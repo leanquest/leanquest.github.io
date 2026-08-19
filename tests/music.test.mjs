@@ -24,6 +24,7 @@ test("every game music cue is a populated, parseable MIDI file", async () => {
 
 test("music roles and story coverage stay complete", () => {
   assert.equal(musicCues.title.loop, true);
+  assert.equal(storyMusic["the-broken-axiom"], "title", "Opening story should continue the title music cue");
   assert.equal(musicCues.combat.loop, true);
   assert.equal(musicCues.combat.url, "/music/battle.mid");
   assert.equal(musicCues.victory.loop, false);

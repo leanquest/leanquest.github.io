@@ -770,7 +770,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   padding: clamp(18px, 4vw, 50px);
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(ellipse at 50% 40%, rgba(109,75,28,.19), transparent 37%),
     linear-gradient(rgba(5,6,4,.3), rgba(5,6,4,.85)),
@@ -788,7 +789,6 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   min-height: 0;
-  aspect-ratio: 100 / 48;
   overflow: hidden;
   padding: 0;
   border: 4px solid #090a07;
@@ -805,8 +805,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 .class-card.locked .class-art { filter: grayscale(.8) brightness(.55); }
 .class-card.locked .class-copy > b { color: #8d8774; }
 .class-art {
-  width: auto;
-  height: 100%;
+  width: clamp(150px, 18vw, 220px);
+  height: auto;
   min-height: 100%;
   aspect-ratio: 1;
   background-image: url("/assets/classes.png");
@@ -1427,7 +1427,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
     height: 100dvh;
     min-height: 560px;
     padding: 8px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
   .select-title .brand-mark { margin-bottom: 5px; }
   .select-title > p { font-size: 8px; }

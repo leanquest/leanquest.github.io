@@ -33,6 +33,6 @@ export const musicCues = {
 export type MusicCueId = keyof typeof musicCues;
 
 export const storyMusic: Record<string, MusicCueId> = {
-  "the-broken-axiom": "story-broken-axiom",
+  "the-broken-axiom": "title",
   "the-hall-of-names": "story-hall-of-names",
 };
