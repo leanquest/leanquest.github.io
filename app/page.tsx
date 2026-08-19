@@ -1,0 +1,989 @@
+"use client";
+
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import Image from "next/image";
+import {
+  curriculum,
+  catalogueMoveDefinitions,
+  depthNames,
+  exercises,
+  newMoveText,
+  unlockedMoves,
+  storySequences,
+  type HeroClass,
+  type MoveId,
+  type MonsterSpec,
+  type StoryImageLayer,
+  type StorySequence,
+} from "./curriculum";
+import {
+  contextLines,
+  createProofState,
+  currentModeLabel,
+  currentTarget,
+  getMoveChoices,
+  isSolved,
+  normalizeFocusedHole,
+  pendingArgumentType,
+  renderProof,
+  renderProofParts,
+  renderTacticProofLines,
+  type MoveChoice,
+  type ProofState,
+} from "./proof-engine";
+import { attackDamageFor, MAX_HP, MAX_MANA, MAX_VISION_POINTS, RESOURCE_CONSUMPTION_ENABLED } from "./game-balance";
+import { canSelectHero, destinationFromTitle } from "./campaign-progress";
+import { MusicControls, useGameMusic } from "./game-music";
+import { storyMusic, type MusicCueId } from "./music-manifest";
+
+type MonsterPhase = "idle" | "attack" | "death" | "gone";
+type Message = { kind: "info" | "error"; text: string } | null;
+type SaveData = {
+  selectedClass?: HeroClass;
+  completed: Record<HeroClass, number[]>;
+  level: Record<HeroClass, number>;
+  seenLessons: Record<HeroClass, number[]>;
+  seenStories: string[];
+};
+
+type StoryDestination = { kind: "character" } | { kind: "level"; index: number } | { kind: "map" };
+type CSSPropertiesWithVariables = CSSProperties & {
+  [name: `--${string}`]: string | number | undefined;
+};
+
+const STORAGE_KEY = "leanquest-campaign-v3";
+const emptySave: SaveData = {
+  completed: { warrior: [], mage: [] },
+  level: { warrior: 0, mage: 0 },
+  seenLessons: { warrior: [], mage: [] },
+  seenStories: [],
+};
+const FINAL_LEVEL_ID = exercises[exercises.length - 1].id;
+
+function storiesBeforeFirstLevel() {
+  const firstLevel = curriculum.findIndex((entry) => entry.kind === "level");
+  return curriculum.slice(0, firstLevel).filter((entry): entry is StorySequence => entry.kind === "story");
+}
+
+function storiesAfterLevel(levelId: number) {
+  const levelPosition = curriculum.findIndex((entry) => entry.kind === "level" && entry.id === levelId);
+  if (levelPosition < 0) return [];
+  const stories: StorySequence[] = [];
+  for (const entry of curriculum.slice(levelPosition + 1)) {
+    if (entry.kind === "level") break;
+    stories.push(entry);
+  }
+  return stories;
+}
+
+function requiredLevelForStory(storyId: string) {
+  let previousLevel = 0;
+  for (const entry of curriculum) {
+    if (entry.kind === "story" && entry.id === storyId) return previousLevel;
+    if (entry.kind === "level") previousLevel = entry.id;
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
+function storyLayerStyle(layer: StoryImageLayer): CSSPropertiesWithVariables {
+  const usesInset = Boolean(layer.layout?.inset) || (!layer.layout?.left && !layer.layout?.top);
+  return {
+    ...(usesInset
+      ? { inset: layer.layout?.inset ?? "0" }
+      : {
+          left: layer.layout?.left,
+          top: layer.layout?.top,
+          width: layer.layout?.width,
+          height: layer.layout?.height,
+        }),
+    opacity: layer.layout?.opacity,
+    "--story-cycle-duration": `${(layer.frameDurationMs ?? 800) * 2}ms`,
+  };
+}
+
+function monsterVisual(monster: MonsterSpec, hero: HeroClass) {
+  const { cell, sheet } = monster.sprite;
+  const x = [0, 25, 50, 75, 100][cell % 5];
+  const y = cell < 5 ? 0 : 100;
+  return {
+    backgroundImage: `url("/assets/${sheet}")`,
+    backgroundPosition: `${x}% ${y}%`,
+    filter: `hue-rotate(${monster.hueShift[hero]}deg) saturate(${hero === "mage" ? 1.08 : 1}) drop-shadow(10px 12px 0 rgba(0,0,0,.7))`,
+  };
+}
+
+function heroPosition(hero: HeroClass) {
+  return hero === "warrior" ? "0% 50%" : "100% 50%";
+}
+
+function maxManaFor(hero: HeroClass) {
+  return MAX_MANA[hero];
+}
+
+function visionFor(hero: HeroClass) {
+  return hero === "warrior" ? MAX_VISION_POINTS : 0;
+}
+
+export default function Home() {
+  const [save, setSave] = useState<SaveData>(emptySave);
+  const [heroClass, setHeroClass] = useState<HeroClass | null>(null);
+  const [showTitle, setShowTitle] = useState(true);
+  const [showCharacterSelect, setShowCharacterSelect] = useState(false);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [proofState, setProofState] = useState<ProofState>(() =>
+    createProofState(exercises[0].theorem, exercises[0].context),
+  );
+  const [undoStack, setUndoStack] = useState<ProofState[]>([]);
+  const [message, setMessage] = useState<Message>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [showCatalogue, setShowCatalogue] = useState(false);
+  const [showLesson, setShowLesson] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [monsterPhase, setMonsterPhase] = useState<MonsterPhase>("idle");
+  const [hp, setHp] = useState(MAX_HP.warrior);
+  const [mana, setMana] = useState(0);
+  const [visionPoints, setVisionPoints] = useState(MAX_VISION_POINTS);
+  const [enteringNaturalNumber, setEnteringNaturalNumber] = useState(false);
+  const [naturalNumber, setNaturalNumber] = useState("");
+  const [storyQueue, setStoryQueue] = useState<StorySequence[]>([]);
+  const [storyPanelIndex, setStoryPanelIndex] = useState(0);
+  const [storyDestination, setStoryDestination] = useState<StoryDestination | null>(null);
+  const animationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const naturalNumberInput = useRef<HTMLInputElement>(null);
+
+  const level = exercises[levelIndex];
+  const solved = isSolved(proofState);
+  const proofFailed = RESOURCE_CONSUMPTION_ENABLED && hp === 0 && !solved;
+  const target = solved ? "No goals" : currentTarget(proofState);
+  const requiredArgumentType = pendingArgumentType(proofState);
+  const displayedContext = contextLines(proofState);
+  const history = proofState.moves;
+  const choices = heroClass && !solved && !proofFailed
+    ? getMoveChoices(proofState, heroClass, level.id)
+    : [];
+  const numberInputChoice = choices.find((choice) => choice.input === "natural-number");
+  const submittedNaturalNumber = naturalNumber || "0";
+  const completed = heroClass ? save.completed[heroClass] : [];
+  const unlockedThrough = Math.min(exercises.length, Math.max(1, completed.length + 1));
+  const catalogueUnlocks = heroClass ? unlockedMoves(unlockedThrough, heroClass) : new Set<MoveId>();
+  const catalogueGroups = Object.entries(catalogueMoveDefinitions)
+    .filter(([moveId]) => catalogueUnlocks.has(moveId as MoveId))
+    .reduce((groups, [moveId, definition]) => {
+      if (definition.kind === "term") {
+        definition.entries.forEach((entry) => {
+          const groupName = entry.group ?? definition.group;
+          const current = groups.get(groupName) ?? { terms: new Map<string, { name: string; type: string }>(), tactics: [] as { id: string; label: string; description: string }[] };
+          current.terms.set(`${entry.name}\n${entry.type}`, entry);
+          groups.set(groupName, current);
+        });
+      } else {
+        const current = groups.get(definition.group) ?? { terms: new Map<string, { name: string; type: string }>(), tactics: [] as { id: string; label: string; description: string }[] };
+        current.tactics.push({ id: moveId, label: definition.label, description: definition.description });
+        groups.set(definition.group, current);
+      }
+      return groups;
+    }, new Map<string, { terms: Map<string, { name: string; type: string }>; tactics: { id: string; label: string; description: string }[] }>());
+  const catalogueGroupOrder = ["Term building", "Logic", "Equality & quantifiers", "Equality", "Quantifiers", "Nat", "List", "Recursion", "Core tactics"];
+  const activeStory = storyQueue[0];
+  const activeStoryPanel = activeStory?.panels[storyPanelIndex];
+  const maxMana = heroClass ? maxManaFor(heroClass) : 0;
+  const maxHp = heroClass ? MAX_HP[heroClass] : MAX_HP.warrior;
+  const attackDamage = heroClass ? attackDamageFor(heroClass, level[heroClass].selections.length) : 0;
+  const currentMusicCue: MusicCueId | null = !ready
+    ? null
+    : activeStory
+      ? storyMusic[activeStory.id] ?? "title"
+      : showTitle || showCharacterSelect || !heroClass
+        ? "title"
+        : solved
+          ? "victory"
+          : "combat";
+  const music = useGameMusic(currentMusicCue);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as SaveData;
+          const restored = parsed.selectedClass && !canSelectHero(parsed.selectedClass, parsed.completed, FINAL_LEVEL_ID)
+            ? { ...parsed, selectedClass: undefined }
+            : parsed;
+          setSave(restored);
+          if (restored.selectedClass) {
+            setHeroClass(restored.selectedClass);
+            setHp(MAX_HP[restored.selectedClass]);
+            setMana(maxManaFor(restored.selectedClass));
+            setVisionPoints(visionFor(restored.selectedClass));
+            const restoredIndex = Math.min(restored.level[restored.selectedClass], exercises.length - 1);
+            setLevelIndex(restoredIndex);
+            setProofState(createProofState(exercises[restoredIndex].theorem, exercises[restoredIndex].context));
+          }
+        } else {
+          setSave(emptySave);
+        }
+      } catch {
+        setSave(emptySave);
+      }
+      setReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
+  }, [ready, save]);
+
+  useEffect(
+    () => () => animationTimers.current.forEach(clearTimeout),
+    [],
+  );
+
+  useEffect(() => {
+    if (enteringNaturalNumber) naturalNumberInput.current?.focus();
+  }, [enteringNaturalNumber]);
+
+  function clearAnimations() {
+    animationTimers.current.forEach(clearTimeout);
+    animationTimers.current = [];
+  }
+
+  function selectClass(nextClass: HeroClass) {
+    if (!canSelectHero(nextClass, save.completed, FINAL_LEVEL_ID)) return;
+    clearAnimations();
+    const nextIndex = Math.min(save.level[nextClass], exercises.length - 1);
+    setHeroClass(nextClass);
+    setLevelIndex(nextIndex);
+    setProofState(createProofState(exercises[nextIndex].theorem, exercises[nextIndex].context));
+    setUndoStack([]);
+    setMessage(null);
+    setMonsterPhase("idle");
+    setHp(MAX_HP[nextClass]);
+    setMana(maxManaFor(nextClass));
+    setVisionPoints(visionFor(nextClass));
+    setEnteringNaturalNumber(false);
+    setNaturalNumber("");
+    setShowCharacterSelect(false);
+    setSave((current) => ({ ...current, selectedClass: nextClass }));
+    if (!save.seenLessons[nextClass].includes(exercises[nextIndex].id)) {
+      setShowLesson(true);
+    }
+  }
+
+  function choose(choice: MoveChoice, value?: string) {
+    if (!heroClass || monsterPhase !== "idle" || proofFailed) return;
+    if (RESOURCE_CONSUMPTION_ENABLED && mana < choice.manaCost) {
+      setMessage({ kind: "error", text: `This move requires ${choice.manaCost} MP, but only ${mana} MP remains.` });
+      return;
+    }
+    if (choice.input === "natural-number" && value === undefined) {
+      setNaturalNumber("");
+      setEnteringNaturalNumber(true);
+      return;
+    }
+    const nextState = choice.apply(value);
+    const completedProof = isSolved(nextState);
+    setEnteringNaturalNumber(false);
+    setNaturalNumber("");
+    setUndoStack((items) => [...items, proofState]);
+    setProofState(nextState);
+    if (RESOURCE_CONSUMPTION_ENABLED) {
+      setMana((current) => current - choice.manaCost);
+    }
+
+    if (completedProof) {
+      setMonsterPhase("death");
+      setSave((current) => {
+        const classCompleted = current.completed[heroClass];
+        return {
+          ...current,
+          completed: {
+            ...current.completed,
+            [heroClass]: classCompleted.includes(level.id)
+              ? classCompleted
+              : [...classCompleted, level.id].sort((a, b) => a - b),
+          },
+        };
+      });
+      setMessage({ kind: "info", text: "All goals completed. The guardian is defeated." });
+      animationTimers.current.push(
+        setTimeout(() => setMonsterPhase("gone"), 1300),
+      );
+    } else {
+      const nextHp = RESOURCE_CONSUMPTION_ENABLED
+        ? Math.max(0, hp - attackDamage)
+        : hp;
+      setHp(nextHp);
+      setMonsterPhase("attack");
+      setMessage(nextHp === 0
+        ? { kind: "error", text: "Your proof has failed. Restart the level to recover and try again." }
+        : RESOURCE_CONSUMPTION_ENABLED ? {
+            kind: "info",
+            text: `The move fits. The guardian strikes for ${attackDamage} HP. The focused hole now expects ${currentTarget(nextState)}.`,
+          } : {
+            kind: "info",
+            text: `The move fits. Resource consumption is paused. The focused hole now expects ${currentTarget(nextState)}.`,
+          });
+      animationTimers.current.push(setTimeout(() => setMonsterPhase("idle"), 620));
+    }
+  }
+
+  function undo() {
+    if (proofFailed) return;
+    const previous = undoStack.at(-1);
+    if (!previous) return;
+    clearAnimations();
+    setMonsterPhase("idle");
+    setProofState(previous);
+    setEnteringNaturalNumber(false);
+    setNaturalNumber("");
+    setUndoStack((items) => items.slice(0, -1));
+    setMessage({ kind: "info", text: "The last move has been undone." });
+  }
+
+  function useVision() {
+    if (heroClass !== "warrior" || visionPoints < 1 || monsterPhase !== "idle" || solved || proofFailed) return;
+    const normalized = normalizeFocusedHole(proofState);
+    if (normalized === proofState) {
+      setMessage({ kind: "info", text: "The focused hole is already in normal form. No VP was spent." });
+      return;
+    }
+    setProofState(normalized);
+    setVisionPoints((current) => current - 1);
+    setMessage({ kind: "info", text: "Vision reveals the focused hole in normal form. No proof move was made." });
+  }
+
+  function reset() {
+    clearAnimations();
+    setMonsterPhase("idle");
+    setHp(heroClass ? MAX_HP[heroClass] : MAX_HP.warrior);
+    setMana(heroClass ? maxManaFor(heroClass) : 0);
+    setVisionPoints(heroClass ? visionFor(heroClass) : MAX_VISION_POINTS);
+    setProofState(createProofState(level.theorem, level.context));
+    setUndoStack([]);
+    setMessage(null);
+    setEnteringNaturalNumber(false);
+    setNaturalNumber("");
+  }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (showCharacterSelect || showMap || showCatalogue || showLesson || enteringNaturalNumber || proofFailed) return;
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  function openLesson(markSeen = false) {
+    if (!heroClass) return;
+    setShowLesson(true);
+    if (markSeen) {
+      setSave((current) => ({
+        ...current,
+        seenLessons: {
+          ...current.seenLessons,
+          [heroClass]: current.seenLessons[heroClass].includes(level.id)
+            ? current.seenLessons[heroClass]
+            : [...current.seenLessons[heroClass], level.id],
+        },
+      }));
+    }
+  }
+
+  function closeLesson() {
+    if (!heroClass) return;
+    setShowLesson(false);
+    setSave((current) => ({
+      ...current,
+      seenLessons: {
+        ...current.seenLessons,
+        [heroClass]: current.seenLessons[heroClass].includes(level.id)
+          ? current.seenLessons[heroClass]
+          : [...current.seenLessons[heroClass], level.id],
+      },
+    }));
+  }
+
+  function goToLevel(index: number) {
+    if (!heroClass) return;
+    if (index + 1 > unlockedThrough && !completed.includes(index + 1)) return;
+    clearAnimations();
+    setLevelIndex(index);
+    setShowMap(false);
+    setProofState(createProofState(exercises[index].theorem, exercises[index].context));
+    setUndoStack([]);
+    setMessage(null);
+    setMonsterPhase("idle");
+    setHp(MAX_HP[heroClass]);
+    setMana(maxManaFor(heroClass));
+    setVisionPoints(visionFor(heroClass));
+    setEnteringNaturalNumber(false);
+    setNaturalNumber("");
+    setSave((current) => ({
+      ...current,
+      level: { ...current.level, [heroClass]: index },
+    }));
+    if (!save.seenLessons[heroClass].includes(exercises[index].id)) {
+      setShowLesson(true);
+    }
+  }
+
+  function startStories(stories: StorySequence[], destination: StoryDestination) {
+    if (!stories.length) return;
+    setShowTitle(false);
+    setShowMap(false);
+    setShowCharacterSelect(false);
+    setStoryQueue(stories);
+    setStoryPanelIndex(0);
+    setStoryDestination(destination);
+  }
+
+  function continueFromTitle() {
+    const unseenOpening = storiesBeforeFirstLevel().filter((story) => !save.seenStories.includes(story.id));
+    const destination = destinationFromTitle(unseenOpening.length > 0, save.selectedClass);
+    if (destination === "opening-story") {
+      startStories(unseenOpening, { kind: "character" });
+      return;
+    }
+    setShowTitle(false);
+    setShowCharacterSelect(destination === "character-select" || !heroClass);
+  }
+
+  function returnToTitle() {
+    setShowCharacterSelect(false);
+    setShowTitle(true);
+  }
+
+  function arriveAfterStory(destination: StoryDestination | null) {
+    if (!destination) return;
+    if (destination.kind === "character") {
+      setShowCharacterSelect(true);
+    } else if (destination.kind === "map") {
+      setShowMap(true);
+    } else {
+      goToLevel(destination.index);
+    }
+  }
+
+  function finishCurrentStory() {
+    if (!activeStory) return;
+    setSave((current) => ({
+      ...current,
+      seenStories: current.seenStories.includes(activeStory.id)
+        ? current.seenStories
+        : [...current.seenStories, activeStory.id],
+    }));
+    if (storyQueue.length > 1) {
+      setStoryQueue((queue) => queue.slice(1));
+      setStoryPanelIndex(0);
+      return;
+    }
+    const destination = storyDestination;
+    setStoryQueue([]);
+    setStoryPanelIndex(0);
+    setStoryDestination(null);
+    arriveAfterStory(destination);
+  }
+
+  function skipStories() {
+    if (!storyQueue.length) return;
+    setSave((current) => ({
+      ...current,
+      seenStories: Array.from(new Set([...current.seenStories, ...storyQueue.map((story) => story.id)])),
+    }));
+    const destination = storyDestination;
+    setStoryQueue([]);
+    setStoryPanelIndex(0);
+    setStoryDestination(null);
+    arriveAfterStory(destination);
+  }
+
+  function nextStoryPanel() {
+    if (!activeStory) return;
+    if (storyPanelIndex < activeStory.panels.length - 1) {
+      setStoryPanelIndex((index) => index + 1);
+    } else {
+      finishCurrentStory();
+    }
+  }
+
+  function nextLevel() {
+    const stories = storiesAfterLevel(level.id).filter((story) => !save.seenStories.includes(story.id));
+    const destination: StoryDestination = levelIndex >= exercises.length - 1
+      ? { kind: "map" }
+      : { kind: "level", index: levelIndex + 1 };
+    if (stories.length) {
+      startStories(stories, destination);
+      return;
+    }
+    arriveAfterStory(destination);
+  }
+
+  if (!ready) {
+    return <main className="loading-shell">ENTERING THE DUNGEON...</main>;
+  }
+
+  if (showTitle) {
+    return (
+      <main className="title-screen">
+        <div className="screen-music-control"><MusicControls {...music} /></div>
+        <section className="title-card" aria-labelledby="game-title">
+          <div className="title-heading">
+            <span className="brand-mark" aria-hidden="true">λ</span>
+            <h1 id="game-title">LEANQUEST</h1>
+          </div>
+          <div className="title-art pixel-frame" role="img" aria-label="An endless stone staircase climbing toward a distant golden light">
+            <Image className="title-frame title-frame-1" src="/assets/title/infinite-stair-1.png" alt="" fill priority sizes="(max-width: 650px) 100vw, 820px" />
+            <Image className="title-frame title-frame-2" src="/assets/title/infinite-stair-2.png" alt="" fill sizes="(max-width: 650px) 100vw, 820px" />
+            <div className="title-vignette" aria-hidden="true" />
+          </div>
+          <button className="title-continue primary-button" onClick={continueFromTitle}>CONTINUE</button>
+        </section>
+      </main>
+    );
+  }
+
+  if (activeStory && activeStoryPanel) {
+    return (
+      <main className="story-screen">
+        <div className="screen-music-control"><MusicControls {...music} /></div>
+        <section className="story-viewer pixel-frame" aria-labelledby="story-panel-title">
+          <div className="story-image" aria-label={`Story image ${storyPanelIndex + 1} of ${activeStory.panels.length}`}>
+            {activeStoryPanel.layers.map((layer) => (
+              <div className={`story-layer ${layer.frames.length === 2 ? "animated" : ""}`} style={storyLayerStyle(layer)} key={layer.id}>
+                {layer.frames.map((frame, index) => (
+                  <img
+                    className={`story-frame story-frame-${index + 1}`}
+                    src={frame}
+                    alt={index === 0 ? layer.alt ?? "" : ""}
+                    style={{ objectFit: layer.layout?.objectFit ?? "cover" }}
+                    key={frame}
+                  />
+                ))}
+              </div>
+            ))}
+            <div className="story-vignette" aria-hidden="true" />
+            <div className="story-counter">{String(storyPanelIndex + 1).padStart(2, "0")} / {String(activeStory.panels.length).padStart(2, "0")}</div>
+          </div>
+          <div className="story-copy">
+            <p className="eyebrow">STORY · {activeStory.title}</p>
+            <h1 id="story-panel-title">{activeStoryPanel.title}</h1>
+            <div className="story-text">{activeStoryPanel.text.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>
+            <div className="story-actions">
+              <button onClick={() => setStoryPanelIndex((index) => Math.max(0, index - 1))} disabled={storyPanelIndex === 0}>◀ BACK</button>
+              <button className="story-skip" onClick={skipStories}>SKIP STORY</button>
+              <button className="primary-button" onClick={nextStoryPanel}>
+                {storyPanelIndex === activeStory.panels.length - 1 ? "CONTINUE" : "NEXT"} ▶
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (showCharacterSelect || !heroClass) {
+    return (
+      <main className="character-screen">
+        <div className="screen-music-control"><MusicControls {...music} /></div>
+        <div className="character-backdrop">
+          <div className="select-title">
+            <span className="brand-mark">λ</span>
+            <p>LEANQUEST</p>
+            <h1>CHOOSE YOUR PATH</h1>
+            <small>Your class determines the proof language you will learn.</small>
+          </div>
+          <section className="class-grid">
+            {(["mage", "warrior"] as HeroClass[]).map((hero) => {
+              const isLocked = !canSelectHero(hero, save.completed, FINAL_LEVEL_ID);
+              return (
+                <button
+                  className={`class-card ${hero}${isLocked ? " locked" : ""}`}
+                  key={hero}
+                  onClick={() => selectClass(hero)}
+                  disabled={isLocked}
+                  aria-label={isLocked ? `Warrior locked until Mage level ${FINAL_LEVEL_ID} is complete` : undefined}
+                >
+                  <div className="class-art" style={{ backgroundPosition: heroPosition(hero) }} />
+                  <div className="class-copy">
+                    <span>{hero === "warrior" ? "PATH OF TERMS" : "PATH OF TACTICS"}</span>
+                    <h2>{hero.toUpperCase()}</h2>
+                    <p>
+                      {hero === "warrior"
+                        ? "Forge proofs directly from functions, constructors, recursors, and applications. No tactics are available."
+                        : "Cast tactics to transform goals, selecting only the simple terms and names each spell requires."}
+                    </p>
+                    <div className="class-progress">
+                      <i style={{ width: `${(save.completed[hero].length / exercises.length) * 100}%` }} />
+                    </div>
+                    <strong>{isLocked ? `UNLOCK AFTER MAGE LEVEL ${FINAL_LEVEL_ID}` : `${save.completed[hero].length}/${exercises.length} GUARDIANS SLAIN`}</strong>
+                    <b>{isLocked ? "LOCKED · COMPLETE THE MAGE PATH" : `${save.completed[hero].length ? "CONTINUE" : "BEGIN"} AS ${hero.toUpperCase()} ▶`}</b>
+                  </div>
+                </button>
+              );
+            })}
+          </section>
+          <div className="character-actions">
+            <button className="return-button" onClick={returnToTitle}>◀ MAIN TITLE</button>
+            {save.selectedClass && (
+              <button className="return-button" onClick={() => setShowCharacterSelect(false)}>
+                CANCEL · RETURN TO {save.selectedClass.toUpperCase()}
+              </button>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const proofDisplay =
+    heroClass === "mage"
+      ? renderTacticProofLines(proofState)
+      : [];
+  const termProofDisplay = heroClass === "warrior" ? renderProofParts(proofState) : [];
+  const visual = monsterVisual(level.monster, heroClass);
+
+  return (
+    <main className={`app-shell hero-${heroClass} ${monsterPhase === "attack" ? "under-attack" : ""} ${proofFailed ? "proof-failed" : ""}`}>
+      <header className="topbar pixel-frame">
+        <button className="brand" onClick={() => setShowMap(true)} aria-label="Open dungeon map">
+          <span className="brand-mark">λ</span>
+          <span><strong>LEANQUEST</strong><small>{heroClass === "warrior" ? "PATH OF TERMS" : "PATH OF TACTICS"}</small></span>
+        </button>
+        <div className="quest-progress" aria-label={`${completed.length} of ${exercises.length} levels complete`}>
+          <div className="progress-copy">
+            <span>DEPTH {String(level.depth).padStart(2, "0")} · {depthNames[level.depth - 1]}</span>
+            <strong>{completed.length}/{exercises.length} SLAIN</strong>
+          </div>
+          <div className="progress-track"><span style={{ width: `${(completed.length / exercises.length) * 100}%` }} /></div>
+        </div>
+        <div className="top-actions">
+          <MusicControls {...music} />
+          <button className="class-button" onClick={() => setShowCharacterSelect(true)}>
+            <span className="hero-icon" style={{ backgroundPosition: heroPosition(heroClass) }} />
+            {heroClass.toUpperCase()}
+          </button>
+          <button className="map-button" onClick={() => setShowMap(true)}><span>▦</span> MAP</button>
+          <button className="map-button catalogue-button" onClick={() => setShowCatalogue(true)}><span>▤</span> LIBRARY</button>
+        </div>
+      </header>
+
+      <section className="workspace">
+        <section className={`encounter pixel-frame phase-${monsterPhase}`}>
+          <div className="dungeon-view">
+            <div className="torch torch-left"><i /></div><div className="torch torch-right"><i /></div>
+            <div className="monster-stage">
+              <div className="monster-sprite" role="img" aria-label={level.monster.name} style={visual} />
+              {monsterPhase === "attack" && <div className="claw-flash" aria-hidden="true">{"///"}</div>}
+              {monsterPhase === "death" && <div className="death-burst" aria-hidden="true">✦</div>}
+            </div>
+            <div className="monster-plaque">
+              <span>ENCOUNTER {String(level.id).padStart(2, "0")} · DEPTH {level.depth}</span>
+              <strong>{level.monster.name}</strong>
+              <small>{level.monster.lore}</small>
+            </div>
+            <div className="player-hud">
+              <div className="hero-portrait" style={{ backgroundPosition: heroPosition(heroClass) }} />
+              <div className="vitals">
+                <div className="vital-row"><b>HP</b><div className="vital-bar hp" role="meter" aria-label="Player health" aria-valuemin={0} aria-valuemax={maxHp} aria-valuenow={hp}><i style={{ width: `${(hp / maxHp) * 100}%` }} /></div><em>{RESOURCE_CONSUMPTION_ENABLED ? `${hp} / ${maxHp}` : "PAUSED"}</em></div>
+                {heroClass === "warrior" ? (
+                  <div className="vital-row"><b>VP</b><div className="vital-bar vp" role="meter" aria-label="Warrior vision points" aria-valuemin={0} aria-valuemax={MAX_VISION_POINTS} aria-valuenow={visionPoints}><i style={{ width: `${(visionPoints / MAX_VISION_POINTS) * 100}%` }} /></div><em>{visionPoints} / {MAX_VISION_POINTS}</em></div>
+                ) : (
+                  <div className="vital-row"><b>MP</b><div className="vital-bar mp" role="meter" aria-label="Player mana" aria-valuemin={0} aria-valuemax={maxMana} aria-valuenow={mana}><i style={{ width: `${maxMana === 0 ? 0 : (mana / maxMana) * 100}%` }} /></div><em>{RESOURCE_CONSUMPTION_ENABLED ? `${mana} / ${maxMana}` : "PAUSED"}</em></div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="combat-console">
+          <div className="left-console">
+            <div className="level-strip pixel-frame">
+              <div className="level-rune">{String(level.id).padStart(2, "0")}</div>
+              <div><p className="eyebrow">{level.chapter} · {level.topic}</p><h1>{level.title}</h1><p>{level.intro}</p></div>
+              <div className="heading-actions">
+                <button onClick={undo} disabled={proofFailed || !undoStack.length}>↶ <span>UNDO</span></button>
+                <button className={proofFailed ? "restart-button encouraged" : "restart-button"} onClick={reset}>↻ <span>RESTART</span></button>
+                <button onClick={() => openLesson()}>i <span>LESSON</span></button>
+              </div>
+            </div>
+
+            <article className="theorem-card pixel-frame">
+              <div className="card-label"><span>QUEST OBJECTIVE</span><span className="verified-dot">CURRICULUM LEVEL</span></div>
+              <code>{level.theorem}</code>
+            </article>
+
+            <article className="goals-card pixel-frame">
+              <div className="card-label"><span>{solved ? "COMBAT LOG" : heroClass === "warrior" ? "CURRENT HOLE" : "CURRENT GOAL"}</span><span>{solved ? "CLEAR" : "1 ACTIVE"}</span></div>
+              {solved ? (
+                <div className="victory-state"><div className="victory-sigil">✦</div><div><strong>MONSTER DEFEATED</strong><p>No goals remain. The proof is complete.</p></div></div>
+              ) : (
+                <>
+                  <div className="context-list">{displayedContext.length ? displayedContext.map((item) => <code key={item}>{item}</code>) : <code>empty context</code>}</div>
+                  <div className="goal-divider" />
+                  <div className="goal-stack"><div className="goal focused"><span>{heroClass === "warrior" ? "□" : "⊢"}</span><code>{target}</code></div></div>
+                </>
+              )}
+            </article>
+
+            <article className="source-card pixel-frame">
+              <div className="card-label"><span>SCROLL OF PROOF</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
+              <pre className="proof-scroll" tabIndex={0} aria-label="Current proof script">
+                {heroClass === "warrior" ? (
+                  <span>
+                    {termProofDisplay.map((part, index) =>
+                      part.hole
+                        ? <span className={`proof-hole ${part.active ? "active" : ""}`} key={`${part.text}-${index}`}>□</span>
+                        : <span key={`${part.text}-${index}`}>{part.text}</span>
+                    )}
+                    {"\n"}
+                  </span>
+                ) : proofDisplay.map((line, index) => {
+                  let highlightedHole = false;
+                  const highlightFirstHole = Boolean(proofState.pending) && index === proofDisplay.length - 1;
+                  return (
+                    <span key={`${line}-${index}`}>
+                      {line.split(/(□)/).map((piece, pieceIndex) => {
+                        if (piece !== "□") return piece;
+                        const active = highlightFirstHole && !highlightedHole;
+                        highlightedHole = highlightedHole || active;
+                        return <span className={`proof-hole ${active ? "active" : ""}`} key={`${piece}-${pieceIndex}`}>□</span>;
+                      })}
+                      {"\n"}
+                    </span>
+                  );
+                })}
+              </pre>
+            </article>
+          </div>
+
+          <aside className="moves-column pixel-frame">
+            <div className="path-banner">
+              <span className="path-symbol">{proofFailed ? "☠" : heroClass === "warrior" ? "⚔" : "✦"}</span>
+              <span><strong>{proofFailed ? "PROOF FAILED" : heroClass === "warrior" ? "TERM CATALOGUE" : "MOVE CATALOGUE"}</strong><small>{proofFailed ? "NO MOVES REMAIN" : "CUMULATIVE · FILTERED BY TYPE"}</small></span>
+            </div>
+            <div className="move-panel">
+              <div className="move-heading">
+                <div>
+                  <p className="eyebrow">{proofFailed ? "HP DEPLETED" : solved ? "ENCOUNTER WON" : `MOVE ${history.length + 1}`}</p>
+                  <h2>{proofFailed ? "PROOF FAILED" : solved ? "VICTORY" : currentModeLabel(proofState, heroClass)}</h2>
+                </div>
+                {!solved && !proofFailed && <span className="focus-chip">{choices.length} MATCH</span>}
+              </div>
+              {proofFailed ? (
+                <div className="failure-panel">
+                  <div className="failure-sigil">☠</div>
+                  <p className="eyebrow">HP DEPLETED</p>
+                  <h2>PROOF FAILED</h2>
+                  <p>The guardian has broken this proof attempt. Restart the level to recover your HP.</p>
+                  <button className="restart-level-button" onClick={reset}>↻ RESTART LEVEL</button>
+                </div>
+              ) : solved ? (
+                <div className="completion-panel">
+                  <div className="completion-orbit"><span>✦</span></div>
+                  <h3>{level.monster.name} falls!</h3>
+                  <p>The {heroClass}&apos;s proof used {history.length} moves.</p>
+                  <div className="proof-pair"><div><small>COMPLETE {heroClass.toUpperCase()} PROOF</small><code>{heroClass === "warrior" ? renderProof(proofState) : proofDisplay.join("\n")}</code></div></div>
+                  <button className="primary-button" onClick={nextLevel}>{level.id === exercises.length ? "VIEW CONQUERED DUNGEON" : "ENTER NEXT CHAMBER"} <span>▶</span></button>
+                </div>
+              ) : (
+                <>
+                  <p className="move-instruction">
+                    {proofState.pending
+                      ? "Fill the selected move's next hole."
+                      : `Every displayed move can produce or transform ${target}.`}
+                  </p>
+                  {requiredArgumentType && (
+                    <div className="argument-requirement">
+                      <span>REQUIRED TYPE</span>
+                      <code>{requiredArgumentType}</code>
+                    </div>
+                  )}
+                  {heroClass === "warrior" && (
+                    <button className="normalize-hole-button" disabled={visionPoints < 1 || monsterPhase !== "idle"} onClick={useVision}>
+                      <span>◉</span><span><strong>NORMALIZE CURRENT HOLE</strong></span><span>1 VP</span>
+                    </button>
+                  )}
+                  {enteringNaturalNumber ? (
+                    <form className="natural-number-entry" onSubmit={(event) => {
+                      event.preventDefault();
+                      if (numberInputChoice?.acceptsInput?.(submittedNaturalNumber)) {
+                        choose(numberInputChoice, submittedNaturalNumber);
+                      }
+                    }}>
+                      <label htmlFor="natural-number-input">ENTER A NATURAL NUMBER</label>
+                      <input
+                        ref={naturalNumberInput}
+                        id="natural-number-input"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]+"
+                        autoComplete="off"
+                        placeholder="0"
+                        value={naturalNumber}
+                        onChange={(event) => setNaturalNumber(event.target.value.replace(/\D/g, ""))}
+                        onKeyDown={(event) => {
+                          if (event.key === "Escape") {
+                            setEnteringNaturalNumber(false);
+                            setNaturalNumber("");
+                          }
+                        }}
+                      />
+                      <p>Use one or more decimal digits. The complete number counts as one move.</p>
+                      <div className="natural-number-actions">
+                        <button type="button" onClick={() => {
+                          setEnteringNaturalNumber(false);
+                          setNaturalNumber("");
+                        }}>CANCEL</button>
+                        <button type="submit" disabled={!numberInputChoice?.acceptsInput?.(submittedNaturalNumber)}>INSERT NUMBER ▶</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="choice-grid">
+                      {choices.map((choice, index) => {
+                        const unaffordable = RESOURCE_CONSUMPTION_ENABLED && mana < choice.manaCost;
+                        return (
+                          <button className="choice-card" key={choice.id} disabled={monsterPhase !== "idle" || unaffordable} title={unaffordable ? "Not enough mana" : undefined} onClick={() => choose(choice)}>
+                            <span className="choice-key">{index + 1}</span>
+                            <span className="choice-copy"><code>{choice.label}</code>{choice.argumentType && <small>{choice.argumentType}</small>}</span>
+                            <span className={`choice-cost ${heroClass === "mage" && RESOURCE_CONSUMPTION_ENABLED && choice.manaCost ? "paid" : "free"}`}>{heroClass === "warrior" ? "FREE" : RESOURCE_CONSUMPTION_ENABLED ? `${choice.manaCost} MP` : "MP PAUSED"}</span><span className="choice-arrow">▶</span>
+                          </button>
+                        );
+                      })}
+                      {!choices.length && <p className="catalogue-empty">No catalogue move fits this branch. Undo and try another route.</p>}
+                    </div>
+                  )}
+                  <div className={`feedback ${message?.kind ?? "quiet"}`} role="status" aria-live="polite">
+                    <span>{message?.kind === "error" ? "!" : message ? "◆" : "i"}</span>
+                    <p>{message?.text ?? (RESOURCE_CONSUMPTION_ENABLED
+                      ? "Every displayed move is type-compatible. Every selection gives the guardian a chance to strike."
+                      : heroClass === "warrior"
+                        ? "Every displayed move is type-compatible. Guardian attacks continue, but HP consumption is paused; vision still costs VP."
+                        : "Every displayed move is type-compatible. Guardian attacks continue, but HP and MP consumption is paused.")}</p>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="keyboard-note"><span><kbd>⌘</kbd><kbd>Z</kbd> UNDO</span></div>
+          </aside>
+        </section>
+      </section>
+
+      {showLesson && (
+        <div className="modal-backdrop lesson-backdrop">
+          <section className="lesson-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="lesson-title">
+            <div className="lesson-class-art" style={{ backgroundPosition: heroPosition(heroClass) }} />
+            <div className="lesson-copy">
+              <p className="eyebrow">LESSON {String(level.id).padStart(2, "0")} · {level.chapter}</p>
+              <h2 id="lesson-title">{level.title}</h2>
+              {level.lesson[heroClass].map((sentence) => <p key={sentence}>{sentence}</p>)}
+              {newMoveText(level, heroClass) && <p>{newMoveText(level, heroClass)}</p>}
+              <button className="primary-button" onClick={closeLesson}>FACE {level.monster.name.toUpperCase()} ▶</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {showCatalogue && (
+        <div className="modal-backdrop catalogue-backdrop" onMouseDown={() => setShowCatalogue(false)}>
+          <section className="catalogue-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="catalogue-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="catalogue-header">
+              <div>
+                <p className="eyebrow">{heroClass.toUpperCase()} · UNLOCKED KNOWLEDGE</p>
+                <h2 id="catalogue-title">MOVE LIBRARY</h2>
+                <p>Every move you have earned, arranged by the kind of proof it helps you build.</p>
+              </div>
+              <button className="close-button" onClick={() => setShowCatalogue(false)} aria-label="Close move library">×</button>
+            </div>
+            <div className="catalogue-summary">
+              <span><strong>{[...catalogueGroups.values()].reduce((count, group) => count + group.terms.size, 0)}</strong> TERM ENTRIES</span>
+              <span><strong>{[...catalogueGroups.values()].reduce((count, group) => count + group.tactics.length, 0)}</strong> TACTIC MOVES</span>
+              <span className="catalogue-hint">HIDE LIBRARY TO RESUME THE ENCOUNTER</span>
+            </div>
+            <div className="catalogue-groups">
+              {catalogueGroupOrder.map((groupName) => {
+                const group = catalogueGroups.get(groupName);
+                if (!group) return null;
+                return (
+                  <section className="catalogue-group" key={groupName}>
+                    <h3>{groupName}</h3>
+                    <div className="catalogue-entries">
+                      {[...group.terms.values()].map((entry) => (
+                        <article className="catalogue-entry term-entry" key={`${entry.name}-${entry.type}`}>
+                          <div className="catalogue-entry-heading"><span className="catalogue-kind">TERM</span><code>{entry.name}</code></div>
+                          <code className="catalogue-type">{entry.type}</code>
+                        </article>
+                      ))}
+                      {group.tactics.map((tactic) => (
+                        <article className="catalogue-entry tactic-entry" key={tactic.id}>
+                          <div className="catalogue-entry-heading"><span className="catalogue-kind">TACTIC</span><code>{tactic.label}</code></div>
+                          <p>{tactic.description}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+            <button className="primary-button catalogue-close-button" onClick={() => setShowCatalogue(false)}>RETURN TO ENCOUNTER ▶</button>
+          </section>
+        </div>
+      )}
+
+      {showMap && (
+        <div className="modal-backdrop" onMouseDown={() => setShowMap(false)}>
+          <section className="map-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="map-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="map-header">
+              <div><p className="eyebrow">{heroClass.toUpperCase()} CAMPAIGN</p><h2 id="map-title">DUNGEON MAP</h2></div>
+              <button className="close-button" onClick={() => setShowMap(false)}>×</button>
+            </div>
+            <p className="map-intro">Each guardian unlocks the next chamber. Warrior and Mage progress are saved separately.</p>
+            <div className="story-archive">
+              <h3>STORY ARCHIVE</h3>
+              <div className="story-archive-grid">
+                {storySequences.map((story) => {
+                  const requiredLevel = requiredLevelForStory(story.id);
+                  const isUnlocked = requiredLevel === 0 || completed.includes(requiredLevel);
+                  return (
+                    <button
+                      key={story.id}
+                      disabled={!isUnlocked}
+                      onClick={() => startStories([story], { kind: "map" })}
+                    >
+                      <span>{isUnlocked ? "◆" : "◇"}</span>
+                      <span><strong>{story.title}</strong><small>{isUnlocked ? `${story.panels.length} PANEL${story.panels.length === 1 ? "" : "S"} · REPLAY` : `UNLOCK AFTER LEVEL ${requiredLevel}`}</small></span>
+                      <span>{isUnlocked ? "▶" : ""}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {depthNames.map((depthName, depthIndex) => (
+              <div className="map-depth" key={depthName}>
+                <h3>DEPTH {depthIndex + 1} · {depthName}</h3>
+                <div className="level-grid">
+                  {exercises.filter((item) => item.depth === depthIndex + 1).map((item) => {
+                    const index = item.id - 1;
+                    const isComplete = completed.includes(item.id);
+                    const isLocked = item.id > unlockedThrough && !isComplete;
+                    return (
+                      <button key={item.id} className={`level-tile ${item.id === level.id ? "current" : ""} ${isComplete ? "complete" : ""}`} disabled={isLocked} onClick={() => goToLevel(index)}>
+                        <span className="tile-number">{String(item.id).padStart(2, "0")}</span>
+                        <span><strong>{item.monster.name}</strong><small>{item.title} · {item.topic}</small></span>
+                        <span className="tile-arrow">{isComplete ? "✓" : isLocked ? "◆" : "▶"}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
+      )}
+    </main>
+  );
+}
