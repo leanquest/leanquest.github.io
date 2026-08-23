@@ -272,9 +272,9 @@ const sumRepeatEachProof = "fun xs => List.rec " +
 
 const levelEntries = [
   {
-    id: 1, depth: 1, chapter: "Propositions as Types", title: "The Given Proof", topic: "Using a hypothesis",
+    id: 1, depth: 1, chapter: "Propositions as Types", title: "The Given Fact", topic: "Using a hypothesis",
     theorem: "P", context: ["P : Prop", "hp : P"],
-    intro: "The proof environment lists the declarations and hypotheses currently available to you.",
+    intro: "The environment lists the declarations and hypotheses currently available to you.",
     // Intended Warrior term (shortest lesson route): `hp`.
     // Intended Mage moves (shortest lesson route): `exact hp`.
     lesson: lesson("The environment lists available declarations and hypotheses. An entry `hp : P` is already a proof of `P`, so the term `hp` can fill any hole expecting that type.", "The environment lists available declarations and hypotheses. The `exact` tactic closes the current goal whenever the supplied term has exactly the required type."),

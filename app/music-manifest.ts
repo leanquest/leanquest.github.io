@@ -1,9 +1,9 @@
 export const musicCues = {
   title: {
-    title: "Lanterns Above the Proof",
+    title: "Ave Verum Corpus · William Byrd",
     url: "/music/title.mid",
     loop: true,
-    loopSeconds: 64 * 60 / 88,
+    loopSeconds: 58 * 4 * 60 / 76,
   },
   combat: {
     title: "Theorem Under Siege",

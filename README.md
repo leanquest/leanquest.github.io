@@ -38,7 +38,7 @@ the built application can server-render.
 ## Music
 
 The browser renders the MIDI files in `public/music/` through Tone.js. To
-regenerate the original compositions produced by the project script, run:
+regenerate the arrangements and original compositions produced by the project script, run:
 
 ```bash
 npm run music:generate
