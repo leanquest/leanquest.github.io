@@ -1301,7 +1301,15 @@ export const intendedSelections = {
 } as const satisfies Record<number, IntendedSelections>;
 
 export function selectionsForLevel(levelId: number): IntendedSelections {
-  const selections = (intendedSelections as Readonly<Record<number, IntendedSelections>>)[levelId];
+  const tutorialSelections: Readonly<Record<number, IntendedSelections>> = {
+    1: { warrior: ["0"], mage: ["exact □", "0"] },
+    2: { warrior: ["n"], mage: ["exact □", "n"] },
+    3: { warrior: ["[]"], mage: ["exact □", "[]"] },
+    4: { warrior: ["True"], mage: ["exact □", "True"] },
+    5: { warrior: ["True.intro"], mage: ["exact □", "True.intro"] },
+  };
+  const selections = tutorialSelections[levelId] ??
+    (intendedSelections as Readonly<Record<number, IntendedSelections>>)[levelId - 5];
   if (!selections) throw new Error(`Missing intended selections for level ${levelId}`);
   return selections;
 }

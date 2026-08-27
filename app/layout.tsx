@@ -28,14 +28,14 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(origin),
     title: "LeanQuest — The Proof Dungeon",
     description:
-      "Choose Warrior or Mage and battle through 50 paired Lean proof lessons using terms or tactics.",
+      "Choose Warrior or Mage and battle through 55 paired Lean proof lessons using terms or tactics.",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",
     },
     openGraph: {
       title: "LeanQuest",
-      description: "Choose your proof path and defeat 50 dungeon guardians with Lean.",
+      description: "Choose your proof path and defeat 55 dungeon guardians with Lean.",
       images: [{ url: `${origin}/og.png`, width: 1536, height: 1024 }],
     },
     twitter: {

@@ -4,6 +4,7 @@ import { Midi } from "@tonejs/midi";
 import { useEffect, useRef, useState } from "react";
 import * as Tone from "tone";
 import { musicCues, type MusicCueId } from "./music-manifest";
+import { safeTriggerTime } from "./music-timing";
 
 const SETTINGS_KEY = "leanquest-music-v1";
 
@@ -91,14 +92,23 @@ function drumVoice(output: Tone.ToneAudioNode): Voice {
     noise: { type: "white" },
     envelope: { attack: 0.001, decay: 0.025, sustain: 0, release: 0.015 },
   }).connect(channel);
+  let lastKickTime: number | null = null;
+  let lastSnareTime: number | null = null;
+  let lastHatTime: number | null = null;
   return {
     trigger: (entry, time) => {
       if (entry.midi === 36) {
-        kick.triggerAttackRelease("C1", Math.min(0.16, entry.duration), time, entry.velocity);
+        const startTime = safeTriggerTime(time, Tone.immediate(), lastKickTime);
+        lastKickTime = startTime;
+        kick.triggerAttackRelease("C1", Math.min(0.16, entry.duration), startTime, entry.velocity);
       } else if (entry.midi === 38) {
-        snare.triggerAttackRelease(Math.min(0.12, entry.duration), time, entry.velocity);
+        const startTime = safeTriggerTime(time, Tone.immediate(), lastSnareTime);
+        lastSnareTime = startTime;
+        snare.triggerAttackRelease(Math.min(0.12, entry.duration), startTime, entry.velocity);
       } else {
-        hat.triggerAttackRelease(Math.min(0.04, entry.duration), time, entry.velocity * 0.7);
+        const startTime = safeTriggerTime(time, Tone.immediate(), lastHatTime);
+        lastHatTime = startTime;
+        hat.triggerAttackRelease(Math.min(0.04, entry.duration), startTime, entry.velocity * 0.7);
       }
     },
     dispose: () => {

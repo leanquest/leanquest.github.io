@@ -5,9 +5,24 @@ import test from "node:test";
 
 import { storySequences } from "../app/curriculum.ts";
 import { musicCues, storyMusic } from "../app/music-manifest.ts";
+import { MIN_TRIGGER_STEP_SECONDS, safeTriggerTime } from "../app/music-timing.ts";
 
 const require = createRequire(import.meta.url);
 const { Midi } = require("@tonejs/midi");
+
+test("late and simultaneous drum hits receive strictly increasing start times", () => {
+  const now = 12;
+  const first = safeTriggerTime(11.9, now, null);
+  const simultaneous = safeTriggerTime(11.9, now, first);
+  const later = safeTriggerTime(12.5, now, simultaneous);
+
+  assert.equal(first, now + MIN_TRIGGER_STEP_SECONDS);
+  assert.equal(simultaneous, first + MIN_TRIGGER_STEP_SECONDS);
+  assert.equal(later, 12.5);
+  assert.ok(first > now);
+  assert.ok(simultaneous > first);
+  assert.ok(later > simultaneous);
+});
 
 test("every game music cue is a populated, parseable MIDI file", async () => {
   for (const [id, cue] of Object.entries(musicCues)) {

@@ -51,7 +51,7 @@ type CSSPropertiesWithVariables = CSSProperties & {
   [name: `--${string}`]: string | number | undefined;
 };
 
-const STORAGE_KEY = "leanquest-campaign-v3";
+const STORAGE_KEY = "leanquest-campaign-v4";
 const emptySave: SaveData = {
   completed: { warrior: [], mage: [] },
   level: { warrior: 0, mage: 0 },

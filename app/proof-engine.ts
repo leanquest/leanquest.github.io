@@ -94,6 +94,7 @@ type FunctionShape = {
 type TermCandidate = CandidateTerm;
 
 export const libraryTermTypes = {
+  "True.intro": "True",
   "And.intro": "∀ {a b : Prop}, a → b → a ∧ b",
   "And.left": "∀ {a b : Prop}, a ∧ b → a",
   "And.right": "∀ {a b : Prop}, a ∧ b → b",

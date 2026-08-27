@@ -13,6 +13,7 @@ export type CandidateRequest = {
 export type CandidateProvider = (request: CandidateRequest) => CandidateTerm[];
 
 const catalogueTermNames: Partial<Record<MoveId, string[]>> = {
+  "catalogue.trueIntro": ["True.intro"],
   "catalogue.andIntro": ["And.intro"],
   "catalogue.andLeft": ["And.left"],
   "catalogue.andRight": ["And.right"],
@@ -61,6 +62,10 @@ export const catalogueCandidateProvider: CandidateProvider = ({
 }) => {
   if (!includeCatalogue) return [];
   const candidates: CandidateTerm[] = [];
+  if (unlocks.has("term.emptyList")) candidates.push({ text: "[]", type: "List Nat" });
+  if (unlocks.has("term.basicPropositions")) {
+    candidates.push({ text: "True", type: "Prop" }, { text: "False", type: "Prop" });
+  }
   for (const move of unlocks) {
     for (const name of catalogueTermNames[move] ?? []) {
       const type = libraryTermTypes[name];

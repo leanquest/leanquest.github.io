@@ -4,7 +4,8 @@ export type HeroClass = "warrior" | "mage";
 
 export type MoveId =
   | "term.context" | "term.lambda" | "term.application" | "term.dot" | "term.naturalNumber"
-  | "catalogue.andIntro" | "catalogue.andLeft" | "catalogue.andRight"
+  | "term.emptyList" | "term.basicPropositions"
+  | "catalogue.trueIntro" | "catalogue.andIntro" | "catalogue.andLeft" | "catalogue.andRight"
   | "catalogue.orIntro" | "catalogue.orElim" | "catalogue.falseElim"
   | "catalogue.iffIntro" | "catalogue.iffProjection" | "catalogue.byContradiction"
   | "catalogue.eqRefl" | "catalogue.existsIntro" | "catalogue.existsElim"
@@ -36,7 +37,13 @@ export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> =
   "term.application": { kind: "term", group: "Term building", entries: [{ name: "Application", type: "(A → B) → A → B" }] },
   "term.dot": { kind: "term", group: "Term building", entries: [{ name: "Projection dot notation", type: "h.left, h.right, h.mp, and h.mpr abbreviate logical projections" }] },
   "term.naturalNumber": { kind: "term", group: "Term building", entries: [{ name: "Natural number", type: "Nat" }] },
+  "term.emptyList": { kind: "term", group: "Term building", entries: [{ name: "[]", type: "List Nat" }] },
+  "term.basicPropositions": { kind: "term", group: "Term building", entries: [
+    { name: "True", type: "Prop" },
+    { name: "False", type: "Prop" },
+  ] },
 
+  "catalogue.trueIntro": { kind: "term", group: "Logic", entries: [{ name: "True.intro", type: "True" }] },
   "catalogue.andIntro": { kind: "term", group: "Logic", entries: [{ name: "And.intro", type: "∀ {a b : Prop}, a → b → a ∧ b" }] },
   "catalogue.andLeft": { kind: "term", group: "Logic", entries: [{ name: "And.left", type: "∀ {a b : Prop}, a ∧ b → a" }] },
   "catalogue.andRight": { kind: "term", group: "Logic", entries: [{ name: "And.right", type: "∀ {a b : Prop}, a ∧ b → b" }] },
@@ -270,7 +277,80 @@ const sumRepeatEachProof = "fun xs => List.rec " +
             "(Eq.trans (Nat.add_comm (n * sum tail) (n * head)) " +
               "(Eq.symm (Nat.mul_add n head (sum tail))))))) xs";
 
-const levelEntries = [
+const tutorialEntries = [
+  {
+    id: 1, depth: 1, chapter: "First Steps", title: "Choose a Number", topic: "Natural numbers",
+    theorem: "Nat", context: [],
+    intro: "A goal is a type. To complete it, choose a value of that type.",
+    lesson: lesson("`Nat` is the type of natural numbers. Enter any whole number to build a term of this type.", "`exact` closes a goal with a term of the required type. Choose it, then enter any natural number."),
+    unlocks: {
+      shared: ["term.naturalNumber"],
+      warrior: { moves: [], text: "New move: `natural number` lets you enter a value of type `Nat`." },
+      mage: { moves: ["tactic.exact"], text: "New move: `exact □` asks for a term matching the goal; `natural number` supplies a `Nat`." },
+    },
+    warrior: route(["0"], ["Nat"], "0"),
+    mage: route(["exact 0"], ["Nat"], "by\n  exact 0"),
+    monster: monster("Pebble Eye", "It yields to the smallest mark of number magic.", "monsters.png", 0, 12, 42),
+  },
+  {
+    id: 2, depth: 1, chapter: "First Steps", title: "Use the Number", topic: "Environment values",
+    theorem: "Nat", context: ["n : Nat"],
+    intro: "The environment can already contain a value with the type your goal requests.",
+    lesson: lesson("The environment contains `n : Nat`, so choosing `n` completes a goal of type `Nat`.", "Choose `exact`, then select `n` from the environment to close the `Nat` goal."),
+    unlocks: {
+      shared: ["term.context"],
+      warrior: { moves: [], text: "New move: choose a matching value from the environment." },
+      mage: { moves: [], text: "New term choice: `exact` can use a matching value from the environment." },
+    },
+    warrior: route(["n"], ["Nat"], "n"),
+    mage: route(["exact n"], ["Nat"], "by\n  exact n"),
+    monster: monster("Pocket Imp", "It is defeated by returning the number it tried to hide.", "monsters.png", 1, 12, 42),
+  },
+  {
+    id: 3, depth: 1, chapter: "First Steps", title: "Pack an Empty List", topic: "Lists",
+    theorem: "List Nat", context: [],
+    intro: "A list may contain many values—or none at all.",
+    lesson: lesson("`[]` is the empty list. With a goal of `List Nat`, Lean knows this empty list is a list of natural numbers.", "Choose `exact`, then choose `[]` to provide an empty `List Nat`."),
+    unlocks: {
+      shared: ["term.emptyList"],
+      warrior: { moves: [], text: "New term: `[]` constructs an empty `List Nat`." },
+      mage: { moves: [], text: "New term choice: `[]` supplies an empty `List Nat` to `exact`." },
+    },
+    warrior: route(["[]"], ["List Nat"], "[]"),
+    mage: route(["exact []"], ["List Nat"], "by\n  exact []"),
+    monster: monster("Empty Satchel Lich", "Its hollow hoard is already a perfectly good list.", "monsters.png", 2, 12, 42),
+  },
+  {
+    id: 4, depth: 1, chapter: "First Steps", title: "Name a Proposition", topic: "Propositions",
+    theorem: "Prop", context: [],
+    intro: "Propositions are themselves values of the type `Prop`.",
+    lesson: lesson("`True` and `False` are both propositions, so either is a term of type `Prop`. This goal asks for a proposition, not yet for a proof of one.", "Choose `exact`, then choose either `True` or `False` to complete the `Prop` goal."),
+    unlocks: {
+      shared: ["term.basicPropositions"],
+      warrior: { moves: [], text: "New terms: `True` and `False` are propositions and therefore have type `Prop`." },
+      mage: { moves: [], text: "New term choices: `True` and `False` can each supply a proposition to `exact`." },
+    },
+    warrior: route(["True"], ["Prop"], "True"),
+    mage: route(["exact True"], ["Prop"], "by\n  exact True"),
+    monster: monster("Truth Pair", "It vanishes when given the simplest proposition.", "monsters.png", 3, 12, 42),
+  },
+  {
+    id: 5, depth: 1, chapter: "First Steps", title: "Prove the Truth", topic: "Constructor proofs",
+    theorem: "True", context: [],
+    intro: "Now the goal asks for a proof of the proposition `True`.",
+    lesson: lesson("`True.intro` is the constructor for `True`: it directly builds a proof of that proposition.", "Choose `exact`, then select the constructor `True.intro` to close the goal."),
+    unlocks: {
+      shared: ["catalogue.trueIntro"],
+      warrior: { moves: [], text: "New catalogue term: `True.intro` constructs a proof of `True`." },
+      mage: { moves: [], text: "New term choice: `True.intro` supplies a proof of `True` to `exact`." },
+    },
+    warrior: route(["True.intro"], ["True"], "True.intro"),
+    mage: route(["exact True.intro"], ["True"], "by\n  exact True.intro"),
+    monster: monster("Rune Gargoyle", "It guards the constructor of the simplest truth.", "monsters.png", 4, 12, 42),
+  },
+] satisfies Omit<Exercise, "kind">[];
+
+const existingLevelEntries = [
   {
     id: 1, depth: 1, chapter: "Propositions as Types", title: "The Given Fact", topic: "Using a hypothesis",
     theorem: "P", context: ["P : Prop", "hp : P"],
@@ -1012,6 +1092,11 @@ const levelEntries = [
   },
 ] satisfies Omit<Exercise, "kind">[];
 
+const levelEntries = [
+  ...tutorialEntries,
+  ...existingLevelEntries.map((exercise) => ({ ...exercise, id: exercise.id + 5 })),
+];
+
 const levels: Exercise[] = levelEntries.map((exercise) => {
   const selections = selectionsForLevel(exercise.id);
   return {
@@ -1094,9 +1179,9 @@ const hallOfNamesStory: StorySequence = {
 
 export const curriculum: CurriculumEntry[] = [
   openingStory,
-  ...levels.slice(0, 20),
+  ...levels.slice(0, 25),
   hallOfNamesStory,
-  ...levels.slice(20),
+  ...levels.slice(25),
 ];
 
 export const exercises = curriculum.filter((entry): entry is Exercise => entry.kind === "level");
@@ -1128,8 +1213,8 @@ export function newMoveText(exercise: Exercise, hero: HeroClass) {
   return exercise.unlocks?.[hero]?.text;
 }
 
-if (exercises.length !== 50) {
-  throw new Error(`LeanQuest curriculum must contain 50 paired encounters, found ${exercises.length}.`);
+if (exercises.length !== 55) {
+  throw new Error(`LeanQuest curriculum must contain 55 paired encounters, found ${exercises.length}.`);
 }
 
 if (new Set(exercises.map((exercise) => exercise.monster.name)).size !== exercises.length) {

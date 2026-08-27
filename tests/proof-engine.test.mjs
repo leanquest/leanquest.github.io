@@ -36,7 +36,7 @@ import {
 } from "../app/game-balance.ts";
 
 test("the Warrior catalogue prompts the player to choose a move", () => {
-  assert.equal(currentModeLabel(createProofState(exercises[1], "warrior"), "warrior"), "CHOOSE A MOVE");
+  assert.equal(currentModeLabel(createProofState(exercises[6], "warrior"), "warrior"), "CHOOSE A MOVE");
 });
 
 function move(state, hero, level, label) {
@@ -70,32 +70,70 @@ function replayIntendedRoute(level, hero) {
   return { mana, selections: level[hero].selections.length };
 }
 
+test("five basic tutorials begin both proof paths", () => {
+  assert.deepEqual(
+    exercises.slice(0, 5).map(({ id, theorem, context }) => ({ id, theorem, context })),
+    [
+      { id: 1, theorem: "Nat", context: [] },
+      { id: 2, theorem: "Nat", context: ["n : Nat"] },
+      { id: 3, theorem: "List Nat", context: [] },
+      { id: 4, theorem: "Prop", context: [] },
+      { id: 5, theorem: "True", context: [] },
+    ],
+  );
+
+  for (const level of exercises.slice(0, 5)) {
+    replayIntendedRoute(level, "warrior");
+    replayIntendedRoute(level, "mage");
+  }
+
+  assert.equal(exercises[5].title, "The Given Fact");
+  assert.equal(exercises.at(-1).id, 55);
+});
+
+test("the proposition tutorial accepts True or False before proving True", () => {
+  const propositionGoal = createProofState("Prop", []);
+  const warriorChoices = getMoveChoices(propositionGoal, "warrior", 4).map((choice) => choice.label);
+  assert.ok(warriorChoices.includes("True"));
+  assert.ok(warriorChoices.includes("False"));
+
+  let mageGoal = move(propositionGoal, "mage", 4, "exact □");
+  const mageChoices = getMoveChoices(mageGoal, "mage", 4).map((choice) => choice.label);
+  assert.ok(mageChoices.includes("True"));
+  assert.ok(mageChoices.includes("False"));
+
+  const truthGoal = createProofState("True", []);
+  assert.deepEqual(getMoveChoices(truthGoal, "warrior", 5).map((choice) => choice.label), ["True.intro"]);
+  mageGoal = move(truthGoal, "mage", 5, "exact □");
+  assert.deepEqual(getMoveChoices(mageGoal, "mage", 5).map((choice) => choice.label), ["True.intro"]);
+});
+
 test("curriculum data controls cumulative move unlocks and lesson callouts", () => {
-  assert.equal(unlockedMoves(5, "warrior").has("catalogue.andIntro"), false);
-  assert.equal(unlockedMoves(6, "warrior").has("catalogue.andIntro"), true);
-  assert.equal(unlockedMoves(6, "mage").has("catalogue.andIntro"), false);
-  assert.equal(unlockedMoves(4, "warrior").has("term.application"), true);
-  assert.equal(unlockedMoves(4, "warrior").has("tactic.apply"), false);
-  assert.equal(unlockedMoves(4, "mage").has("tactic.apply"), true);
-  assert.equal(unlockedMoves(8, "mage").has("term.dot"), true);
-  assert.equal(unlockedMoves(28, "mage").has("tactic.rewrite"), false);
-  assert.equal(unlockedMoves(29, "mage").has("tactic.rewrite"), true);
-  assert.equal(unlockedMoves(33, "mage").has("tactic.subst"), false);
-  assert.equal(unlockedMoves(34, "mage").has("tactic.subst"), true);
-  assert.equal(unlockedMoves(36, "mage").has("tactic.contradiction"), false);
-  assert.equal(unlockedMoves(37, "mage").has("tactic.contradiction"), true);
-  assert.equal(exercises[34].title, "Chain the Equalities");
-  assert.equal(unlockedMoves(34, "mage").has("tactic.calc"), false);
-  assert.equal(unlockedMoves(35, "mage").has("tactic.calc"), true);
-  assert.equal(unlockedMoves(38, "warrior").has("catalogue.natAddZero"), false);
-  assert.equal(unlockedMoves(39, "warrior").has("catalogue.natAddZero"), true);
-  assert.equal(unlockedMoves(39, "warrior").has("catalogue.natZeroAdd"), false);
-  assert.equal(unlockedMoves(40, "warrior").has("catalogue.natZeroAdd"), true);
-  assert.equal(unlockedMoves(45, "mage").has("catalogue.listLengthAppend"), false);
-  assert.equal(unlockedMoves(46, "mage").has("catalogue.listLengthAppend"), true);
-  assert.match(newMoveText(exercises[3], "warrior"), /application/);
-  assert.match(newMoveText(exercises[38], "warrior"), /Nat\.zero_add/);
-  assert.match(newMoveText(exercises[38], "mage"), /without using any hypothesis or catalogue theorem/);
+  assert.equal(unlockedMoves(10, "warrior").has("catalogue.andIntro"), false);
+  assert.equal(unlockedMoves(11, "warrior").has("catalogue.andIntro"), true);
+  assert.equal(unlockedMoves(11, "mage").has("catalogue.andIntro"), false);
+  assert.equal(unlockedMoves(9, "warrior").has("term.application"), true);
+  assert.equal(unlockedMoves(9, "warrior").has("tactic.apply"), false);
+  assert.equal(unlockedMoves(9, "mage").has("tactic.apply"), true);
+  assert.equal(unlockedMoves(13, "mage").has("term.dot"), true);
+  assert.equal(unlockedMoves(33, "mage").has("tactic.rewrite"), false);
+  assert.equal(unlockedMoves(34, "mage").has("tactic.rewrite"), true);
+  assert.equal(unlockedMoves(38, "mage").has("tactic.subst"), false);
+  assert.equal(unlockedMoves(39, "mage").has("tactic.subst"), true);
+  assert.equal(unlockedMoves(41, "mage").has("tactic.contradiction"), false);
+  assert.equal(unlockedMoves(42, "mage").has("tactic.contradiction"), true);
+  assert.equal(exercises[39].title, "Chain the Equalities");
+  assert.equal(unlockedMoves(39, "mage").has("tactic.calc"), false);
+  assert.equal(unlockedMoves(40, "mage").has("tactic.calc"), true);
+  assert.equal(unlockedMoves(43, "warrior").has("catalogue.natAddZero"), false);
+  assert.equal(unlockedMoves(44, "warrior").has("catalogue.natAddZero"), true);
+  assert.equal(unlockedMoves(44, "warrior").has("catalogue.natZeroAdd"), false);
+  assert.equal(unlockedMoves(45, "warrior").has("catalogue.natZeroAdd"), true);
+  assert.equal(unlockedMoves(50, "mage").has("catalogue.listLengthAppend"), false);
+  assert.equal(unlockedMoves(51, "mage").has("catalogue.listLengthAppend"), true);
+  assert.match(newMoveText(exercises[8], "warrior"), /application/);
+  assert.match(newMoveText(exercises[43], "warrior"), /Nat\.zero_add/);
+  assert.match(newMoveText(exercises[43], "mage"), /without using any hypothesis or catalogue theorem/);
 
   const warriorOnlyProofTerms = [
     "catalogue.andIntro", "catalogue.orIntro", "catalogue.orElim", "catalogue.falseElim",
@@ -105,11 +143,11 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
     "catalogue.classicalEm", "catalogue.recursor", "catalogue.listPermRec",
   ];
   for (const moveId of warriorOnlyProofTerms) {
-    assert.equal(unlockedMoves(50, "warrior").has(moveId), true, `${moveId} must remain available to Warrior`);
-    assert.equal(unlockedMoves(50, "mage").has(moveId), false, `${moveId} must stay out of the Mage catalogue`);
+    assert.equal(unlockedMoves(55, "warrior").has(moveId), true, `${moveId} must remain available to Warrior`);
+    assert.equal(unlockedMoves(55, "mage").has(moveId), false, `${moveId} must stay out of the Mage catalogue`);
   }
-  assert.equal(unlockedMoves(50, "mage").has("catalogue.dataConstructors"), true);
-  assert.equal(unlockedMoves(50, "mage").has("catalogue.natAddLeftComm"), true);
+  assert.equal(unlockedMoves(55, "mage").has("catalogue.dataConstructors"), true);
+  assert.equal(unlockedMoves(55, "mage").has("catalogue.natAddLeftComm"), true);
 
   const warriorOnlyNames = [
     "And.intro", "Or.inl", "Or.inr", "Or.elim", "False.elim", "Iff.intro",
@@ -124,16 +162,16 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
   }
 
   const theoremRewards = [
-    [38, "catalogue.natAddZero", "Nat.add_zero"],
-    [39, "catalogue.natZeroAdd", "Nat.zero_add"],
-    [40, "catalogue.natAddSucc", "Nat.add_succ"],
-    [41, "catalogue.natAddAssoc", "Nat.add_assoc"],
-    [42, "catalogue.natAddComm", "Nat.add_comm"],
-    [43, "catalogue.listAppendNil", "List.append_nil"],
-    [44, "catalogue.listAppendAssoc", "List.append_assoc"],
-    [45, "catalogue.listLengthAppend", "List.length_append"],
-    [46, "catalogue.sumAppend", "sum_append"],
-    [49, "catalogue.sumReplicate", "sum_replicate"],
+    [43, "catalogue.natAddZero", "Nat.add_zero"],
+    [44, "catalogue.natZeroAdd", "Nat.zero_add"],
+    [45, "catalogue.natAddSucc", "Nat.add_succ"],
+    [46, "catalogue.natAddAssoc", "Nat.add_assoc"],
+    [47, "catalogue.natAddComm", "Nat.add_comm"],
+    [48, "catalogue.listAppendNil", "List.append_nil"],
+    [49, "catalogue.listAppendAssoc", "List.append_assoc"],
+    [50, "catalogue.listLengthAppend", "List.length_append"],
+    [51, "catalogue.sumAppend", "sum_append"],
+    [54, "catalogue.sumReplicate", "sum_replicate"],
   ];
   for (const [level, moveId, theorem] of theoremRewards) {
     assert.equal(unlockedMoves(level, "warrior").has(moveId), false, `${theorem} must not prove itself`);
@@ -145,28 +183,28 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
 
 test("catalogue moves expose class-appropriate mana costs", () => {
   const warriorState = createProofState("P → P", ["P : Prop"]);
-  const warriorChoices = getMoveChoices(warriorState, "warrior", 2);
+  const warriorChoices = getMoveChoices(warriorState, "warrior", 7);
   assert.ok(warriorChoices.length > 0);
   assert.ok(warriorChoices.every((choice) => choice.category === "term" && choice.manaCost === 0));
 
   let mageState = createProofState("P → P", ["P : Prop"]);
-  const intro = getMoveChoices(mageState, "mage", 2).find((choice) => choice.label.startsWith("intro "));
+  const intro = getMoveChoices(mageState, "mage", 7).find((choice) => choice.label.startsWith("intro "));
   assert.ok(intro);
   assert.equal(intro.manaCost, TACTIC_MANA_COSTS.intro);
   mageState = intro.apply();
 
-  const exact = getMoveChoices(mageState, "mage", 2).find((choice) => choice.label === "exact □");
+  const exact = getMoveChoices(mageState, "mage", 7).find((choice) => choice.label === "exact □");
   assert.ok(exact);
   assert.equal(exact.manaCost, TACTIC_MANA_COSTS.exact);
   mageState = exact.apply();
 
-  const argumentsChoices = getMoveChoices(mageState, "mage", 2);
+  const argumentsChoices = getMoveChoices(mageState, "mage", 7);
   assert.ok(argumentsChoices.length > 0);
   assert.ok(argumentsChoices.every((choice) => choice.category === "argument" && choice.manaCost === 0));
 });
 
-test("level forty-eight provides sum_append through the catalogue, not the environment", () => {
-  const level = exercises.find((exercise) => exercise.id === 48);
+test("the sum-append capstone provides sum_append through the catalogue, not the environment", () => {
+  const level = exercises.find((exercise) => exercise.id === 53);
   const state = createProofState(level.theorem, level.context);
 
   assert.equal(level.context.some((declaration) => declaration.startsWith("sum_append :")), false);
@@ -188,11 +226,11 @@ test("shared story sequences are placed and rendered entirely from curriculum da
   assert.equal(curriculum[0].id, "the-broken-axiom");
   assert.equal(curriculum[0].panels.length, 3);
 
-  const level20Index = curriculum.findIndex((entry) => entry.kind === "level" && entry.id === 20);
-  assert.equal(curriculum[level20Index + 1].kind, "story");
-  assert.equal(curriculum[level20Index + 1].id, "the-hall-of-names");
-  assert.equal(curriculum[level20Index + 2].kind, "level");
-  assert.equal(curriculum[level20Index + 2].id, 21);
+  const level25Index = curriculum.findIndex((entry) => entry.kind === "level" && entry.id === 25);
+  assert.equal(curriculum[level25Index + 1].kind, "story");
+  assert.equal(curriculum[level25Index + 1].id, "the-hall-of-names");
+  assert.equal(curriculum[level25Index + 2].kind, "level");
+  assert.equal(curriculum[level25Index + 2].id, 26);
 
   assert.equal(storySequences.length, 2);
   assert.ok(storySequences.some((story) => story.panels.some((panel) => panel.layers.some((layer) => layer.frames.length === 2))));
@@ -216,8 +254,8 @@ test("every level specifies its monster sprite and class hue shifts", () => {
     assert.equal(typeof exercise.monster.hueShift.warrior, "number");
     assert.equal(typeof exercise.monster.hueShift.mage, "number");
   }
-  assert.deepEqual(exercises[30].monster.sprite, { sheet: "monsters-3.png", cell: 9 });
-  assert.deepEqual(exercises[30].monster.hueShift, { warrior: 92, mage: 126 });
+  assert.deepEqual(exercises[35].monster.sprite, { sheet: "monsters-3.png", cell: 9 });
+  assert.deepEqual(exercises[35].monster.hueShift, { warrior: 92, mage: 126 });
 });
 
 test("every intended proof route replays and the active economy is balanced from it", () => {
@@ -253,7 +291,7 @@ test("every intended proof route replays and the active economy is balanced from
       }
     }
   }
-  assert.equal(Math.max(...manaByLevel.filter(({ level }) => level >= 46).map(({ mana }) => mana)), MAX_MANA.mage);
+  assert.equal(Math.max(...manaByLevel.filter(({ level }) => level >= 51).map(({ mana }) => mana)), MAX_MANA.mage);
 });
 
 test("warrior vision normalizes the focused hole without making a proof move", () => {
@@ -297,7 +335,7 @@ test("repeatEach unfolds one source-list constructor", () => {
 });
 
 test("completed argument placeholders cannot reappear as selectable terms", () => {
-  const level = exercises.find((exercise) => exercise.id === 48);
+  const level = exercises.find((exercise) => exercise.id === 53);
   let state = createProofState(level.theorem, level.context);
   const moves = [
     "fun xs => □", "fun ys => □",
@@ -334,14 +372,14 @@ test("proof completion rejects unresolved metas, constraints, and the wrong root
 });
 
 test("dependent catalogue recursors are inferred from the target without context evidence", () => {
-  let state = createProofState(exercises[46].theorem, exercises[46].context);
-  state = move(state, "warrior", 47, "fun xs => □");
-  state = move(state, "warrior", 47, "fun ys => □");
-  for (let index = 0; index < 4; index += 1) state = move(state, "warrior", 47, "(□ □)");
+  let state = createProofState(exercises[51].theorem, exercises[51].context);
+  state = move(state, "warrior", 52, "fun xs => □");
+  state = move(state, "warrior", 52, "fun ys => □");
+  for (let index = 0; index < 4; index += 1) state = move(state, "warrior", 52, "(□ □)");
 
   assert.equal(currentTarget(state), "(?3 → ?2 → ?1 → ?0 → List.Perm xs ys → sum xs = sum ys)");
-  assert.ok(getMoveChoices(state, "warrior", 47).some((choice) => choice.label === "List.Perm.rec"));
-  state = move(state, "warrior", 47, "List.Perm.rec");
+  assert.ok(getMoveChoices(state, "warrior", 52).some((choice) => choice.label === "List.Perm.rec"));
+  state = move(state, "warrior", 52, "List.Perm.rec");
   assert.equal(currentTarget(state), "sum [] = sum []");
 });
 
@@ -350,54 +388,54 @@ test("congrArg infers a shared unary context from an equality target", () => {
     "(x + y) + sum l = (y + x) + sum l",
     ["x y : Nat", "l : List Nat"],
   );
-  state = move(state, "warrior", 47, "(□ □)");
-  state = move(state, "warrior", 47, "(□ □)");
+  state = move(state, "warrior", 52, "(□ □)");
+  state = move(state, "warrior", 52, "(□ □)");
 
-  assert.ok(getMoveChoices(state, "warrior", 47).some((choice) => choice.label === "congrArg"));
-  state = move(state, "warrior", 47, "congrArg");
+  assert.ok(getMoveChoices(state, "warrior", 52).some((choice) => choice.label === "congrArg"));
+  state = move(state, "warrior", 52, "congrArg");
   assert.equal(currentTarget(state), "Nat → ?3");
   assert.ok(
-    getMoveChoices(state, "warrior", 47)
+    getMoveChoices(state, "warrior", 52)
       .some((choice) => choice.label === "fun __leanquest_arg => __leanquest_arg + sum l"),
   );
 });
 
 test("the list-sum capstones use no more than two nested recursors", () => {
-  const recursorCounts = exercises.slice(45).map((level) =>
+  const recursorCounts = exercises.slice(50).map((level) =>
     level.warrior.proof.match(/(?:Nat|List|List\.Perm)\.rec/g)?.length ?? 0
   );
   assert.deepEqual(recursorCounts, [1, 1, 0, 1, 2]);
 
-  let appendState = createProofState(exercises[45].theorem, exercises[45].context);
-  appendState = move(appendState, "mage", 46, "intro xs");
-  appendState = move(appendState, "mage", 46, "intro ys");
-  const appendChoices = getMoveChoices(appendState, "mage", 46).map((choice) => choice.label);
+  let appendState = createProofState(exercises[50].theorem, exercises[50].context);
+  appendState = move(appendState, "mage", 51, "intro xs");
+  appendState = move(appendState, "mage", 51, "intro ys");
+  const appendChoices = getMoveChoices(appendState, "mage", 51).map((choice) => choice.label);
   assert.equal(appendChoices.includes("simp"), false);
   assert.ok(appendChoices.includes("induction □"));
 
-  let replicateState = createProofState(exercises[48].theorem, exercises[48].context);
-  replicateState = move(replicateState, "mage", 49, "intro n");
-  replicateState = move(replicateState, "mage", 49, "intro x");
-  assert.equal(getMoveChoices(replicateState, "mage", 49).some((choice) => choice.label === "simp"), false);
-  assert.ok(getMoveChoices(replicateState, "mage", 49).some((choice) => choice.label === "induction □"));
+  let replicateState = createProofState(exercises[53].theorem, exercises[53].context);
+  replicateState = move(replicateState, "mage", 54, "intro n");
+  replicateState = move(replicateState, "mage", 54, "intro x");
+  assert.equal(getMoveChoices(replicateState, "mage", 54).some((choice) => choice.label === "simp"), false);
+  assert.ok(getMoveChoices(replicateState, "mage", 54).some((choice) => choice.label === "induction □"));
 
   assert.deepEqual(
-    exercises[49].mage.selections.filter((move) => move.startsWith("induction ")),
+    exercises[54].mage.selections.filter((move) => move.startsWith("induction ")),
     ["induction □"],
   );
 });
 
 test("all five Mage capstones replay with their intended move and mana counts", () => {
   const routes = [
-    { labels: exercises[45].mage.selections, mana: 24 },
-    { labels: exercises[46].mage.selections, mana: 30 },
-    { labels: exercises[47].mage.selections, mana: 12 },
-    { labels: exercises[48].mage.selections, mana: 27 },
-    { labels: exercises[49].mage.selections, mana: 27 },
+    { labels: exercises[50].mage.selections, mana: 24 },
+    { labels: exercises[51].mage.selections, mana: 30 },
+    { labels: exercises[52].mage.selections, mana: 12 },
+    { labels: exercises[53].mage.selections, mana: 27 },
+    { labels: exercises[54].mage.selections, mana: 27 },
   ];
 
   for (const [index, route] of routes.entries()) {
-    const level = exercises[index + 45];
+    const level = exercises[index + 50];
     let state = createProofState(level.theorem, level.context);
     let mana = 0;
     for (const label of route.labels) {
@@ -451,12 +489,12 @@ test("all five Warrior capstones replay with their intended selection counts", (
   };
 
   const counts = [];
-  counts.push(replay(45, ({ exact, lambda }) => {
+  counts.push(replay(50, ({ exact, lambda }) => {
     for (const label of ["fun xs => □", "fun ys => □", "(□ □)", "(□ □)", "(□ □)", "List.rec", "xs", "(□ □)", "Eq.symm", "(□ □)", "Nat.zero_add", "sum ys"]) exact(label);
     for (let index = 0; index < 3; index += 1) lambda();
     for (const label of ["(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add head", "h", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "(□ □)", "Nat.add_assoc", "head", "sum tail", "sum ys"]) exact(label);
   }));
-  counts.push(replay(46, ({ exact, lambda, direct }) => {
+  counts.push(replay(51, ({ exact, lambda, direct }) => {
     for (const label of ["fun xs => □", "fun ys => □", "fun h => □"]) exact(label);
     for (let index = 0; index < 5; index += 1) exact("(□ □)");
     exact("List.Perm.rec");
@@ -472,13 +510,13 @@ test("all five Warrior capstones replay with their intended selection counts", (
     direct();
     exact("h");
   }));
-  counts.push(replay(47, ({ exact }) => {
+  counts.push(replay(52, ({ exact }) => {
     for (const label of ["fun xs => □", "fun ys => □", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "sum_append", "xs", "ys", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "sum xs", "sum ys", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "sum_append", "ys", "xs"]) exact(label);
   }));
-  counts.push(replay(48, ({ exact }) => {
+  counts.push(replay(53, ({ exact }) => {
     for (const label of ["fun n => □", "fun x => □", "(□ □)", "(□ □)", "(□ □)", "Nat.rec", "n", "(□ □)", "Eq.symm", "(□ □)", "Nat.zero_mul", "x", "fun n2 => □", "fun h => □", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add x", "h", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "x", "n2 * x", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "Nat.succ_mul", "n2", "x"]) exact(label);
   }));
-  counts.push(replay(49, ({ exact }) => {
+  counts.push(replay(54, ({ exact }) => {
     for (const label of ["fun xs => □", "(□ □)", "(□ □)", "(□ □)", "List.rec", "xs", "fun n => □", "(□ □)", "(□ □)", "(□ □)", "Nat.rec", "n", "(□ □)", "Eq.refl", "0", "fun n2 => □", "fun h => □", "h", "fun head => □", "fun tail => □", "fun hatil => □", "fun n => □", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "sum_append", "List.replicate n head", "repeatEach n tail", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add (sum (List.replicate n head))", "(□ □)", "hatil", "n", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "sum (List.replicate n head)", "n * sum tail", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add (n * sum tail)", "(□ □)", "(□ □)", "sum_replicate", "n", "head", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "n * sum tail", "n * head", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "(□ □)", "Nat.mul_add", "n", "head", "sum tail"]) exact(label);
   }));
 
@@ -529,18 +567,18 @@ test("every monster name matches its sprite archetype", () => {
 
 test("an environment term can close the first warrior level", () => {
   let state = createProofState("P", ["P : Prop", "hp : P"]);
-  state = move(state, "warrior", 1, "hp");
+  state = move(state, "warrior", 6, "hp");
   assert.equal(isSolved(state), true);
   assert.equal(renderProof(state), "hp");
 });
 
 test("intro extends the mage environment before exact chooses a term", () => {
   let state = createProofState("P → P", ["P : Prop"]);
-  state = move(state, "mage", 2, "intro hP");
+  state = move(state, "mage", 7, "intro hP");
   assert.ok(contextLines(state).includes("hP : P"));
-  state = move(state, "mage", 2, "exact □");
+  state = move(state, "mage", 7, "exact □");
   assert.deepEqual(state.tacticScript, ["intro hP", "exact □"]);
-  state = move(state, "mage", 2, "hP");
+  state = move(state, "mage", 7, "hP");
   assert.equal(isSolved(state), true);
   assert.deepEqual(state.tacticScript, ["intro hP", "exact hP"]);
   assert.deepEqual(state.moves, ["intro hP", "exact □", "hP"]);
@@ -548,23 +586,23 @@ test("intro extends the mage environment before exact chooses a term", () => {
 
 test("mage tactic arguments fill their scroll holes without disappearing from move history", () => {
   let state = createProofState("P ∧ Q → P", ["P Q : Prop"]);
-  state = move(state, "mage", 7, "intro h");
-  state = move(state, "mage", 7, "apply □");
-  state = move(state, "mage", 7, "And.left");
+  state = move(state, "mage", 12, "intro h");
+  state = move(state, "mage", 12, "apply □");
+  state = move(state, "mage", 12, "And.left");
   assert.deepEqual(state.tacticScript, ["intro h", "apply And.left"]);
   assert.deepEqual(state.moves, ["intro h", "apply □", "And.left"]);
 });
 
 test("mage apply offers function-valued conjunction projections from the environment", () => {
   let state = createProofState("P ∧ ¬P → False", ["P : Prop"]);
-  state = move(state, "mage", 14, "intro h");
-  state = move(state, "mage", 14, "apply □");
-  assert.ok(getMoveChoices(state, "mage", 14).some((choice) => choice.label === "h.right"));
-  state = move(state, "mage", 14, "h.right");
+  state = move(state, "mage", 19, "intro h");
+  state = move(state, "mage", 19, "apply □");
+  assert.ok(getMoveChoices(state, "mage", 19).some((choice) => choice.label === "h.right"));
+  state = move(state, "mage", 19, "h.right");
   assert.equal(currentTarget(state), "P");
-  state = move(state, "mage", 14, "exact □");
-  assert.deepEqual(getMoveChoices(state, "mage", 14).map((choice) => choice.label), ["h.left"]);
-  state = move(state, "mage", 14, "h.left");
+  state = move(state, "mage", 19, "exact □");
+  assert.deepEqual(getMoveChoices(state, "mage", 19).map((choice) => choice.label), ["h.left"]);
+  state = move(state, "mage", 19, "h.left");
   assert.equal(isSolved(state), true);
   assert.deepEqual(renderTacticProofLines(state), [
     "by",
@@ -576,88 +614,88 @@ test("mage apply offers function-valued conjunction projections from the environ
 
 test("mage apply offers function-valued equivalence projections from the environment", () => {
   let state = createProofState("(P ↔ Q) → P → Q", ["P Q : Prop"]);
-  state = move(state, "mage", 13, "intro h");
-  state = move(state, "mage", 13, "intro hP");
-  state = move(state, "mage", 13, "apply □");
+  state = move(state, "mage", 18, "intro h");
+  state = move(state, "mage", 18, "intro hP");
+  state = move(state, "mage", 18, "apply □");
   assert.equal(pendingArgumentType(state), "?₁ → … → ?ₙ → Q");
-  const forwardProjection = getMoveChoices(state, "mage", 13).find((choice) => choice.label === "h.mp");
+  const forwardProjection = getMoveChoices(state, "mage", 18).find((choice) => choice.label === "h.mp");
   assert.equal(forwardProjection?.argumentType, "P → Q");
-  state = move(state, "mage", 13, "h.mp");
+  state = move(state, "mage", 18, "h.mp");
   assert.equal(currentTarget(state), "P");
-  state = move(state, "mage", 13, "exact □");
-  state = move(state, "mage", 13, "hP");
+  state = move(state, "mage", 18, "exact □");
+  state = move(state, "mage", 18, "hP");
   assert.equal(isSolved(state), true);
 });
 
 test("mage term-taking tactics stage and type-check their arguments", () => {
   let state = createProofState("a = b → b = c → a = c", ["α : Type", "a b c : α"]);
-  state = move(state, "mage", 27, "intro h");
-  state = move(state, "mage", 27, "intro h2");
+  state = move(state, "mage", 32, "intro h");
+  state = move(state, "mage", 32, "intro h2");
 
-  const tacticLabels = getMoveChoices(state, "mage", 27).map((choice) => choice.label);
+  const tacticLabels = getMoveChoices(state, "mage", 32).map((choice) => choice.label);
   assert.ok(tacticLabels.includes("trans □"));
   assert.equal(tacticLabels.some((label) => label.startsWith("trans ") && label !== "trans □"), false);
 
-  state = move(state, "mage", 27, "trans □");
+  state = move(state, "mage", 32, "trans □");
   assert.equal(pendingArgumentType(state), "α");
   assert.deepEqual(
-    getMoveChoices(state, "mage", 27).map((choice) => [choice.label, choice.argumentType]),
+    getMoveChoices(state, "mage", 32).map((choice) => [choice.label, choice.argumentType]),
     [["b", "α"]],
   );
-  state = move(state, "mage", 27, "b");
+  state = move(state, "mage", 32, "b");
   assert.equal(currentTarget(state), "a = b");
   assert.deepEqual(renderTacticProofLines(state), ["by", "  intro h", "  intro h2", "  trans b"]);
 });
 
 test("mage structural and equality tactics do not preselect context terms", () => {
   let casesState = createProofState("(P ∨ Q) → R", ["P Q R : Prop"]);
-  casesState = move(casesState, "mage", 10, "intro h");
-  casesState = move(casesState, "mage", 10, "cases □");
+  casesState = move(casesState, "mage", 15, "intro h");
+  casesState = move(casesState, "mage", 15, "cases □");
   assert.equal(pendingArgumentType(casesState), "P ∨ Q");
   assert.deepEqual(
-    getMoveChoices(casesState, "mage", 10).map((choice) => [choice.label, choice.argumentType]),
+    getMoveChoices(casesState, "mage", 15).map((choice) => [choice.label, choice.argumentType]),
     [["h", "P ∨ Q"]],
   );
 
   let rcasesState = createProofState("(∃ x : α, P x) → Q", [
     "α : Type", "P : α → Prop", "Q : Prop",
   ]);
-  rcasesState = move(rcasesState, "mage", 24, "intro h");
-  const rcases = getMoveChoices(rcasesState, "mage", 24).find((choice) => choice.label === "rcases □");
+  rcasesState = move(rcasesState, "mage", 29, "intro h");
+  const rcases = getMoveChoices(rcasesState, "mage", 29).find((choice) => choice.label === "rcases □");
   assert.ok(rcases);
   rcasesState = rcases.apply();
   assert.equal(pendingArgumentType(rcasesState), "∃ x : α, P x");
-  assert.deepEqual(getMoveChoices(rcasesState, "mage", 24).map((choice) => choice.label), ["h"]);
+  assert.deepEqual(getMoveChoices(rcasesState, "mage", 29).map((choice) => choice.label), ["h"]);
 
   let substState = createProofState("a = b → P a → P b", [
     "α : Type", "P : α → Prop", "a b : α",
   ]);
-  substState = move(substState, "mage", 34, "intro h");
-  substState = move(substState, "mage", 34, "intro h2");
-  substState = move(substState, "mage", 34, "subst □");
+  substState = move(substState, "mage", 39, "intro h");
+  substState = move(substState, "mage", 39, "intro h2");
+  substState = move(substState, "mage", 39, "subst □");
   assert.equal(pendingArgumentType(substState), "α");
   assert.deepEqual(
-    getMoveChoices(substState, "mage", 34).map((choice) => [choice.label, choice.argumentType]),
+    getMoveChoices(substState, "mage", 39).map((choice) => [choice.label, choice.argumentType]),
     [["a", "α"], ["b", "α"]],
   );
-  substState = move(substState, "mage", 34, "b");
+  substState = move(substState, "mage", 39, "b");
   assert.equal(currentTarget(substState), "P a");
-  substState = move(substState, "mage", 34, "exact □");
-  substState = move(substState, "mage", 34, "h2");
+  substState = move(substState, "mage", 39, "exact □");
+  substState = move(substState, "mage", 39, "h2");
   assert.equal(isSolved(substState), true);
 
   let calcState = createProofState("a = b → b = c → f a = f c", [
     "α β : Type", "f : α → β", "a b c : α",
   ]);
-  calcState = move(calcState, "mage", 35, "intro h");
-  calcState = move(calcState, "mage", 35, "intro h2");
-  calcState = move(calcState, "mage", 35, "calc … = □ := □");
+  calcState = move(calcState, "mage", 40, "intro h");
+  calcState = move(calcState, "mage", 40, "intro h2");
+  calcState = move(calcState, "mage", 40, "calc … = □ := □");
   assert.equal(pendingArgumentType(calcState), "β");
   assert.deepEqual(
-    getMoveChoices(calcState, "mage", 35).map((choice) => [choice.label, choice.argumentType]),
+    getMoveChoices(calcState, "mage", 40).map((choice) => [choice.label, choice.argumentType]),
     [["f b", "β"]],
   );
-  calcState = move(calcState, "mage", 35, "f b");
+  calcState = move(calcState, "mage", 40, "f b");
   assert.deepEqual(renderTacticProofLines(calcState), [
     "by",
     "  intro h",
@@ -670,10 +708,10 @@ test("mage structural and equality tactics do not preselect context terms", () =
   ]);
 
   let byCasesState = createProofState("P ∨ ¬P", ["P : Prop"]);
-  byCasesState = move(byCasesState, "mage", 36, "by_cases □");
+  byCasesState = move(byCasesState, "mage", 41, "by_cases □");
   assert.equal(pendingArgumentType(byCasesState), "Prop");
   assert.deepEqual(
-    getMoveChoices(byCasesState, "mage", 36).map((choice) => [choice.label, choice.argumentType]),
+    getMoveChoices(byCasesState, "mage", 41).map((choice) => [choice.label, choice.argumentType]),
     [["P", "Prop"]],
   );
 });
@@ -682,27 +720,27 @@ test("mage subst offers every eliminable equality variable and rewrites the whol
   let state = createProofState("a = b → b = c → f a = f c", [
     "α β : Type", "f : α → β", "a b c : α",
   ]);
-  state = move(state, "mage", 35, "intro h");
-  state = move(state, "mage", 35, "intro h2");
-  state = move(state, "mage", 35, "subst □");
+  state = move(state, "mage", 40, "intro h");
+  state = move(state, "mage", 40, "intro h2");
+  state = move(state, "mage", 40, "subst □");
 
   assert.equal(pendingArgumentType(state), "α");
   assert.deepEqual(
-    getMoveChoices(state, "mage", 35).map((choice) => [choice.label, choice.argumentType]),
+    getMoveChoices(state, "mage", 40).map((choice) => [choice.label, choice.argumentType]),
     [["a", "α"], ["b", "α"], ["c", "α"]],
   );
 
-  const eliminateA = move(state, "mage", 35, "a");
+  const eliminateA = move(state, "mage", 40, "a");
   assert.equal(currentTarget(eliminateA), "f b = f c");
   assert.ok(contextLines(eliminateA).includes("h2 : b = c"));
   assert.equal(contextLines(eliminateA).some((line) => line.startsWith("a :") || line.startsWith("h :")), false);
 
-  const eliminateB = move(state, "mage", 35, "b");
+  const eliminateB = move(state, "mage", 40, "b");
   assert.equal(currentTarget(eliminateB), "f a = f c");
   assert.ok(contextLines(eliminateB).includes("h2 : a = c"));
   assert.equal(contextLines(eliminateB).some((line) => line.startsWith("b :") || line.startsWith("h :")), false);
 
-  const eliminateC = move(state, "mage", 35, "c");
+  const eliminateC = move(state, "mage", 40, "c");
   assert.equal(currentTarget(eliminateC), "f a = f b");
   assert.ok(contextLines(eliminateC).includes("h : a = b"));
   assert.equal(contextLines(eliminateC).some((line) => line.startsWith("c :") || line.startsWith("h2 :")), false);
@@ -712,23 +750,23 @@ test("mage learns rewriting before substitution on the existing equality levels"
   let rewriteState = createProofState("a = b → P a → P b", [
     "α : Type", "P : α → Prop", "a b : α",
   ]);
-  rewriteState = move(rewriteState, "mage", 29, "intro h");
-  rewriteState = move(rewriteState, "mage", 29, "intro h2");
-  assert.equal(getMoveChoices(rewriteState, "mage", 29).some((choice) => choice.label === "subst □"), false);
-  rewriteState = move(rewriteState, "mage", 29, "rw [← □]");
-  rewriteState = move(rewriteState, "mage", 29, "h");
-  rewriteState = move(rewriteState, "mage", 29, "exact □");
-  rewriteState = move(rewriteState, "mage", 29, "h2");
+  rewriteState = move(rewriteState, "mage", 34, "intro h");
+  rewriteState = move(rewriteState, "mage", 34, "intro h2");
+  assert.equal(getMoveChoices(rewriteState, "mage", 34).some((choice) => choice.label === "subst □"), false);
+  rewriteState = move(rewriteState, "mage", 34, "rw [← □]");
+  rewriteState = move(rewriteState, "mage", 34, "h");
+  rewriteState = move(rewriteState, "mage", 34, "exact □");
+  rewriteState = move(rewriteState, "mage", 34, "h2");
   assert.equal(isSolved(rewriteState), true);
 
   let substState = createProofState("a = b → g (f a) = g (f b)", [
     "α β γ : Type", "f : α → β", "g : β → γ", "a b : α",
   ]);
-  substState = move(substState, "mage", 34, "intro h");
-  substState = move(substState, "mage", 34, "subst □");
-  substState = move(substState, "mage", 34, "b");
+  substState = move(substState, "mage", 39, "intro h");
+  substState = move(substState, "mage", 39, "subst □");
+  substState = move(substState, "mage", 39, "b");
   assert.equal(currentTarget(substState), "g (f a) = g (f a)");
-  substState = move(substState, "mage", 34, "rfl");
+  substState = move(substState, "mage", 39, "rfl");
   assert.equal(isSolved(substState), true);
 });
 
@@ -736,16 +774,16 @@ test("mage proof scroll renders calc steps as Lean syntax", () => {
   let state = createProofState("a = b → b = c → f a = f c", [
     "α β : Type", "f : α → β", "a b c : α",
   ]);
-  state = move(state, "mage", 35, "intro h");
-  state = move(state, "mage", 35, "intro h2");
-  state = move(state, "mage", 35, "calc … = □ := □");
-  state = move(state, "mage", 35, "f b");
-  state = move(state, "mage", 35, "congr");
-  state = move(state, "mage", 35, "exact □");
-  state = move(state, "mage", 35, "h");
-  state = move(state, "mage", 35, "congr");
-  state = move(state, "mage", 35, "exact □");
-  state = move(state, "mage", 35, "h2");
+  state = move(state, "mage", 40, "intro h");
+  state = move(state, "mage", 40, "intro h2");
+  state = move(state, "mage", 40, "calc … = □ := □");
+  state = move(state, "mage", 40, "f b");
+  state = move(state, "mage", 40, "congr");
+  state = move(state, "mage", 40, "exact □");
+  state = move(state, "mage", 40, "h");
+  state = move(state, "mage", 40, "congr");
+  state = move(state, "mage", 40, "exact □");
+  state = move(state, "mage", 40, "h2");
 
   assert.equal(isSolved(state), true);
   assert.deepEqual(renderTacticProofLines(state), [
@@ -766,20 +804,20 @@ test("mage proof scroll nests calc syntax inside an ordinary tactic branch", () 
   let state = createProofState("a = b → b = c → P → f a = f c ∧ P", [
     "α β : Type", "f : α → β", "a b c : α", "P : Prop",
   ]);
-  state = move(state, "mage", 35, "intro h");
-  state = move(state, "mage", 35, "intro h2");
-  state = move(state, "mage", 35, "intro hP");
-  state = move(state, "mage", 35, "constructor");
-  state = move(state, "mage", 35, "calc … = □ := □");
-  state = move(state, "mage", 35, "f b");
-  state = move(state, "mage", 35, "congr");
-  state = move(state, "mage", 35, "exact □");
-  state = move(state, "mage", 35, "h");
-  state = move(state, "mage", 35, "congr");
-  state = move(state, "mage", 35, "exact □");
-  state = move(state, "mage", 35, "h2");
-  state = move(state, "mage", 35, "exact □");
-  state = move(state, "mage", 35, "hP");
+  state = move(state, "mage", 40, "intro h");
+  state = move(state, "mage", 40, "intro h2");
+  state = move(state, "mage", 40, "intro hP");
+  state = move(state, "mage", 40, "constructor");
+  state = move(state, "mage", 40, "calc … = □ := □");
+  state = move(state, "mage", 40, "f b");
+  state = move(state, "mage", 40, "congr");
+  state = move(state, "mage", 40, "exact □");
+  state = move(state, "mage", 40, "h");
+  state = move(state, "mage", 40, "congr");
+  state = move(state, "mage", 40, "exact □");
+  state = move(state, "mage", 40, "h2");
+  state = move(state, "mage", 40, "exact □");
+  state = move(state, "mage", 40, "hP");
 
   assert.equal(isSolved(state), true);
   assert.deepEqual(renderTacticProofLines(state), [
@@ -801,12 +839,12 @@ test("mage proof scroll nests calc syntax inside an ordinary tactic branch", () 
 
 test("mage proof scroll marks the goals created by constructor with bullets", () => {
   let state = createProofState("P ∧ Q → Q ∧ P", ["P Q : Prop"]);
-  state = move(state, "mage", 8, "intro h");
-  state = move(state, "mage", 8, "constructor");
-  state = move(state, "mage", 8, "exact □");
-  state = move(state, "mage", 8, "h.right");
-  state = move(state, "mage", 8, "exact □");
-  state = move(state, "mage", 8, "h.left");
+  state = move(state, "mage", 13, "intro h");
+  state = move(state, "mage", 13, "constructor");
+  state = move(state, "mage", 13, "exact □");
+  state = move(state, "mage", 13, "h.right");
+  state = move(state, "mage", 13, "exact □");
+  state = move(state, "mage", 13, "h.left");
 
   assert.deepEqual(renderTacticProofLines(state), [
     "by",
@@ -819,17 +857,17 @@ test("mage proof scroll marks the goals created by constructor with bullets", ()
 
 test("mage proof scroll indents tactics and bullets inside nested constructors", () => {
   let state = createProofState("P → Q → R → P ∧ (Q ∧ R)", ["P Q R : Prop"]);
-  state = move(state, "mage", 31, "intro hP");
-  state = move(state, "mage", 31, "intro hQ");
-  state = move(state, "mage", 31, "intro hR");
-  state = move(state, "mage", 31, "constructor");
-  state = move(state, "mage", 31, "exact □");
-  state = move(state, "mage", 31, "hP");
-  state = move(state, "mage", 31, "constructor");
-  state = move(state, "mage", 31, "exact □");
-  state = move(state, "mage", 31, "hQ");
-  state = move(state, "mage", 31, "exact □");
-  state = move(state, "mage", 31, "hR");
+  state = move(state, "mage", 36, "intro hP");
+  state = move(state, "mage", 36, "intro hQ");
+  state = move(state, "mage", 36, "intro hR");
+  state = move(state, "mage", 36, "constructor");
+  state = move(state, "mage", 36, "exact □");
+  state = move(state, "mage", 36, "hP");
+  state = move(state, "mage", 36, "constructor");
+  state = move(state, "mage", 36, "exact □");
+  state = move(state, "mage", 36, "hQ");
+  state = move(state, "mage", 36, "exact □");
+  state = move(state, "mage", 36, "hR");
 
   assert.deepEqual(renderTacticProofLines(state), [
     "by",
@@ -846,19 +884,19 @@ test("mage proof scroll indents tactics and bullets inside nested constructors",
 
 test("mage proof scroll marks every branch created by cases", () => {
   let state = createProofState("(P → R) → (Q → R) → P ∨ Q → R", ["P Q R : Prop"]);
-  state = move(state, "mage", 10, "intro hPR");
-  state = move(state, "mage", 10, "intro hQR");
-  state = move(state, "mage", 10, "intro h");
-  state = move(state, "mage", 10, "cases □");
-  state = move(state, "mage", 10, "h");
-  state = move(state, "mage", 10, "apply □");
-  state = move(state, "mage", 10, "hPR");
-  state = move(state, "mage", 10, "exact □");
-  state = move(state, "mage", 10, "hP");
-  state = move(state, "mage", 10, "apply □");
-  state = move(state, "mage", 10, "hQR");
-  state = move(state, "mage", 10, "exact □");
-  state = move(state, "mage", 10, "hQ");
+  state = move(state, "mage", 15, "intro hPR");
+  state = move(state, "mage", 15, "intro hQR");
+  state = move(state, "mage", 15, "intro h");
+  state = move(state, "mage", 15, "cases □");
+  state = move(state, "mage", 15, "h");
+  state = move(state, "mage", 15, "apply □");
+  state = move(state, "mage", 15, "hPR");
+  state = move(state, "mage", 15, "exact □");
+  state = move(state, "mage", 15, "hP");
+  state = move(state, "mage", 15, "apply □");
+  state = move(state, "mage", 15, "hQR");
+  state = move(state, "mage", 15, "exact □");
+  state = move(state, "mage", 15, "hQ");
 
   assert.deepEqual(renderTacticProofLines(state), [
     "by",
@@ -875,14 +913,14 @@ test("mage proof scroll marks every branch created by cases", () => {
 
 test("mage proof scroll marks every branch created by induction", () => {
   let state = createProofState("∀ n : Nat, 0 + n = n", []);
-  state = move(state, "mage", 39, "intro n");
-  state = move(state, "mage", 39, "induction □");
-  state = move(state, "mage", 39, "n");
-  state = move(state, "mage", 39, "rfl");
-  state = move(state, "mage", 39, "simp");
-  state = move(state, "mage", 39, "congr");
-  state = move(state, "mage", 39, "exact □");
-  state = move(state, "mage", 39, "ih");
+  state = move(state, "mage", 44, "intro n");
+  state = move(state, "mage", 44, "induction □");
+  state = move(state, "mage", 44, "n");
+  state = move(state, "mage", 44, "rfl");
+  state = move(state, "mage", 44, "simp");
+  state = move(state, "mage", 44, "congr");
+  state = move(state, "mage", 44, "exact □");
+  state = move(state, "mage", 44, "ih");
 
   assert.deepEqual(renderTacticProofLines(state), [
     "by",
@@ -900,9 +938,9 @@ test("mage simp performs reductions without using hypotheses or catalogue theore
     "n : Nat",
     "ih : 0 + n = n",
   ]);
-  assert.equal(unlockedMoves(42, "mage").has("catalogue.natZeroAdd"), true);
+  assert.equal(unlockedMoves(47, "mage").has("catalogue.natZeroAdd"), true);
   assert.equal(
-    getMoveChoices(factGoal, "mage", 42).some((choice) => choice.label === "simp"),
+    getMoveChoices(factGoal, "mage", 47).some((choice) => choice.label === "simp"),
     false,
   );
 
@@ -910,24 +948,24 @@ test("mage simp performs reductions without using hypotheses or catalogue theore
     "n : Nat",
     "ih : 0 + n = n",
   ]);
-  reduced = move(reduced, "mage", 42, "simp");
+  reduced = move(reduced, "mage", 47, "simp");
   assert.equal(currentTarget(reduced), "Nat.succ (0 + n) = Nat.succ n");
   assert.equal(isSolved(reduced), false);
 
   let trivial = createProofState("n + 0 = n", ["n : Nat"]);
-  trivial = move(trivial, "mage", 39, "simp");
+  trivial = move(trivial, "mage", 44, "simp");
   assert.equal(isSolved(trivial), true);
 });
 
 test("mage proof scroll marks multiple goals created after choosing an apply function", () => {
   let state = createProofState("(P → Q → R) → R", ["P Q R : Prop", "hP : P", "hQ : Q"]);
-  state = move(state, "mage", 10, "intro hPQR");
-  state = move(state, "mage", 10, "apply □");
-  state = move(state, "mage", 10, "hPQR");
-  state = move(state, "mage", 10, "exact □");
-  state = move(state, "mage", 10, "hP");
-  state = move(state, "mage", 10, "exact □");
-  state = move(state, "mage", 10, "hQ");
+  state = move(state, "mage", 15, "intro hPQR");
+  state = move(state, "mage", 15, "apply □");
+  state = move(state, "mage", 15, "hPQR");
+  state = move(state, "mage", 15, "exact □");
+  state = move(state, "mage", 15, "hP");
+  state = move(state, "mage", 15, "exact □");
+  state = move(state, "mage", 15, "hQ");
 
   assert.deepEqual(renderTacticProofLines(state), [
     "by",
@@ -943,78 +981,78 @@ test("nested applications fill the focused hole instead of appending text", () =
     "(P → Q) → (Q → R) → P → R",
     ["P Q R : Prop"],
   );
-  state = move(state, "warrior", 5, "fun hPQ => □");
-  state = move(state, "warrior", 5, "fun hQR => □");
-  state = move(state, "warrior", 5, "fun hP => □");
-  state = move(state, "warrior", 5, "(□ □)");
+  state = move(state, "warrior", 10, "fun hPQ => □");
+  state = move(state, "warrior", 10, "fun hQR => □");
+  state = move(state, "warrior", 10, "fun hP => □");
+  state = move(state, "warrior", 10, "(□ □)");
   assert.equal(currentTarget(state), "(?0 → R)");
   assert.deepEqual(
     renderProofParts(state).filter((part) => part.hole).map((part) => part.active),
     [true, false],
   );
-  state = move(state, "warrior", 5, "hQR");
-  state = move(state, "warrior", 5, "(□ □)");
-  state = move(state, "warrior", 5, "hPQ");
-  state = move(state, "warrior", 5, "hP");
+  state = move(state, "warrior", 10, "hQR");
+  state = move(state, "warrior", 10, "(□ □)");
+  state = move(state, "warrior", 10, "hPQ");
+  state = move(state, "warrior", 10, "hP");
   assert.equal(isSolved(state), true);
   assert.equal(renderProof(state), "fun hPQ => fun hQR => fun hP => hQR (hPQ hP)");
 });
 
 test("unresolved application types display stable numbered variables", () => {
   let state = createProofState("R", ["R : Prop"]);
-  state = move(state, "warrior", 5, "(□ □)");
+  state = move(state, "warrior", 10, "(□ □)");
   assert.equal(currentTarget(state), "(?0 → R)");
-  state = move(state, "warrior", 5, "(□ □)");
+  state = move(state, "warrior", 10, "(□ □)");
   assert.equal(currentTarget(state), "(?1 → ?0 → R)");
 });
 
 test("a multi-argument catalogue function is built with ordinary applications", () => {
   let state = createProofState("P → Q → P ∧ Q", ["P Q : Prop"]);
-  state = move(state, "warrior", 6, "fun hP => □");
-  state = move(state, "warrior", 6, "fun hQ => □");
-  state = move(state, "warrior", 6, "(□ □)");
-  state = move(state, "warrior", 6, "(□ □)");
-  state = move(state, "warrior", 6, "And.intro");
+  state = move(state, "warrior", 11, "fun hP => □");
+  state = move(state, "warrior", 11, "fun hQ => □");
+  state = move(state, "warrior", 11, "(□ □)");
+  state = move(state, "warrior", 11, "(□ □)");
+  state = move(state, "warrior", 11, "And.intro");
   assert.deepEqual(
     renderProofParts(state).filter((part) => part.hole).map((part) => part.active),
     [true, false],
   );
-  state = move(state, "warrior", 6, "hP");
-  state = move(state, "warrior", 6, "hQ");
+  state = move(state, "warrior", 11, "hP");
+  state = move(state, "warrior", 11, "hQ");
   assert.equal(renderProof(state), "fun hP => fun hQ => And.intro hP hQ");
   assert.equal(isSolved(state), true);
 });
 
 test("constructor functions are catalogue terms rather than pre-applied moves", () => {
   let state = createProofState("P → Q → P ∧ Q", ["P Q : Prop"]);
-  assert.equal(getMoveChoices(state, "warrior", 6).some((move) => move.label.includes("And.intro □")), false);
-  assert.equal(getMoveChoices(state, "mage", 6).some((move) => move.label === "constructor"), false);
+  assert.equal(getMoveChoices(state, "warrior", 11).some((move) => move.label.includes("And.intro □")), false);
+  assert.equal(getMoveChoices(state, "mage", 11).some((move) => move.label === "constructor"), false);
 
-  state = move(state, "warrior", 6, "fun hP => □");
-  state = move(state, "warrior", 6, "fun hQ => □");
-  assert.deepEqual(getMoveChoices(state, "warrior", 6).map((move) => move.label), ["(□ □)"]);
-  state = move(state, "warrior", 6, "(□ □)");
-  state = move(state, "warrior", 6, "(□ □)");
-  assert.ok(getMoveChoices(state, "warrior", 6).some((move) => move.label === "And.intro"));
+  state = move(state, "warrior", 11, "fun hP => □");
+  state = move(state, "warrior", 11, "fun hQ => □");
+  assert.deepEqual(getMoveChoices(state, "warrior", 11).map((move) => move.label), ["(□ □)"]);
+  state = move(state, "warrior", 11, "(□ □)");
+  state = move(state, "warrior", 11, "(□ □)");
+  assert.ok(getMoveChoices(state, "warrior", 11).some((move) => move.label === "And.intro"));
 });
 
 test("catalogue functions never arrive with pre-filled argument holes", () => {
   const cases = [
-    { level: 6, theorem: "P → Q → P ∧ Q", expected: "And.intro" },
-    { level: 9, theorem: "P → P ∨ Q", expected: "Or.inl" },
-    { level: 10, theorem: "(P ∨ Q) → (P → R) → (Q → R) → R", expected: "Or.elim" },
-    { level: 11, theorem: "False → P", expected: "False.elim" },
-    { level: 12, theorem: "(P → Q) → (Q → P) → (P ↔ Q)", expected: "Iff.intro" },
-    { level: 19, theorem: "(¬P → False) → P", expected: "Classical.byContradiction" },
-    { level: 20, theorem: "∀ x : α, x = x", context: ["α : Type"], expected: "Eq.refl" },
-    { level: 23, theorem: "∀ x : α, P x → ∃ y : α, P y", context: ["α : Type", "P : α → Prop"], expected: "Exists.intro" },
-    { level: 24, theorem: "(∃ x : α, P x) → (∀ x : α, P x → Q) → Q", context: ["α : Type", "P : α → Prop", "Q : Prop"], expected: "Exists.elim" },
-    { level: 26, theorem: "a = b → b = a", context: ["α : Type", "a b : α"], expected: "Eq.symm" },
-    { level: 27, theorem: "a = b → b = c → a = c", context: ["α : Type", "a b c : α"], expected: "Eq.trans" },
-    { level: 28, theorem: "(α → β) → a = b → f a = f b", context: ["α β : Type", "f : α → β", "a b : α"], expected: "congrArg" },
-    { level: 29, theorem: "(P a = P b) → P a → P b", context: ["α : Type", "P : α → Prop", "a b : α", "hab : a = b"], expected: "Eq.mp" },
-    { level: 36, theorem: "∀ p : Prop, p ∨ ¬p", context: [], expected: "Classical.em" },
-    { level: 43, theorem: "∀ a b : Nat, a + b = b + a", context: [], expected: "Nat.add_comm" },
+    { level: 11, theorem: "P → Q → P ∧ Q", expected: "And.intro" },
+    { level: 14, theorem: "P → P ∨ Q", expected: "Or.inl" },
+    { level: 15, theorem: "(P ∨ Q) → (P → R) → (Q → R) → R", expected: "Or.elim" },
+    { level: 16, theorem: "False → P", expected: "False.elim" },
+    { level: 17, theorem: "(P → Q) → (Q → P) → (P ↔ Q)", expected: "Iff.intro" },
+    { level: 24, theorem: "(¬P → False) → P", expected: "Classical.byContradiction" },
+    { level: 25, theorem: "∀ x : α, x = x", context: ["α : Type"], expected: "Eq.refl" },
+    { level: 28, theorem: "∀ x : α, P x → ∃ y : α, P y", context: ["α : Type", "P : α → Prop"], expected: "Exists.intro" },
+    { level: 29, theorem: "(∃ x : α, P x) → (∀ x : α, P x → Q) → Q", context: ["α : Type", "P : α → Prop", "Q : Prop"], expected: "Exists.elim" },
+    { level: 31, theorem: "a = b → b = a", context: ["α : Type", "a b : α"], expected: "Eq.symm" },
+    { level: 32, theorem: "a = b → b = c → a = c", context: ["α : Type", "a b c : α"], expected: "Eq.trans" },
+    { level: 33, theorem: "(α → β) → a = b → f a = f b", context: ["α β : Type", "f : α → β", "a b : α"], expected: "congrArg" },
+    { level: 34, theorem: "(P a = P b) → P a → P b", context: ["α : Type", "P : α → Prop", "a b : α", "hab : a = b"], expected: "Eq.mp" },
+    { level: 41, theorem: "∀ p : Prop, p ∨ ¬p", context: [], expected: "Classical.em" },
+    { level: 48, theorem: "∀ a b : Nat, a + b = b + a", context: [], expected: "Nat.add_comm" },
   ];
 
   for (const item of cases) {
@@ -1027,96 +1065,96 @@ test("catalogue functions never arrive with pre-filled argument holes", () => {
 
 test("dependent applications instantiate later argument types from the chosen term", () => {
   let state = createProofState("P a → ∃ x, P x", ["α : Type", "P : α → Prop", "a : α"]);
-  state = move(state, "warrior", 23, "fun h => □");
-  state = move(state, "warrior", 23, "(□ □)");
-  state = move(state, "warrior", 23, "(□ □)");
-  state = move(state, "warrior", 23, "Exists.intro");
+  state = move(state, "warrior", 28, "fun h => □");
+  state = move(state, "warrior", 28, "(□ □)");
+  state = move(state, "warrior", 28, "(□ □)");
+  state = move(state, "warrior", 28, "Exists.intro");
   assert.equal(currentTarget(state), "α");
-  state = move(state, "warrior", 23, "a");
+  state = move(state, "warrior", 28, "a");
   assert.equal(currentTarget(state), "P a");
-  state = move(state, "warrior", 23, "h");
+  state = move(state, "warrior", 28, "h");
   assert.equal(renderProof(state), "fun h => Exists.intro a h");
   assert.equal(isSolved(state), true);
 });
 
-test("level twenty-five unlocks natural number entry for terms and tactic arguments", () => {
+test("the first tutorial unlocks natural number entry for terms and tactic arguments", () => {
   const locked = createProofState("Nat", []);
   assert.equal(
-    getMoveChoices(locked, "warrior", 24).some((choice) => choice.label === "natural number"),
+    getMoveChoices(locked, "warrior", 0).some((choice) => choice.label === "natural number"),
     false,
   );
   assert.equal(
-    getMoveChoices(locked, "warrior", 25).some((choice) => choice.label === "natural number"),
+    getMoveChoices(locked, "warrior", 1).some((choice) => choice.label === "natural number"),
     true,
   );
 
   let warrior = createProofState("∃ n : Nat, n = 0", []);
-  warrior = move(warrior, "warrior", 25, "(□ □)");
-  warrior = move(warrior, "warrior", 25, "(□ □)");
-  warrior = move(warrior, "warrior", 25, "Exists.intro");
-  warrior = inputMove(warrior, "warrior", 25, "natural number", "000");
+  warrior = move(warrior, "warrior", 30, "(□ □)");
+  warrior = move(warrior, "warrior", 30, "(□ □)");
+  warrior = move(warrior, "warrior", 30, "Exists.intro");
+  warrior = inputMove(warrior, "warrior", 30, "natural number", "000");
   assert.equal(currentTarget(warrior), "0 = 0");
-  warrior = move(warrior, "warrior", 25, "(□ □)");
-  warrior = move(warrior, "warrior", 25, "Eq.refl");
-  warrior = inputMove(warrior, "warrior", 25, "natural number", "0");
+  warrior = move(warrior, "warrior", 30, "(□ □)");
+  warrior = move(warrior, "warrior", 30, "Eq.refl");
+  warrior = inputMove(warrior, "warrior", 30, "natural number", "0");
   assert.equal(renderProof(warrior), "Exists.intro 0 (Eq.refl 0)");
   assert.equal(isSolved(warrior), true);
 
   let mage = createProofState("∃ n : Nat, n = 0", []);
-  mage = move(mage, "mage", 25, "use □");
-  mage = inputMove(mage, "mage", 25, "natural number", "0");
+  mage = move(mage, "mage", 30, "use □");
+  mage = inputMove(mage, "mage", 30, "natural number", "0");
   assert.equal(currentTarget(mage), "0 = 0");
-  mage = move(mage, "mage", 25, "rfl");
+  mage = move(mage, "mage", 30, "rfl");
   assert.equal(isSolved(mage), true);
 });
 
 test("level seven teaches And.left through ordinary application", () => {
   let state = createProofState("P ∧ Q → P", ["P Q : Prop"]);
-  const openingLabels = getMoveChoices(state, "warrior", 7).map((choice) => choice.label);
+  const openingLabels = getMoveChoices(state, "warrior", 12).map((choice) => choice.label);
   assert.ok(openingLabels.includes("And.left"));
   assert.equal(openingLabels.includes("And.left □"), false);
 
-  const direct = move(state, "warrior", 7, "And.left");
+  const direct = move(state, "warrior", 12, "And.left");
   assert.equal(renderProof(direct), "And.left");
   assert.equal(isSolved(direct), true);
 
-  state = move(state, "warrior", 7, "fun h => □");
-  const initialLabels = getMoveChoices(state, "warrior", 7).map((choice) => choice.label);
+  state = move(state, "warrior", 12, "fun h => □");
+  const initialLabels = getMoveChoices(state, "warrior", 12).map((choice) => choice.label);
   assert.ok(initialLabels.includes("(□ □)"));
   assert.equal(initialLabels.includes("□.□"), false);
   assert.equal(initialLabels.includes("h.left"), false);
 
-  state = move(state, "warrior", 7, "(□ □)");
-  assert.ok(getMoveChoices(state, "warrior", 7).some((choice) => choice.label === "And.left"));
-  state = move(state, "warrior", 7, "And.left");
-  assert.ok(getMoveChoices(state, "warrior", 7).some((choice) => choice.label === "h"));
-  state = move(state, "warrior", 7, "h");
+  state = move(state, "warrior", 12, "(□ □)");
+  assert.ok(getMoveChoices(state, "warrior", 12).some((choice) => choice.label === "And.left"));
+  state = move(state, "warrior", 12, "And.left");
+  assert.ok(getMoveChoices(state, "warrior", 12).some((choice) => choice.label === "h"));
+  state = move(state, "warrior", 12, "h");
   assert.equal(renderProof(state), "fun h => And.left h");
   assert.equal(isSolved(state), true);
 });
 
 test("goal-derived projection functions appear before their inputs are introduced", () => {
   const rightState = createProofState("P ∧ Q → Q", ["P Q : Prop"]);
-  assert.ok(getMoveChoices(rightState, "warrior", 8).some((choice) => choice.label === "And.right"));
+  assert.ok(getMoveChoices(rightState, "warrior", 13).some((choice) => choice.label === "And.right"));
 
   const iffState = createProofState("(P ↔ Q) → P → Q", ["P Q : Prop"]);
-  assert.ok(getMoveChoices(iffState, "warrior", 13).some((choice) => choice.label === "Iff.mp"));
+  assert.ok(getMoveChoices(iffState, "warrior", 18).some((choice) => choice.label === "Iff.mp"));
 });
 
 test("level eight dot notation fills its source and function separately", () => {
   let state = createProofState("P ∧ Q → P", ["P Q : Prop"]);
-  state = move(state, "warrior", 8, "fun h => □");
-  const initialLabels = getMoveChoices(state, "warrior", 8).map((choice) => choice.label);
+  state = move(state, "warrior", 13, "fun h => □");
+  const initialLabels = getMoveChoices(state, "warrior", 13).map((choice) => choice.label);
   assert.ok(initialLabels.includes("□.□"));
   assert.equal(initialLabels.includes("h.left"), false);
 
-  state = move(state, "warrior", 8, "□.□");
+  state = move(state, "warrior", 13, "□.□");
   assert.equal(renderProof(state), "fun h => □.□");
-  assert.deepEqual(getMoveChoices(state, "warrior", 8).map((choice) => choice.label), ["h"]);
-  state = move(state, "warrior", 8, "h");
+  assert.deepEqual(getMoveChoices(state, "warrior", 13).map((choice) => choice.label), ["h"]);
+  state = move(state, "warrior", 13, "h");
   assert.equal(renderProof(state), "fun h => h.□");
-  assert.deepEqual(getMoveChoices(state, "warrior", 8).map((choice) => choice.label), ["left"]);
-  state = move(state, "warrior", 8, "left");
+  assert.deepEqual(getMoveChoices(state, "warrior", 13).map((choice) => choice.label), ["left"]);
+  state = move(state, "warrior", 13, "left");
   assert.equal(renderProof(state), "fun h => h.left");
   assert.equal(isSolved(state), true);
 });
@@ -1128,45 +1166,45 @@ test("dot notation excludes arbitrary namespaced functions", () => {
     "x : Box",
     "Box.open : Box → P",
   ]);
-  const labels = getMoveChoices(state, "warrior", 8).map((choice) => choice.label);
+  const labels = getMoveChoices(state, "warrior", 13).map((choice) => choice.label);
   assert.equal(labels.includes("□.□"), false);
   assert.equal(labels.includes("x.open"), false);
 });
 
 test("dot notation retains both Iff projections", () => {
   let state = createProofState("(P ↔ Q) → (P → Q)", ["P Q : Prop"]);
-  state = move(state, "warrior", 13, "fun h => □");
-  state = move(state, "warrior", 13, "□.□");
-  state = move(state, "warrior", 13, "h");
-  state = move(state, "warrior", 13, "mp");
+  state = move(state, "warrior", 18, "fun h => □");
+  state = move(state, "warrior", 18, "□.□");
+  state = move(state, "warrior", 18, "h");
+  state = move(state, "warrior", 18, "mp");
   assert.equal(renderProof(state), "fun h => h.mp");
   assert.equal(isSolved(state), true);
 
   state = createProofState("(P ↔ Q) → (Q → P)", ["P Q : Prop"]);
-  state = move(state, "warrior", 13, "fun h => □");
-  state = move(state, "warrior", 13, "□.□");
-  state = move(state, "warrior", 13, "h");
-  state = move(state, "warrior", 13, "mpr");
+  state = move(state, "warrior", 18, "fun h => □");
+  state = move(state, "warrior", 18, "□.□");
+  state = move(state, "warrior", 18, "h");
+  state = move(state, "warrior", 18, "mpr");
   assert.equal(renderProof(state), "fun h => h.mpr");
   assert.equal(isSolved(state), true);
 });
 
 test("application metavariables resolve across linked holes on level fourteen", () => {
   let state = createProofState("P ∧ ¬P → False", ["P : Prop"]);
-  state = move(state, "warrior", 14, "fun h => □");
-  state = move(state, "warrior", 14, "(□ □)");
+  state = move(state, "warrior", 19, "fun h => □");
+  state = move(state, "warrior", 19, "(□ □)");
 
   assert.equal(currentTarget(state), "(?0 → False)");
-  assert.ok(getMoveChoices(state, "warrior", 14).some((choice) => choice.label.startsWith("fun ")));
+  assert.ok(getMoveChoices(state, "warrior", 19).some((choice) => choice.label.startsWith("fun ")));
 
-  state = move(state, "warrior", 14, "□.□");
-  state = move(state, "warrior", 14, "h");
-  state = move(state, "warrior", 14, "right");
+  state = move(state, "warrior", 19, "□.□");
+  state = move(state, "warrior", 19, "h");
+  state = move(state, "warrior", 19, "right");
 
   assert.equal(currentTarget(state), "P");
-  state = move(state, "warrior", 14, "□.□");
-  state = move(state, "warrior", 14, "h");
-  state = move(state, "warrior", 14, "left");
+  state = move(state, "warrior", 19, "□.□");
+  state = move(state, "warrior", 19, "h");
+  state = move(state, "warrior", 19, "left");
   assert.equal(renderProof(state), "fun h => h.right h.left");
   assert.equal(isSolved(state), true);
 });
@@ -1176,51 +1214,51 @@ test("Or.elim is supplied through three ordinary applications", () => {
     "(P → R) → (Q → R) → P ∨ Q → R",
     ["P Q R : Prop"],
   );
-  state = move(state, "warrior", 10, "fun hPR => □");
-  state = move(state, "warrior", 10, "fun hQR => □");
-  state = move(state, "warrior", 10, "fun h => □");
-  state = move(state, "warrior", 10, "(□ □)");
-  state = move(state, "warrior", 10, "(□ □)");
-  state = move(state, "warrior", 10, "(□ □)");
-  state = move(state, "warrior", 10, "Or.elim");
+  state = move(state, "warrior", 15, "fun hPR => □");
+  state = move(state, "warrior", 15, "fun hQR => □");
+  state = move(state, "warrior", 15, "fun h => □");
+  state = move(state, "warrior", 15, "(□ □)");
+  state = move(state, "warrior", 15, "(□ □)");
+  state = move(state, "warrior", 15, "(□ □)");
+  state = move(state, "warrior", 15, "Or.elim");
   assert.equal(renderProof(state), "fun hPR => fun hQR => fun h => Or.elim □ □ □");
   assert.deepEqual(
     renderProofParts(state).filter((part) => part.hole).map((part) => part.active),
     [true, false, false],
   );
-  assert.ok(getMoveChoices(state, "warrior", 10).some((choice) => choice.label === "h"));
-  state = move(state, "warrior", 10, "h");
-  state = move(state, "warrior", 10, "hPR");
-  state = move(state, "warrior", 10, "hQR");
+  assert.ok(getMoveChoices(state, "warrior", 15).some((choice) => choice.label === "h"));
+  state = move(state, "warrior", 15, "h");
+  state = move(state, "warrior", 15, "hPR");
+  state = move(state, "warrior", 15, "hQR");
   assert.equal(renderProof(state), "fun hPR => fun hQR => fun h => Or.elim h hPR hQR");
   assert.equal(isSolved(state), true);
 });
 
 test("Or.elim introduces fresh alternatives resolved by its disjunction argument", () => {
   let state = createProofState("(P ∨ Q) ∨ R → R ∨ Q ∨ P", ["P Q R : Prop"]);
-  state = move(state, "warrior", 32, "fun h => □");
-  state = move(state, "warrior", 32, "(□ □)");
-  state = move(state, "warrior", 32, "(□ □)");
-  state = move(state, "warrior", 32, "(□ □)");
-  state = move(state, "warrior", 32, "Or.elim");
+  state = move(state, "warrior", 37, "fun h => □");
+  state = move(state, "warrior", 37, "(□ □)");
+  state = move(state, "warrior", 37, "(□ □)");
+  state = move(state, "warrior", 37, "(□ □)");
+  state = move(state, "warrior", 37, "Or.elim");
   assert.equal(currentTarget(state), "?3 ∨ ?4");
-  state = move(state, "warrior", 32, "h");
+  state = move(state, "warrior", 37, "h");
   assert.equal(currentTarget(state), "(P ∨ Q) → R ∨ Q ∨ P");
-  state = move(state, "warrior", 32, "fun h2 => □");
-  state = move(state, "warrior", 32, "(□ □)");
-  state = move(state, "warrior", 32, "(□ □)");
-  state = move(state, "warrior", 32, "(□ □)");
-  state = move(state, "warrior", 32, "Or.elim");
-  state = move(state, "warrior", 32, "h2");
+  state = move(state, "warrior", 37, "fun h2 => □");
+  state = move(state, "warrior", 37, "(□ □)");
+  state = move(state, "warrior", 37, "(□ □)");
+  state = move(state, "warrior", 37, "(□ □)");
+  state = move(state, "warrior", 37, "Or.elim");
+  state = move(state, "warrior", 37, "h2");
   assert.equal(currentTarget(state), "P → R ∨ Q ∨ P");
 });
 
 test("proof rendering keeps parentheses around a lambda used as a function", () => {
   let state = createProofState("P", ["P : Prop", "hp : P"]);
-  state = move(state, "warrior", 4, "(□ □)");
-  state = move(state, "warrior", 4, "fun h => □");
-  state = move(state, "warrior", 4, "hp");
-  state = move(state, "warrior", 4, "hp");
+  state = move(state, "warrior", 9, "(□ □)");
+  state = move(state, "warrior", 9, "fun h => □");
+  state = move(state, "warrior", 9, "hp");
+  state = move(state, "warrior", 9, "hp");
   assert.equal(renderProof(state), "(fun h => hp) hp");
 });
 
@@ -1229,46 +1267,46 @@ test("dependent universal application infers and filters its argument", () => {
     "(∀ x, P x) → P a",
     ["α : Type", "P : α → Prop", "a : α"],
   );
-  state = move(state, "warrior", 21, "fun h_Px => □");
-  state = move(state, "warrior", 21, "(□ □)");
-  state = move(state, "warrior", 21, "h_Px");
-  assert.ok(getMoveChoices(state, "warrior", 21).some((item) => item.label === "a"));
-  state = move(state, "warrior", 21, "a");
+  state = move(state, "warrior", 26, "fun h_Px => □");
+  state = move(state, "warrior", 26, "(□ □)");
+  state = move(state, "warrior", 26, "h_Px");
+  assert.ok(getMoveChoices(state, "warrior", 26).some((item) => item.label === "a"));
+  state = move(state, "warrior", 26, "a");
   assert.equal(isSolved(state), true);
 });
 
 test("Eq.refl matches a goal modulo definitional equality on level thirty-eight", () => {
   let state = createProofState("∀ n : Nat, n + 0 = n", []);
-  state = move(state, "warrior", 38, "fun n => □");
-  state = move(state, "warrior", 38, "(□ □)");
-  assert.ok(getMoveChoices(state, "warrior", 38).some((choice) => choice.label === "Eq.refl"));
-  state = move(state, "warrior", 38, "Eq.refl");
+  state = move(state, "warrior", 43, "fun n => □");
+  state = move(state, "warrior", 43, "(□ □)");
+  assert.ok(getMoveChoices(state, "warrior", 43).some((choice) => choice.label === "Eq.refl"));
+  state = move(state, "warrior", 43, "Eq.refl");
   assert.equal(currentTarget(state), "Nat");
-  assert.deepEqual(getMoveChoices(state, "warrior", 38).map((choice) => choice.label), ["n"]);
-  state = move(state, "warrior", 38, "n");
+  assert.deepEqual(getMoveChoices(state, "warrior", 43).map((choice) => choice.label), ["n"]);
+  state = move(state, "warrior", 43, "n");
   assert.equal(renderProof(state), "fun n => Eq.refl n");
   assert.equal(isSolved(state), true);
 });
 
 test("Eq.trans introduces a fresh middle term instead of choosing one from the environment", () => {
   let state = createProofState("0 + Nat.succ k = Nat.succ k", ["k n : Nat"]);
-  state = move(state, "warrior", 39, "(□ □)");
-  state = move(state, "warrior", 39, "(□ □)");
-  state = move(state, "warrior", 39, "Eq.trans");
+  state = move(state, "warrior", 44, "(□ □)");
+  state = move(state, "warrior", 44, "(□ □)");
+  state = move(state, "warrior", 44, "Eq.trans");
   assert.match(currentTarget(state), /^0 \+ Nat\.succ k = \?\d+$/);
 });
 
 test("congrArg unifies with a partially unknown equality result", () => {
   let state = createProofState("Nat.succ k = ?u7", ["k : Nat"]);
-  state = move(state, "warrior", 39, "(□ □)");
-  state = move(state, "warrior", 39, "(□ □)");
-  assert.ok(getMoveChoices(state, "warrior", 39).some((choice) => choice.label === "congrArg"));
+  state = move(state, "warrior", 44, "(□ □)");
+  state = move(state, "warrior", 44, "(□ □)");
+  assert.ok(getMoveChoices(state, "warrior", 44).some((choice) => choice.label === "congrArg"));
 
-  state = move(state, "warrior", 39, "congrArg");
+  state = move(state, "warrior", 44, "congrArg");
   assert.equal(currentTarget(state), "Nat → Nat");
-  assert.ok(getMoveChoices(state, "warrior", 39).some((choice) => choice.label === "Nat.succ"));
+  assert.ok(getMoveChoices(state, "warrior", 44).some((choice) => choice.label === "Nat.succ"));
 
-  state = move(state, "warrior", 39, "Nat.succ");
+  state = move(state, "warrior", 44, "Nat.succ");
   assert.match(currentTarget(state), /^k = \?\d+$/);
   assert.match(renderProof(state), /^congrArg Nat\.succ /);
 });
@@ -1278,15 +1316,15 @@ test("catalogue unification normalizes recursive terms before offering congrArg"
     "0 + Nat.succ k = Nat.succ k",
     ["k : Nat", "ih : 0 + k = k"],
   );
-  state = move(state, "warrior", 39, "(□ □)");
-  state = move(state, "warrior", 39, "(□ □)");
-  assert.ok(getMoveChoices(state, "warrior", 39).some((choice) => choice.label === "congrArg"));
+  state = move(state, "warrior", 44, "(□ □)");
+  state = move(state, "warrior", 44, "(□ □)");
+  assert.ok(getMoveChoices(state, "warrior", 44).some((choice) => choice.label === "congrArg"));
 
-  state = move(state, "warrior", 39, "congrArg");
+  state = move(state, "warrior", 44, "congrArg");
   assert.equal(currentTarget(state), "Nat → Nat");
-  state = move(state, "warrior", 39, "Nat.succ");
+  state = move(state, "warrior", 44, "Nat.succ");
   assert.equal(currentTarget(state), "0 + k = k");
-  state = move(state, "warrior", 39, "ih");
+  state = move(state, "warrior", 44, "ih");
   assert.equal(renderProof(state), "congrArg Nat.succ ih");
   assert.equal(isSolved(state), true);
 });
@@ -1296,16 +1334,16 @@ test("congrArg is offered for a normalized list constructor application", () => 
     "(head :: tail) ++ [] = ?u10",
     ["α : Type", "head : α", "tail : List α", "h : tail ++ [] = tail"],
   );
-  state = move(state, "warrior", 43, "(□ □)");
-  state = move(state, "warrior", 43, "(□ □)");
+  state = move(state, "warrior", 48, "(□ □)");
+  state = move(state, "warrior", 48, "(□ □)");
 
-  assert.ok(getMoveChoices(state, "warrior", 43).some((choice) => choice.label === "congrArg"));
-  state = move(state, "warrior", 43, "congrArg");
+  assert.ok(getMoveChoices(state, "warrior", 48).some((choice) => choice.label === "congrArg"));
+  state = move(state, "warrior", 48, "congrArg");
   assert.equal(currentTarget(state), "List α → List α");
-  assert.ok(getMoveChoices(state, "warrior", 43).some((choice) => choice.label === "List.cons head"));
-  state = move(state, "warrior", 43, "List.cons head");
+  assert.ok(getMoveChoices(state, "warrior", 48).some((choice) => choice.label === "List.cons head"));
+  state = move(state, "warrior", 48, "List.cons head");
   assert.match(currentTarget(state), /^tail \+\+ \[\] = \?\d+$/);
-  state = move(state, "warrior", 43, "h");
+  state = move(state, "warrior", 48, "h");
 
   assert.equal(renderProof(state), "congrArg (List.cons head) h");
   assert.equal(isSolved(state), true);
@@ -1316,13 +1354,13 @@ test("Eq.refl sees the definitional reduction of List.length on level forty-five
     "([] ++ []).length = [].length + [].length",
     ["α : Type"],
   );
-  state = move(state, "warrior", 45, "(□ □)");
+  state = move(state, "warrior", 50, "(□ □)");
 
-  assert.ok(getMoveChoices(state, "warrior", 45).some((choice) => choice.label === "Eq.refl"));
-  state = move(state, "warrior", 45, "Eq.refl");
+  assert.ok(getMoveChoices(state, "warrior", 50).some((choice) => choice.label === "Eq.refl"));
+  state = move(state, "warrior", 50, "Eq.refl");
   assert.equal(currentTarget(state), "Nat");
-  assert.ok(getMoveChoices(state, "warrior", 45).some((choice) => choice.label === "0"));
-  state = move(state, "warrior", 45, "0");
+  assert.ok(getMoveChoices(state, "warrior", 50).some((choice) => choice.label === "0"));
+  state = move(state, "warrior", 50, "0");
 
   assert.equal(renderProof(state), "Eq.refl 0");
   assert.equal(isSolved(state), true);
@@ -1339,8 +1377,8 @@ test("a level forty-five hypothesis unifies across length notation and applicati
   );
 
   assert.equal(termSyntaxKind("List.length tail"), "application");
-  assert.ok(getMoveChoices(state, "warrior", 45).some((choice) => choice.label === "h"));
-  const solved = move(state, "warrior", 45, "h");
+  assert.ok(getMoveChoices(state, "warrior", 50).some((choice) => choice.label === "h"));
+  const solved = move(state, "warrior", 50, "h");
   assert.equal(renderProof(solved), "h");
   assert.equal(isSolved(solved), true);
 });
@@ -1350,21 +1388,21 @@ test("unification normalizes terms inside applications and list expressions", ()
     "P (0 + Nat.succ k)",
     ["P : Nat → Prop", "k : Nat", "h : P (Nat.succ (0 + k))"],
   );
-  assert.ok(getMoveChoices(nested, "warrior", 39).some((choice) => choice.label === "h"));
+  assert.ok(getMoveChoices(nested, "warrior", 44).some((choice) => choice.label === "h"));
 
   let list = createProofState(
     "[] ++ xs = xs",
     ["α : Type", "xs : List α"],
   );
-  list = move(list, "warrior", 43, "(□ □)");
-  assert.ok(getMoveChoices(list, "warrior", 43).some((choice) => choice.label === "Eq.refl"));
+  list = move(list, "warrior", 48, "(□ □)");
+  assert.ok(getMoveChoices(list, "warrior", 48).some((choice) => choice.label === "Eq.refl"));
 });
 
 test("definitional normalization follows recursive equations without algebraic reassociation", () => {
   const offersEqRefl = (theorem, context = []) => {
     let state = createProofState(theorem, context);
-    state = move(state, "warrior", 43, "(□ □)");
-    return getMoveChoices(state, "warrior", 43).some((choice) => choice.label === "Eq.refl");
+    state = move(state, "warrior", 48, "(□ □)");
+    return getMoveChoices(state, "warrior", 48).some((choice) => choice.label === "Eq.refl");
   };
 
   assert.equal(offersEqRefl("n + 0 = n", ["n : Nat"]), true);
@@ -1394,16 +1432,16 @@ test("Eq.refl offers only the inferred normal-form argument", () => {
     "∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)",
     [],
   );
-  state = move(state, "warrior", 40, "fun n => □");
-  state = move(state, "warrior", 40, "fun m => □");
-  state = move(state, "warrior", 40, "(□ □)");
-  state = move(state, "warrior", 40, "Eq.refl");
+  state = move(state, "warrior", 45, "fun n => □");
+  state = move(state, "warrior", 45, "fun m => □");
+  state = move(state, "warrior", 45, "(□ □)");
+  state = move(state, "warrior", 45, "Eq.refl");
 
   assert.deepEqual(
-    getMoveChoices(state, "warrior", 40).map((choice) => choice.label),
+    getMoveChoices(state, "warrior", 45).map((choice) => choice.label),
     ["Nat.succ (n + m)"],
   );
-  state = move(state, "warrior", 40, "Nat.succ (n + m)");
+  state = move(state, "warrior", 45, "Nat.succ (n + m)");
   assert.equal(renderProof(state), "fun n => fun m => Eq.refl (Nat.succ (n + m))");
   assert.equal(isSolved(state), true);
 });
@@ -1413,20 +1451,20 @@ test("Nat.rec chooses its induction variable in the final argument", () => {
     "∀ c b a : Nat, (a + b) + c = a + (b + c)",
     [],
   );
-  state = move(state, "warrior", 41, "fun c => □");
-  state = move(state, "warrior", 41, "fun b => □");
-  state = move(state, "warrior", 41, "fun a => □");
-  state = move(state, "warrior", 41, "(□ □)");
-  state = move(state, "warrior", 41, "(□ □)");
-  state = move(state, "warrior", 41, "(□ □)");
-  state = move(state, "warrior", 41, "Nat.rec");
+  state = move(state, "warrior", 46, "fun c => □");
+  state = move(state, "warrior", 46, "fun b => □");
+  state = move(state, "warrior", 46, "fun a => □");
+  state = move(state, "warrior", 46, "(□ □)");
+  state = move(state, "warrior", 46, "(□ □)");
+  state = move(state, "warrior", 46, "(□ □)");
+  state = move(state, "warrior", 46, "Nat.rec");
 
   assert.equal(currentTarget(state), "Nat");
   assert.deepEqual(
-    getMoveChoices(state, "warrior", 41).map((choice) => choice.label),
+    getMoveChoices(state, "warrior", 46).map((choice) => choice.label),
     ["c", "b", "a"],
   );
-  state = move(state, "warrior", 41, "c");
+  state = move(state, "warrior", 46, "c");
   assert.equal(currentTarget(state), "a + b + 0 = a + (b + 0)");
   assert.equal(renderProof(state), "fun c => fun b => fun a => Nat.rec □ □ c");
 });
@@ -1442,16 +1480,16 @@ test("Nat.rec uses its genuine dependent type before later theorem binders are i
     "∀ c b a : Nat, (a + b) + c = a + (b + c)",
     [],
   );
-  state = move(state, "warrior", 41, "fun c => □");
-  state = move(state, "warrior", 41, "(□ □)");
-  state = move(state, "warrior", 41, "(□ □)");
-  state = move(state, "warrior", 41, "(□ □)");
+  state = move(state, "warrior", 46, "fun c => □");
+  state = move(state, "warrior", 46, "(□ □)");
+  state = move(state, "warrior", 46, "(□ □)");
+  state = move(state, "warrior", 46, "(□ □)");
 
   assert.equal(currentTarget(state), "(?2 → ?1 → ?0 → ∀ b : Nat, ∀ a : Nat, a + b + c = a + (b + c))");
-  assert.ok(getMoveChoices(state, "warrior", 41).some((choice) => choice.label === "Nat.rec"));
-  state = move(state, "warrior", 41, "Nat.rec");
-  assert.deepEqual(getMoveChoices(state, "warrior", 41).map((choice) => choice.label), ["c"]);
-  state = move(state, "warrior", 41, "c");
+  assert.ok(getMoveChoices(state, "warrior", 46).some((choice) => choice.label === "Nat.rec"));
+  state = move(state, "warrior", 46, "Nat.rec");
+  assert.deepEqual(getMoveChoices(state, "warrior", 46).map((choice) => choice.label), ["c"]);
+  state = move(state, "warrior", 46, "c");
   assert.equal(
     currentTarget(state),
     "∀ b : Nat, ∀ a : Nat, a + b + 0 = a + (b + 0)",
@@ -1467,11 +1505,11 @@ test("List.rec uses its genuine dependent type before the list binder is introdu
   );
 
   let state = createProofState("∀ xs : List α, xs ++ [] = xs", ["α : Type"]);
-  state = move(state, "warrior", 43, "(□ □)");
-  state = move(state, "warrior", 43, "(□ □)");
+  state = move(state, "warrior", 48, "(□ □)");
+  state = move(state, "warrior", 48, "(□ □)");
 
-  assert.ok(getMoveChoices(state, "warrior", 43).some((choice) => choice.label === "List.rec"));
-  state = move(state, "warrior", 43, "List.rec");
+  assert.ok(getMoveChoices(state, "warrior", 48).some((choice) => choice.label === "List.rec"));
+  state = move(state, "warrior", 48, "List.rec");
   assert.equal(currentTarget(state), "[] ++ [] = []");
   assert.equal(renderProof(state), "List.rec □ □");
 });
@@ -1482,12 +1520,12 @@ test("term syntax keeps list append distinct from natural addition", () => {
 
   let state = createProofState("∀ xs : List α, xs ++ [] = xs", ["α : Type"]);
   for (const label of ["(□ □)", "(□ □)", "List.rec", "(□ □)", "Eq.refl"]) {
-    state = move(state, "warrior", 43, label);
+    state = move(state, "warrior", 48, label);
   }
   assert.equal(renderProof(state), "List.rec (Eq.refl □) □");
   assert.equal(currentTarget(state), "List α");
-  assert.deepEqual(getMoveChoices(state, "warrior", 43).map((choice) => choice.label), ["[]"]);
-  state = move(state, "warrior", 43, "[]");
+  assert.deepEqual(getMoveChoices(state, "warrior", 48).map((choice) => choice.label), ["[]"]);
+  state = move(state, "warrior", 48, "[]");
   assert.equal(
     currentTarget(state),
     "∀ head : α, ∀ tail : List α, (tail ++ [] = tail) → (head :: tail) ++ [] = head :: tail",
@@ -1535,6 +1573,7 @@ test("metavariable beta reduction traverses operator-bearing arguments", () => {
 
 test("every named catalogue constant has one fixed polymorphic type", () => {
   assert.deepEqual(Object.keys(libraryTermTypes), [
+    "True.intro",
     "And.intro", "And.left", "And.right",
     "Or.inl", "Or.inr", "Or.elim", "False.elim",
     "Iff.intro", "Iff.mp", "Iff.mpr", "Classical.byContradiction",
@@ -1557,18 +1596,18 @@ test("implicit list theorem arguments are inferred from the goal", () => {
     ["α : Type", "xs ys : List α"],
   );
   assert.ok(
-    getMoveChoices(state, "warrior", 46).some((choice) => choice.label === "List.length_append"),
+    getMoveChoices(state, "warrior", 51).some((choice) => choice.label === "List.length_append"),
   );
 });
 
 test("mage apply instantiates canonical implicit catalogue parameters", () => {
   let state = createProofState("P ∧ Q → P", ["P Q : Prop"]);
-  state = move(state, "mage", 7, "intro h");
-  state = move(state, "mage", 7, "apply □");
-  state = move(state, "mage", 7, "And.left");
+  state = move(state, "mage", 12, "intro h");
+  state = move(state, "mage", 12, "apply □");
+  state = move(state, "mage", 12, "And.left");
   assert.match(currentTarget(state), /^P ∧ \?\d+$/);
-  state = move(state, "mage", 7, "exact □");
-  state = move(state, "mage", 7, "h");
+  state = move(state, "mage", 12, "exact □");
+  state = move(state, "mage", 12, "h");
   assert.equal(isSolved(state), true);
 });
 
@@ -1577,10 +1616,10 @@ test("mage apply jointly infers explicit dependent theorem arguments", () => {
     "x + (sum xs + sum ys) = x + sum xs + sum ys",
     ["x : Nat", "xs ys : List Nat"],
   );
-  state = move(state, "mage", 46, "symm");
-  state = move(state, "mage", 46, "apply □");
-  assert.ok(getMoveChoices(state, "mage", 46).some((choice) => choice.label === "Nat.add_assoc"));
-  state = move(state, "mage", 46, "Nat.add_assoc");
+  state = move(state, "mage", 51, "symm");
+  state = move(state, "mage", 51, "apply □");
+  assert.ok(getMoveChoices(state, "mage", 51).some((choice) => choice.label === "Nat.add_assoc"));
+  state = move(state, "mage", 51, "Nat.add_assoc");
   assert.equal(isSolved(state), true);
   assert.deepEqual(renderTacticProofLines(state), ["by", "  symm", "  apply Nat.add_assoc"]);
 });
@@ -1590,8 +1629,8 @@ test("mage apply offers only arithmetic theorems whose conclusions strictly unif
     "sum l + y = y + sum l",
     ["x y : Nat", "l : List Nat"],
   );
-  state = move(state, "mage", 47, "apply □");
-  const labels = getMoveChoices(state, "mage", 47).map((choice) => choice.label);
+  state = move(state, "mage", 52, "apply □");
+  const labels = getMoveChoices(state, "mage", 52).map((choice) => choice.label);
   assert.ok(labels.includes("Nat.add_comm"));
   assert.equal(labels.includes("Nat.add_assoc"), false);
   assert.equal(labels.includes("Nat.add_left_comm"), false);
@@ -1611,7 +1650,7 @@ test("ordinary metavariables can be function-typed and solved by application", (
     metaTypes: { 0: "α → Prop" },
   };
 
-  state = move(state, "warrior", 41, "h");
+  state = move(state, "warrior", 46, "h");
   assert.equal(state.substitutions[0], "fun a => P a");
   assert.equal(isSolved(state), true);
 });
@@ -1624,16 +1663,16 @@ test("application arguments are inferred jointly across dependent binders", () =
       "hatbn : ∀ b : Nat, ∀ a : Nat, (a + b) + n = a + (b + n)",
     ],
   );
-  state = move(state, "warrior", 41, "(□ □)");
-  state = move(state, "warrior", 41, "(□ □)");
+  state = move(state, "warrior", 46, "(□ □)");
+  state = move(state, "warrior", 46, "(□ □)");
 
   assert.equal(currentTarget(state), "(?1 → ?0 → (a + b) + n = a + (b + n))");
-  assert.ok(getMoveChoices(state, "warrior", 41).some((choice) => choice.label === "hatbn"));
-  state = move(state, "warrior", 41, "hatbn");
-  assert.deepEqual(getMoveChoices(state, "warrior", 41).map((choice) => choice.label), ["b"]);
-  state = move(state, "warrior", 41, "b");
-  assert.deepEqual(getMoveChoices(state, "warrior", 41).map((choice) => choice.label), ["a"]);
-  state = move(state, "warrior", 41, "a");
+  assert.ok(getMoveChoices(state, "warrior", 46).some((choice) => choice.label === "hatbn"));
+  state = move(state, "warrior", 46, "hatbn");
+  assert.deepEqual(getMoveChoices(state, "warrior", 46).map((choice) => choice.label), ["b"]);
+  state = move(state, "warrior", 46, "b");
+  assert.deepEqual(getMoveChoices(state, "warrior", 46).map((choice) => choice.label), ["a"]);
+  state = move(state, "warrior", 46, "a");
 
   assert.equal(renderProof(state), "hatbn b a");
   assert.equal(isSolved(state), true);
@@ -1642,78 +1681,78 @@ test("application arguments are inferred jointly across dependent binders", () =
 test("catalogue terms are not offered when their explicit arity cannot unify", () => {
   const state = createProofState("?u8 → Nat.succ k = ?u7", ["k : Nat"]);
   assert.equal(
-    getMoveChoices(state, "warrior", 39).some((choice) => choice.label === "congrArg"),
+    getMoveChoices(state, "warrior", 44).some((choice) => choice.label === "congrArg"),
     false,
   );
 });
 
 test("other polymorphic eliminators remain generic until their arguments are supplied", () => {
   let conjunction = createProofState("P ∧ Q → P", ["P Q : Prop"]);
-  conjunction = move(conjunction, "warrior", 7, "fun h => □");
-  conjunction = move(conjunction, "warrior", 7, "(□ □)");
-  conjunction = move(conjunction, "warrior", 7, "And.left");
+  conjunction = move(conjunction, "warrior", 12, "fun h => □");
+  conjunction = move(conjunction, "warrior", 12, "(□ □)");
+  conjunction = move(conjunction, "warrior", 12, "And.left");
   assert.match(currentTarget(conjunction), /^P ∧ \?\d+$/);
-  conjunction = move(conjunction, "warrior", 7, "h");
+  conjunction = move(conjunction, "warrior", 12, "h");
   assert.equal(isSolved(conjunction), true);
 
   let iff = createProofState("Q", ["P Q : Prop", "hIff : P ↔ Q", "hP : P"]);
-  iff = move(iff, "warrior", 13, "(□ □)");
-  iff = move(iff, "warrior", 13, "(□ □)");
-  iff = move(iff, "warrior", 13, "Iff.mp");
+  iff = move(iff, "warrior", 18, "(□ □)");
+  iff = move(iff, "warrior", 18, "(□ □)");
+  iff = move(iff, "warrior", 18, "Iff.mp");
   assert.match(currentTarget(iff), /^\?\d+ ↔ Q$/);
-  iff = move(iff, "warrior", 13, "hIff");
+  iff = move(iff, "warrior", 18, "hIff");
   assert.equal(currentTarget(iff), "P");
 
   let exists = createProofState("Q", [
     "α : Type", "P : α → Prop", "Q : Prop",
     "hEx : ∃ x : α, P x", "hRule : ∀ x : α, P x → Q",
   ]);
-  exists = move(exists, "warrior", 24, "(□ □)");
-  exists = move(exists, "warrior", 24, "(□ □)");
-  exists = move(exists, "warrior", 24, "Exists.elim");
+  exists = move(exists, "warrior", 29, "(□ □)");
+  exists = move(exists, "warrior", 29, "(□ □)");
+  exists = move(exists, "warrior", 29, "Exists.elim");
   assert.match(currentTarget(exists), /^∃ x : \?\d+, \?\d+ x$/);
-  exists = move(exists, "warrior", 24, "hEx");
+  exists = move(exists, "warrior", 29, "hEx");
   assert.equal(currentTarget(exists), "∀ a : α, P a → Q");
 
   let transport = createProofState("P b", [
     "α : Type", "P : α → Prop", "a b : α",
     "hEq : P a = P b", "hPa : P a",
   ]);
-  transport = move(transport, "warrior", 29, "(□ □)");
-  transport = move(transport, "warrior", 29, "(□ □)");
-  transport = move(transport, "warrior", 29, "Eq.mp");
+  transport = move(transport, "warrior", 34, "(□ □)");
+  transport = move(transport, "warrior", 34, "(□ □)");
+  transport = move(transport, "warrior", 34, "Eq.mp");
   assert.match(currentTarget(transport), /^\?\d+ = P b$/);
-  transport = move(transport, "warrior", 29, "hEq");
+  transport = move(transport, "warrior", 34, "hEq");
   assert.equal(currentTarget(transport), "P a");
 });
 
 test("the mage handles falsehood with tactics and a simple hypothesis term", () => {
   let state = createProofState("False → P", ["P : Prop"]);
-  state = move(state, "mage", 11, "intro hFalse");
-  state = move(state, "mage", 11, "exfalso");
-  state = move(state, "mage", 11, "exact □");
-  state = move(state, "mage", 11, "hFalse");
+  state = move(state, "mage", 16, "intro hFalse");
+  state = move(state, "mage", 16, "exfalso");
+  state = move(state, "mage", 16, "exact □");
+  state = move(state, "mage", 16, "hFalse");
   assert.equal(isSolved(state), true);
 
   let disjunctionState = createProofState("P ∨ False → P", ["P : Prop"]);
-  disjunctionState = move(disjunctionState, "mage", 18, "intro h");
-  disjunctionState = move(disjunctionState, "mage", 18, "cases □");
-  disjunctionState = move(disjunctionState, "mage", 18, "h");
-  disjunctionState = move(disjunctionState, "mage", 18, "exact □");
-  disjunctionState = move(disjunctionState, "mage", 18, "hP");
+  disjunctionState = move(disjunctionState, "mage", 23, "intro h");
+  disjunctionState = move(disjunctionState, "mage", 23, "cases □");
+  disjunctionState = move(disjunctionState, "mage", 23, "h");
+  disjunctionState = move(disjunctionState, "mage", 23, "exact □");
+  disjunctionState = move(disjunctionState, "mage", 23, "hP");
   assert.equal(
-    getMoveChoices(disjunctionState, "mage", 18).some((choice) => choice.label === "contradiction"),
+    getMoveChoices(disjunctionState, "mage", 23).some((choice) => choice.label === "contradiction"),
     false,
   );
-  disjunctionState = move(disjunctionState, "mage", 18, "exfalso");
-  disjunctionState = move(disjunctionState, "mage", 18, "exact □");
-  disjunctionState = move(disjunctionState, "mage", 18, "hFalse");
+  disjunctionState = move(disjunctionState, "mage", 23, "exfalso");
+  disjunctionState = move(disjunctionState, "mage", 23, "exact □");
+  disjunctionState = move(disjunctionState, "mage", 23, "hFalse");
   assert.equal(isSolved(disjunctionState), true);
 
   let contradictionState = createProofState("¬P → P → Q", ["P Q : Prop"]);
-  contradictionState = move(contradictionState, "mage", 37, "intro hnP");
-  contradictionState = move(contradictionState, "mage", 37, "intro hP");
-  contradictionState = move(contradictionState, "mage", 37, "contradiction");
+  contradictionState = move(contradictionState, "mage", 42, "intro hnP");
+  contradictionState = move(contradictionState, "mage", 42, "intro hP");
+  contradictionState = move(contradictionState, "mage", 42, "contradiction");
   assert.equal(isSolved(contradictionState), true);
 });
 
@@ -1722,33 +1761,33 @@ test("rewrite levels require rewriting beyond their earlier direct tactic patter
     "(P ↔ Q) → P ∨ R → Q ∨ R",
     ["P Q R : Prop"],
   );
-  iffState = move(iffState, "mage", 33, "intro h");
-  iffState = move(iffState, "mage", 33, "intro h2");
+  iffState = move(iffState, "mage", 38, "intro h");
+  iffState = move(iffState, "mage", 38, "intro h2");
   assert.equal(currentTarget(iffState), "Q ∨ R");
-  assert.equal(getMoveChoices(iffState, "mage", 33).some((choice) => choice.label === "exact □"), false);
-  assert.ok(getMoveChoices(iffState, "mage", 33).some((choice) => choice.label === "rw [← □]"));
-  iffState = move(iffState, "mage", 33, "rw [← □]");
-  iffState = move(iffState, "mage", 33, "h");
+  assert.equal(getMoveChoices(iffState, "mage", 38).some((choice) => choice.label === "exact □"), false);
+  assert.ok(getMoveChoices(iffState, "mage", 38).some((choice) => choice.label === "rw [← □]"));
+  iffState = move(iffState, "mage", 38, "rw [← □]");
+  iffState = move(iffState, "mage", 38, "h");
   assert.equal(currentTarget(iffState), "P ∨ R");
-  iffState = move(iffState, "mage", 33, "exact □");
-  iffState = move(iffState, "mage", 33, "h2");
+  iffState = move(iffState, "mage", 38, "exact □");
+  iffState = move(iffState, "mage", 38, "h2");
   assert.equal(isSolved(iffState), true);
 
   let equalityState = createProofState(
     "a = b → g (f a) = g (f b)",
     ["α β γ : Type", "f : α → β", "g : β → γ", "a b : α"],
   );
-  equalityState = move(equalityState, "mage", 34, "intro h");
-  const oldCongruenceStep = move(equalityState, "mage", 34, "congr");
+  equalityState = move(equalityState, "mage", 39, "intro h");
+  const oldCongruenceStep = move(equalityState, "mage", 39, "congr");
   assert.equal(currentTarget(oldCongruenceStep), "f a = f b");
   assert.equal(
-    getMoveChoices(oldCongruenceStep, "mage", 34).some((choice) => choice.label === "exact □"),
+    getMoveChoices(oldCongruenceStep, "mage", 39).some((choice) => choice.label === "exact □"),
     false,
   );
-  assert.ok(getMoveChoices(equalityState, "mage", 34).some((choice) => choice.label === "rw [□]"));
-  equalityState = move(equalityState, "mage", 34, "rw [□]");
-  equalityState = move(equalityState, "mage", 34, "h");
-  equalityState = move(equalityState, "mage", 34, "rfl");
+  assert.ok(getMoveChoices(equalityState, "mage", 39).some((choice) => choice.label === "rw [□]"));
+  equalityState = move(equalityState, "mage", 39, "rw [□]");
+  equalityState = move(equalityState, "mage", 39, "h");
+  equalityState = move(equalityState, "mage", 39, "rfl");
   assert.equal(isSolved(equalityState), true);
 
   let compoundEqualityState = createProofState("sum l1 = sum l3", [
@@ -1756,10 +1795,10 @@ test("rewrite levels require rewriting beyond their earlier direct tactic patter
     "ih1 : sum l1 = sum l2",
     "ih2 : sum l2 = sum l3",
   ]);
-  assert.ok(getMoveChoices(compoundEqualityState, "mage", 47).some((choice) => choice.label === "rw [□]"));
-  const forwardRewrite = move(compoundEqualityState, "mage", 47, "rw [□]");
-  assert.deepEqual(getMoveChoices(forwardRewrite, "mage", 47).map((choice) => choice.label), ["ih1"]);
-  compoundEqualityState = move(forwardRewrite, "mage", 47, "ih1");
+  assert.ok(getMoveChoices(compoundEqualityState, "mage", 52).some((choice) => choice.label === "rw [□]"));
+  const forwardRewrite = move(compoundEqualityState, "mage", 52, "rw [□]");
+  assert.deepEqual(getMoveChoices(forwardRewrite, "mage", 52).map((choice) => choice.label), ["ih1"]);
+  compoundEqualityState = move(forwardRewrite, "mage", 52, "ih1");
   assert.equal(currentTarget(compoundEqualityState), "sum l2 = sum l3");
 
   let reverseCompoundEqualityState = createProofState("sum l1 = sum l3", [
@@ -1767,17 +1806,17 @@ test("rewrite levels require rewriting beyond their earlier direct tactic patter
     "ih1 : sum l1 = sum l2",
     "ih2 : sum l2 = sum l3",
   ]);
-  const reverseRewrite = move(reverseCompoundEqualityState, "mage", 47, "rw [← □]");
-  assert.ok(getMoveChoices(reverseRewrite, "mage", 47).some((choice) => choice.label === "ih2"));
-  reverseCompoundEqualityState = move(reverseRewrite, "mage", 47, "ih2");
+  const reverseRewrite = move(reverseCompoundEqualityState, "mage", 52, "rw [← □]");
+  assert.ok(getMoveChoices(reverseRewrite, "mage", 52).some((choice) => choice.label === "ih2"));
+  reverseCompoundEqualityState = move(reverseRewrite, "mage", 52, "ih2");
   assert.equal(currentTarget(reverseCompoundEqualityState), "sum l1 = sum l2");
 
   let compoundPropositionState = createProofState("P (f a)", [
     "α β : Type", "P : β → Prop", "f : α → β", "a b : α",
     "hEq : f a = f b", "hProof : P (f b)",
   ]);
-  compoundPropositionState = move(compoundPropositionState, "mage", 47, "rw [□]");
-  compoundPropositionState = move(compoundPropositionState, "mage", 47, "hEq");
+  compoundPropositionState = move(compoundPropositionState, "mage", 52, "rw [□]");
+  compoundPropositionState = move(compoundPropositionState, "mage", 52, "hEq");
   assert.equal(currentTarget(compoundPropositionState), "P (f b)");
 
   let iffTermState = createProofState(
@@ -1790,7 +1829,7 @@ test("rewrite levels require rewriting beyond their earlier direct tactic patter
     "fun hP => □", "(□ □)", "Or.inl", "(□ □)",
     "□.□", "h", "mp", "hP", "Or.inr",
   ]) {
-    iffTermState = move(iffTermState, "warrior", 33, label);
+    iffTermState = move(iffTermState, "warrior", 38, label);
   }
   assert.equal(
     renderProof(iffTermState),
@@ -1806,7 +1845,7 @@ test("rewrite levels require rewriting beyond their earlier direct tactic patter
     "fun h => □", "(□ □)", "(□ □)", "congrArg", "g",
     "(□ □)", "(□ □)", "congrArg", "f", "h",
   ]) {
-    equalityTermState = move(equalityTermState, "warrior", 34, label);
+    equalityTermState = move(equalityTermState, "warrior", 39, label);
   }
   assert.equal(renderProof(equalityTermState), "fun h => congrArg g (congrArg f h)");
   assert.equal(isSolved(equalityTermState), true);
