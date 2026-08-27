@@ -392,6 +392,102 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
 .proof-hole { color: #e4bd55; }
 .proof-hole.active { animation: blink 1s steps(2, end) infinite; }
 
+.tutorial-backdrop {
+  position: fixed;
+  z-index: 70;
+  inset: 0;
+  background: rgba(2, 3, 2, .82);
+  pointer-events: auto;
+}
+.tutorial-highlight {
+  position: relative;
+  z-index: 72 !important;
+  outline: 3px solid #f2c75c !important;
+  outline-offset: 5px;
+  box-shadow: 0 0 0 2px #171006, 0 0 24px rgba(242, 199, 92, .72) !important;
+}
+.monster-stage.tutorial-highlight { position: absolute; }
+.player-hud.tutorial-highlight { position: absolute; }
+.moves-column.tutorial-highlight { position: sticky; }
+.tutorial-muted-parent {
+  position: relative;
+  z-index: 72;
+  isolation: isolate;
+}
+.tutorial-muted-parent::after {
+  content: "";
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  background: rgba(2, 3, 2, .8);
+  pointer-events: auto;
+}
+.tutorial-muted-parent .tutorial-highlight {
+  z-index: 12 !important;
+}
+.tutorial-proof-parent {
+  position: relative;
+  z-index: 72;
+  isolation: isolate;
+}
+.tutorial-proof-parent > :not(.source-card) {
+  filter: brightness(.18);
+  pointer-events: none;
+}
+.tutorial-proof-overlay {
+  position: fixed;
+  z-index: 80;
+  visibility: hidden;
+  margin: 0;
+  pointer-events: none;
+  outline: 3px solid #f2c75c;
+  outline-offset: 5px;
+  box-shadow: 0 0 0 2px #171006, 0 0 24px rgba(242, 199, 92, .72);
+}
+.tutorial-card {
+  position: fixed;
+  z-index: 90;
+  width: min(440px, calc(100vw - 28px));
+  max-height: min(360px, calc(100dvh - 28px));
+  overflow: auto;
+  padding: 20px;
+  border-color: #171006;
+  outline-color: #d0a84a;
+  background:
+    linear-gradient(rgba(35, 38, 29, .98), rgba(15, 17, 12, .99)),
+    repeating-linear-gradient(45deg, #282c21 0 2px, #181b14 2px 4px);
+  box-shadow: inset 0 0 0 2px #4a4024, 8px 8px 0 rgba(0, 0, 0, .8), 0 0 28px rgba(208, 168, 74, .24);
+}
+.tutorial-card h2 {
+  margin: 8px 0 12px;
+  color: #f0dda0;
+  font-size: 20px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  text-shadow: 2px 2px #080906;
+}
+.tutorial-card > p:not(.eyebrow) {
+  margin: 0;
+  color: #c2b897;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.tutorial-card code { color: #f1d57c; }
+.tutorial-card .primary-button { width: 100%; margin-top: 17px; }
+.tutorial-card .tutorial-action-hint {
+  margin-top: 16px !important;
+  padding: 10px;
+  border: 1px solid #6b592b;
+  background: #15170f;
+  color: #ebcd73 !important;
+  font-size: 8px !important;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.tutorial-top-left { top: 96px; left: 22px; }
+.tutorial-top-center { top: 96px; left: 50%; transform: translateX(-50%); }
+.tutorial-bottom-center { bottom: 22px; left: 50%; transform: translateX(-50%); }
+
 .moves-column { position: sticky; top: 98px; min-height: 520px; }
 .path-banner {
   min-height: 65px;
@@ -1365,6 +1461,19 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
     overflow: hidden;
     order: 0;
   }
+  .moves-column.tutorial-highlight { position: static; }
+  .tutorial-card {
+    width: min(370px, calc(100vw - 16px));
+    max-height: min(230px, calc(100dvh - 16px));
+    padding: 12px;
+  }
+  .tutorial-card h2 { margin: 5px 0 7px; font-size: 14px; }
+  .tutorial-card > p:not(.eyebrow) { font-size: 8px; line-height: 1.45; }
+  .tutorial-card .primary-button { margin-top: 9px; }
+  .tutorial-card .tutorial-action-hint { margin-top: 8px !important; padding: 7px; font-size: 7px !important; }
+  .tutorial-top-left,
+  .tutorial-top-center { top: 56px; left: 50%; transform: translateX(-50%); }
+  .tutorial-bottom-center { bottom: 7px; }
   .path-banner {
     min-height: 32px;
     padding: 4px 7px;

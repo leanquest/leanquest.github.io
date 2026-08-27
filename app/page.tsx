@@ -35,6 +35,12 @@ import { attackDamageFor, MAX_HP, MAX_MANA, MAX_VISION_POINTS, RESOURCE_CONSUMPT
 import { canSelectHero, destinationFromTitle } from "./campaign-progress";
 import { MusicControls, useGameMusic } from "./game-music";
 import { storyMusic, type MusicCueId } from "./music-manifest";
+import {
+  tutorialAllowsChoice,
+  tutorialChoiceAdvances,
+  tutorialForLevel,
+  type TutorialTarget,
+} from "./tutorials";
 
 type MonsterPhase = "idle" | "attack" | "death" | "gone";
 type Message = { kind: "info" | "error"; text: string } | null;
@@ -44,6 +50,7 @@ type SaveData = {
   level: Record<HeroClass, number>;
   seenLessons: Record<HeroClass, number[]>;
   seenStories: string[];
+  seenTutorials: string[];
 };
 
 type StoryDestination = { kind: "character" } | { kind: "level"; index: number } | { kind: "map" };
@@ -51,12 +58,13 @@ type CSSPropertiesWithVariables = CSSProperties & {
   [name: `--${string}`]: string | number | undefined;
 };
 
-const STORAGE_KEY = "leanquest-campaign-v4";
+const STORAGE_KEY = "leanquest-campaign-v5";
 const emptySave: SaveData = {
   completed: { warrior: [], mage: [] },
   level: { warrior: 0, mage: 0 },
   seenLessons: { warrior: [], mage: [] },
   seenStories: [],
+  seenTutorials: [],
 };
 const FINAL_LEVEL_ID = exercises[exercises.length - 1].id;
 
@@ -148,8 +156,11 @@ export default function Home() {
   const [storyQueue, setStoryQueue] = useState<StorySequence[]>([]);
   const [storyPanelIndex, setStoryPanelIndex] = useState(0);
   const [storyDestination, setStoryDestination] = useState<StoryDestination | null>(null);
+  const [tutorialStepIndex, setTutorialStepIndex] = useState(0);
   const animationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const naturalNumberInput = useRef<HTMLInputElement>(null);
+  const proofScrollCard = useRef<HTMLElement>(null);
+  const tutorialProofOverlay = useRef<HTMLElement>(null);
 
   const level = exercises[levelIndex];
   const solved = isSolved(proofState);
@@ -189,6 +200,15 @@ export default function Home() {
   const maxMana = heroClass ? maxManaFor(heroClass) : 0;
   const maxHp = heroClass ? MAX_HP[heroClass] : MAX_HP.warrior;
   const attackDamage = heroClass ? attackDamageFor(heroClass, level[heroClass].selections.length) : 0;
+  const tutorial = heroClass ? tutorialForLevel(heroClass, level.id) : undefined;
+  const tutorialIsActive = Boolean(
+    ready && !showTitle && !showCharacterSelect && !showMap && !showCatalogue && !showLesson && !activeStory &&
+    tutorial && !save.seenTutorials.includes(tutorial.id),
+  );
+  const tutorialStep = tutorialIsActive ? tutorial?.steps[tutorialStepIndex] ?? null : null;
+  const tutorialTargets = new Set(tutorialStep?.targets ?? []);
+  const showProofSpotlight = tutorialTargets.has("proof-scroll");
+  const tutorialClass = (target: TutorialTarget) => tutorialTargets.has(target) ? " tutorial-highlight" : "";
   const currentMusicCue: MusicCueId | null = !ready
     ? null
     : activeStory
@@ -243,6 +263,33 @@ export default function Home() {
     if (enteringNaturalNumber) naturalNumberInput.current?.focus();
   }, [enteringNaturalNumber]);
 
+  useEffect(() => {
+    if (!showProofSpotlight) return;
+    const anchor = proofScrollCard.current;
+    const overlay = tutorialProofOverlay.current;
+    if (!anchor || !overlay) return;
+
+    const placeOverlay = () => {
+      const rect = anchor.getBoundingClientRect();
+      overlay.style.left = `${rect.left}px`;
+      overlay.style.top = `${rect.top}px`;
+      overlay.style.width = `${rect.width}px`;
+      overlay.style.height = `${rect.height}px`;
+      overlay.style.visibility = "visible";
+    };
+    const frame = requestAnimationFrame(placeOverlay);
+    const observer = new ResizeObserver(placeOverlay);
+    observer.observe(anchor);
+    window.addEventListener("resize", placeOverlay);
+    window.addEventListener("scroll", placeOverlay, true);
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("resize", placeOverlay);
+      window.removeEventListener("scroll", placeOverlay, true);
+    };
+  }, [showProofSpotlight]);
+
   function clearAnimations() {
     animationTimers.current.forEach(clearTimeout);
     animationTimers.current = [];
@@ -263,6 +310,7 @@ export default function Home() {
     setVisionPoints(visionFor(nextClass));
     setEnteringNaturalNumber(false);
     setNaturalNumber("");
+    setTutorialStepIndex(0);
     setShowCharacterSelect(false);
     setSave((current) => ({ ...current, selectedClass: nextClass }));
     if (!save.seenLessons[nextClass].includes(exercises[nextIndex].id)) {
@@ -272,6 +320,7 @@ export default function Home() {
 
   function choose(choice: MoveChoice, value?: string) {
     if (!heroClass || monsterPhase !== "idle" || proofFailed) return;
+    if (!tutorialAllowsChoice(tutorialStep, choice.id)) return;
     if (RESOURCE_CONSUMPTION_ENABLED && mana < choice.manaCost) {
       setMessage({ kind: "error", text: `This move requires ${choice.manaCost} MP, but only ${mana} MP remains.` });
       return;
@@ -287,6 +336,9 @@ export default function Home() {
     setNaturalNumber("");
     setUndoStack((items) => [...items, proofState]);
     setProofState(nextState);
+    if (tutorialChoiceAdvances(tutorialStep, choice.id, value)) {
+      setTutorialStepIndex((current) => current + 1);
+    }
     if (RESOURCE_CONSUMPTION_ENABLED) {
       setMana((current) => current - choice.manaCost);
     }
@@ -368,7 +420,7 @@ export default function Home() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (showCharacterSelect || showMap || showCatalogue || showLesson || enteringNaturalNumber || proofFailed) return;
+      if (showCharacterSelect || showMap || showCatalogue || showLesson || enteringNaturalNumber || tutorialStep || proofFailed) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undo();
@@ -423,6 +475,7 @@ export default function Home() {
     setVisionPoints(visionFor(heroClass));
     setEnteringNaturalNumber(false);
     setNaturalNumber("");
+    setTutorialStepIndex(0);
     setSave((current) => ({
       ...current,
       level: { ...current.level, [heroClass]: index },
@@ -512,6 +565,15 @@ export default function Home() {
   }
 
   function nextLevel() {
+    if (tutorialStep) {
+      if (tutorialStep.action.type !== "next-level" || !tutorial) return;
+      setSave((current) => ({
+        ...current,
+        seenTutorials: current.seenTutorials.includes(tutorial.id)
+          ? current.seenTutorials
+          : [...current.seenTutorials, tutorial.id],
+      }));
+    }
     const stories = storiesAfterLevel(level.id).filter((story) => !save.seenStories.includes(story.id));
     const destination: StoryDestination = levelIndex >= exercises.length - 1
       ? { kind: "map" }
@@ -521,6 +583,11 @@ export default function Home() {
       return;
     }
     arriveAfterStory(destination);
+  }
+
+  function continueTutorial() {
+    if (tutorialStep?.action.type !== "continue") return;
+    setTutorialStepIndex((current) => current + 1);
   }
 
   if (!ready) {
@@ -646,9 +713,33 @@ export default function Home() {
       : [];
   const termProofDisplay = heroClass === "warrior" ? renderProofParts(proofState) : [];
   const visual = monsterVisual(level.monster, heroClass);
+  const renderProofScrollContent = () => heroClass === "warrior" ? (
+    <span>
+      {termProofDisplay.map((part, index) =>
+        part.hole
+          ? <span className={`proof-hole ${part.active ? "active" : ""}`} key={`${part.text}-${index}`}>□</span>
+          : <span key={`${part.text}-${index}`}>{part.text}</span>
+      )}
+      {"\n"}
+    </span>
+  ) : proofDisplay.map((line, index) => {
+    let highlightedHole = false;
+    const highlightFirstHole = Boolean(proofState.pending) && index === proofDisplay.length - 1;
+    return (
+      <span key={`${line}-${index}`}>
+        {line.split(/(□)/).map((piece, pieceIndex) => {
+          if (piece !== "□") return piece;
+          const active = highlightFirstHole && !highlightedHole;
+          highlightedHole = highlightedHole || active;
+          return <span className={`proof-hole ${active ? "active" : ""}`} key={`${piece}-${pieceIndex}`}>□</span>;
+        })}
+        {"\n"}
+      </span>
+    );
+  });
 
   return (
-    <main className={`app-shell hero-${heroClass} ${monsterPhase === "attack" ? "under-attack" : ""} ${proofFailed ? "proof-failed" : ""}`}>
+    <main className={`app-shell hero-${heroClass} ${monsterPhase === "attack" ? "under-attack" : ""} ${proofFailed ? "proof-failed" : ""} ${tutorialStep ? "tutorial-active" : ""}`}>
       <header className="topbar pixel-frame">
         <button className="brand" onClick={() => setShowMap(true)} aria-label="Open dungeon map">
           <span className="brand-mark">λ</span>
@@ -676,7 +767,7 @@ export default function Home() {
         <section className={`encounter pixel-frame phase-${monsterPhase}`}>
           <div className="dungeon-view">
             <div className="torch torch-left"><i /></div><div className="torch torch-right"><i /></div>
-            <div className="monster-stage">
+            <div className={`monster-stage${tutorialClass("guardian")}`}>
               <div className="monster-sprite" role="img" aria-label={level.monster.name} style={visual} />
               {monsterPhase === "attack" && <div className="claw-flash" aria-hidden="true">{"///"}</div>}
               {monsterPhase === "death" && <div className="death-burst" aria-hidden="true">✦</div>}
@@ -686,7 +777,7 @@ export default function Home() {
               <strong>{level.monster.name}</strong>
               <small>{level.monster.lore}</small>
             </div>
-            <div className="player-hud">
+            <div className={`player-hud${tutorialClass("vitals")}`}>
               <div className="hero-portrait" style={{ backgroundPosition: heroPosition(heroClass) }} />
               <div className="vitals">
                 <div className="vital-row"><b>HP</b><div className="vital-bar hp" role="meter" aria-label="Player health" aria-valuemin={0} aria-valuemax={maxHp} aria-valuenow={hp}><i style={{ width: `${(hp / maxHp) * 100}%` }} /></div><em>{RESOURCE_CONSUMPTION_ENABLED ? `${hp} / ${maxHp}` : "PAUSED"}</em></div>
@@ -701,7 +792,7 @@ export default function Home() {
         </section>
 
         <section className="combat-console">
-          <div className="left-console">
+          <div className={`left-console${tutorialTargets.has("proof-scroll") ? " tutorial-proof-parent" : ""}`}>
             <div className="level-strip pixel-frame">
               <div className="level-rune">{String(level.id).padStart(2, "0")}</div>
               <div><p className="eyebrow">{level.chapter} · {level.topic}</p><h1>{level.title}</h1><p>{level.intro}</p></div>
@@ -712,8 +803,8 @@ export default function Home() {
               </div>
             </div>
 
-            <article className="theorem-card pixel-frame">
-              <div className="card-label"><span>QUEST OBJECTIVE</span><span className="verified-dot">CURRICULUM LEVEL</span></div>
+            <article className={`theorem-card pixel-frame${tutorialClass("level-objective")}`}>
+              <div className="card-label"><span>LEVEL OBJECTIVE</span><span className="verified-dot">CURRICULUM LEVEL</span></div>
               <code>{level.theorem}</code>
             </article>
 
@@ -730,38 +821,15 @@ export default function Home() {
               )}
             </article>
 
-            <article className="source-card pixel-frame">
+            <article ref={proofScrollCard} className={`source-card pixel-frame${tutorialClass("proof-scroll")}`} aria-hidden={showProofSpotlight || undefined}>
               <div className="card-label"><span>SCROLL OF PROOF</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
               <pre className="proof-scroll" tabIndex={0} aria-label="Current proof script">
-                {heroClass === "warrior" ? (
-                  <span>
-                    {termProofDisplay.map((part, index) =>
-                      part.hole
-                        ? <span className={`proof-hole ${part.active ? "active" : ""}`} key={`${part.text}-${index}`}>□</span>
-                        : <span key={`${part.text}-${index}`}>{part.text}</span>
-                    )}
-                    {"\n"}
-                  </span>
-                ) : proofDisplay.map((line, index) => {
-                  let highlightedHole = false;
-                  const highlightFirstHole = Boolean(proofState.pending) && index === proofDisplay.length - 1;
-                  return (
-                    <span key={`${line}-${index}`}>
-                      {line.split(/(□)/).map((piece, pieceIndex) => {
-                        if (piece !== "□") return piece;
-                        const active = highlightFirstHole && !highlightedHole;
-                        highlightedHole = highlightedHole || active;
-                        return <span className={`proof-hole ${active ? "active" : ""}`} key={`${piece}-${pieceIndex}`}>□</span>;
-                      })}
-                      {"\n"}
-                    </span>
-                  );
-                })}
+                {renderProofScrollContent()}
               </pre>
             </article>
           </div>
 
-          <aside className="moves-column pixel-frame">
+          <aside className={`moves-column pixel-frame${tutorialClass("move-catalogue")}${tutorialTargets.has("next-level") ? " tutorial-muted-parent" : ""}`}>
             <div className="path-banner">
               <span className="path-symbol">{proofFailed ? "☠" : heroClass === "warrior" ? "⚔" : "✦"}</span>
               <span><strong>{proofFailed ? "PROOF FAILED" : heroClass === "warrior" ? "TERM CATALOGUE" : "MOVE CATALOGUE"}</strong><small>{proofFailed ? "NO MOVES REMAIN" : "CUMULATIVE · FILTERED BY TYPE"}</small></span>
@@ -788,7 +856,7 @@ export default function Home() {
                   <h3>{level.monster.name} falls!</h3>
                   <p>The {heroClass}&apos;s proof used {history.length} moves.</p>
                   <div className="proof-pair"><div><small>COMPLETE {heroClass.toUpperCase()} PROOF</small><code>{heroClass === "warrior" ? renderProof(proofState) : proofDisplay.join("\n")}</code></div></div>
-                  <button className="primary-button" onClick={nextLevel}>{level.id === exercises.length ? "VIEW CONQUERED DUNGEON" : "ENTER NEXT CHAMBER"} <span>▶</span></button>
+                  <button className={`primary-button${tutorialClass("next-level")}`} onClick={nextLevel}>{level.id === exercises.length ? "VIEW CONQUERED DUNGEON" : "ENTER NEXT CHAMBER"} <span>▶</span></button>
                 </div>
               ) : (
                 <>
@@ -835,7 +903,7 @@ export default function Home() {
                       />
                       <p>Use one or more decimal digits. The complete number counts as one move.</p>
                       <div className="natural-number-actions">
-                        <button type="button" onClick={() => {
+                        <button type="button" disabled={Boolean(tutorialStep)} onClick={() => {
                           setEnteringNaturalNumber(false);
                           setNaturalNumber("");
                         }}>CANCEL</button>
@@ -847,7 +915,7 @@ export default function Home() {
                       {choices.map((choice, index) => {
                         const unaffordable = RESOURCE_CONSUMPTION_ENABLED && mana < choice.manaCost;
                         return (
-                          <button className="choice-card" key={choice.id} disabled={monsterPhase !== "idle" || unaffordable} title={unaffordable ? "Not enough mana" : undefined} onClick={() => choose(choice)}>
+                          <button className="choice-card" key={choice.id} disabled={monsterPhase !== "idle" || unaffordable || !tutorialAllowsChoice(tutorialStep, choice.id)} title={unaffordable ? "Not enough mana" : undefined} onClick={() => choose(choice)}>
                             <span className="choice-key">{index + 1}</span>
                             <span className="choice-copy"><code>{choice.label}</code>{choice.argumentType && <small>{choice.argumentType}</small>}</span>
                             <span className={`choice-cost ${heroClass === "mage" && RESOURCE_CONSUMPTION_ENABLED && choice.manaCost ? "paid" : "free"}`}>{heroClass === "warrior" ? "FREE" : RESOURCE_CONSUMPTION_ENABLED ? `${choice.manaCost} MP` : "MP PAUSED"}</span><span className="choice-arrow">▶</span>
@@ -872,6 +940,42 @@ export default function Home() {
           </aside>
         </section>
       </section>
+
+      {tutorialStep && tutorial && (
+        <>
+          <div className="tutorial-backdrop" aria-hidden="true" />
+          {showProofSpotlight && (
+            <article ref={tutorialProofOverlay} className="source-card pixel-frame tutorial-proof-overlay">
+              <div className="card-label"><span>SCROLL OF PROOF</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
+              <pre className="proof-scroll" tabIndex={0} aria-label="Current proof script">
+                {renderProofScrollContent()}
+              </pre>
+            </article>
+          )}
+          <aside
+            className={`tutorial-card tutorial-${tutorialStep.placement} pixel-frame`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="tutorial-title"
+            aria-describedby="tutorial-description"
+          >
+            <p className="eyebrow">MAGE TUTORIAL · {tutorialStepIndex + 1}/{tutorial.steps.length}</p>
+            <h2 id="tutorial-title">{tutorialStep.title}</h2>
+            <p id="tutorial-description">{tutorialStep.text}</p>
+            {tutorialStep.action.type === "continue" ? (
+              <button className="primary-button" onClick={continueTutorial}>{tutorialStep.action.label} ▶</button>
+            ) : (
+              <p className="tutorial-action-hint">
+                {tutorialStep.action.type === "choice"
+                  ? "Choose exact □ in the highlighted catalogue to continue."
+                  : tutorialStep.action.type === "natural-number"
+                    ? "Insert any natural number to continue."
+                    : "Click Enter Next Chamber to finish the tutorial."}
+              </p>
+            )}
+          </aside>
+        </>
+      )}
 
       {showLesson && (
         <div className="modal-backdrop lesson-backdrop">
