@@ -164,6 +164,12 @@ export type ProofRoute = {
   contextOverrides?: Record<number, string[]>;
 };
 
+export type Lesson = {
+  common: string[];
+  warrior?: string[];
+  mage?: string[];
+};
+
 export type Exercise = {
   kind: "level";
   id: number;
@@ -174,7 +180,7 @@ export type Exercise = {
   theorem: string;
   context: string[];
   intro: string;
-  lesson: Record<HeroClass, string[]>;
+  lesson: Lesson;
   unlocks?: LevelUnlocks;
   warrior: ProofRoute;
   mage: ProofRoute;
@@ -238,12 +244,17 @@ export function buildTermProof(moves: string[]) {
 }
 
 const lesson = (
-  termMeaning: string,
-  tacticMeaning: string,
-): Record<HeroClass, string[]> => ({
-  warrior: [termMeaning],
-  mage: [tacticMeaning],
+  common: string,
+  pathText: Partial<Record<HeroClass, string>> = {},
+): Lesson => ({
+  common: [common],
+  ...(pathText.warrior ? { warrior: [pathText.warrior] } : {}),
+  ...(pathText.mage ? { mage: [pathText.mage] } : {}),
 });
+
+export function lessonTextFor(lessonContent: Lesson, hero: HeroClass) {
+  return [...lessonContent.common, ...(lessonContent[hero] ?? [])];
+}
 
 const monster = (
   name: string,
@@ -287,7 +298,7 @@ const tutorialEntries = [
     id: 1, depth: 1, chapter: "First Steps", title: "Choose a Number", topic: "Natural numbers",
     theorem: "Nat", context: [],
     intro: "A goal is a type. To complete it, choose a value of that type.",
-    lesson: lesson("`Nat` is the type of natural numbers. Enter any whole number to build a term of this type.", "`exact` closes a goal with a term of the required type. Choose it, then enter any natural number."),
+    lesson: lesson("`Nat` is the type of natural numbers. Enter any whole number to build a term of this type."),
     unlocks: {
       shared: ["term.naturalNumber"],
       warrior: { moves: [], text: "New move: `natural number` lets you enter a value of type `Nat`." },
@@ -301,7 +312,7 @@ const tutorialEntries = [
     id: 2, depth: 1, chapter: "First Steps", title: "Use the Number", topic: "Environment values",
     theorem: "Nat", context: ["n : Nat"],
     intro: "The environment can already contain a value with the type your goal requests.",
-    lesson: lesson("The environment contains `n : Nat`, so choosing `n` completes a goal of type `Nat`.", "Choose `exact`, then select `n` from the environment to close the `Nat` goal."),
+    lesson: lesson("The environment contains `n : Nat`, so choosing `n` completes a goal of type `Nat`."),
     unlocks: {
       shared: ["term.context"],
       warrior: { moves: [], text: "New move: choose a matching value from the environment." },
@@ -315,7 +326,7 @@ const tutorialEntries = [
     id: 3, depth: 1, chapter: "First Steps", title: "Pack an Empty List", topic: "Lists",
     theorem: "List Nat", context: [],
     intro: "A list may contain many values—or none at all.",
-    lesson: lesson("`[]` is the empty list. With a goal of `List Nat`, Lean knows this empty list is a list of natural numbers.", "Choose `exact`, then choose `[]` to provide an empty `List Nat`."),
+    lesson: lesson("`[]` is the empty list. With a goal of `List Nat`, Lean knows this empty list is a list of natural numbers."),
     unlocks: {
       shared: ["term.emptyList"],
       warrior: { moves: [], text: "New term: `[]` constructs an empty `List Nat`." },
@@ -329,7 +340,7 @@ const tutorialEntries = [
     id: 4, depth: 1, chapter: "First Steps", title: "Name a Proposition", topic: "Propositions",
     theorem: "Prop", context: [],
     intro: "Propositions are themselves values of the type `Prop`.",
-    lesson: lesson("A `Prop` is a statement that may be true or false. This goal asks for a proposition itself, not yet for a proof that the statement is true.", "Choose `exact`, then select any proposition in the catalogue to complete the `Prop` goal."),
+    lesson: lesson("A `Prop` is a statement that may be true or false. This goal asks for a proposition itself, not yet for a proof that the statement is true."),
     unlocks: {
       shared: ["term.basicPropositions"],
       warrior: { moves: [], text: "New terms: several true and false statements are available as values of type `Prop`." },
@@ -343,7 +354,7 @@ const tutorialEntries = [
     id: 5, depth: 1, chapter: "First Steps", title: "Prove the Truth", topic: "Constructor proofs",
     theorem: "True", context: [],
     intro: "Now the goal asks for a proof of the proposition `True`.",
-    lesson: lesson("`True.intro` is the constructor for `True`: it directly builds a proof of that proposition.", "Choose `exact`, then select the constructor `True.intro` to close the goal."),
+    lesson: lesson("`True.intro` is the constructor for `True`: it directly builds a proof of that proposition."),
     unlocks: {
       shared: ["catalogue.trueIntro"],
       warrior: { moves: [], text: "New catalogue term: `True.intro` constructs a proof of `True`." },
@@ -362,7 +373,7 @@ const existingLevelEntries = [
     intro: "The environment lists the declarations and hypotheses currently available to you.",
     // Intended Warrior term (shortest lesson route): `hp`.
     // Intended Mage moves (shortest lesson route): `exact hp`.
-    lesson: lesson("The environment lists available declarations and hypotheses. An entry `hp : P` is already a proof of `P`, so the term `hp` can fill any hole expecting that type.", "The environment lists available declarations and hypotheses. The `exact` tactic closes the current goal whenever the supplied term has exactly the required type."),
+    lesson: lesson("The environment lists available declarations and hypotheses. An entry `hp : P` is already a proof of `P`, so the term `hp` can fill any hole expecting that type."),
     unlocks: {
       warrior: { moves: ["term.context"], text: "New moves: choose any environment term whose type matches the focused hole." },
       mage: { moves: ["tactic.exact"], text: "New move: `exact □` opens a term-selection view and closes the goal when the chosen term has the required type." },
@@ -377,7 +388,7 @@ const existingLevelEntries = [
     intro: "A proposition is a type, and a proof is a term inhabiting that type.",
     // Intended Warrior term (shortest lesson route): `fun hP => hP`.
     // Intended Mage moves (shortest lesson route): `intro hP → exact hP`.
-    lesson: lesson("A function term such as `fun hP => ...` turns an implication into a proof body where its premise is available under the chosen name.", "The `intro hP` tactic changes an implication goal into its conclusion and adds the premise to the environment under the chosen name."),
+    lesson: lesson("To prove an implication, assume its premise and construct a proof of its conclusion using that assumption."),
     unlocks: {
       warrior: { moves: ["term.lambda"], text: "New move: `fun x => □` introduces a suitably named variable when the hole expects a function." },
       mage: { moves: ["tactic.intro"], text: "New move: `intro x` moves a function premise into the environment using a suitable name." },
@@ -392,7 +403,7 @@ const existingLevelEntries = [
     intro: "Arrows associate to the right, so this theorem accepts two proofs in sequence.",
     // Intended Warrior term (shortest lesson route): `fun hP hQ => hP`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hQ → exact hP`.
-    lesson: lesson("Because implication arrows associate to the right, nested function terms introduce one premise for each successive arrow.", "Repeated `intro` tactics peel implication goals from left to right, adding one local hypothesis at a time."),
+    lesson: lesson("Because implication arrows associate to the right, proving a chain of implications introduces one premise at a time."),
     warrior: route(["fun hP => □", "fun hQ => □", "hP"], ["P → Q → P", "Q → P", "P"], "fun hP hQ => hP"),
     mage: route(["intro hP", "intro hQ", "exact hP"], ["P → Q → P", "Q → P", "P"], "by\n  intro hP\n  intro hQ\n  exact hP"),
     monster: monster("Grix the Hoarder", "It keeps the first treasure and ignores the second.", "monsters.png", 1, 46, 70),
@@ -403,7 +414,7 @@ const existingLevelEntries = [
     intro: "A proof of an implication behaves like a function from proofs to proofs.",
     // Intended Warrior term (shortest lesson route): `fun hP hPQ => hPQ hP`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hPQ → apply hPQ → exact hP`.
-    lesson: lesson("A proof of `A → B` behaves like a function: applying it to a proof of `A` produces a proof of `B`. Metavariables such as `?0` stand for types that have not yet been determined and are resolved when later choices provide enough information.", "The `apply` tactic works backward from a proof whose conclusion matches the goal, replacing that goal with the proof's required premises. Metavariables such as `?0` stand for types that have not yet been determined and are resolved when later choices provide enough information."),
+    lesson: lesson("A proof of `A → B` behaves like a function: applying it to a proof of `A` produces a proof of `B`. Metavariables such as `?0` stand for types that have not yet been determined and are resolved when later choices provide enough information."),
     unlocks: {
       warrior: { moves: ["term.application"], text: "New move: `(□ □)` builds an application, then asks for a compatible function and its argument." },
       mage: { moves: ["tactic.apply"], text: "New move: `apply □` asks for a compatible function and creates goals for all of its premises." },
@@ -418,7 +429,7 @@ const existingLevelEntries = [
     intro: "Implications compose just like ordinary functions.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hQR hP => hQR (hPQ hP)`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hQR → intro hP → apply hQR → apply hPQ → exact hP`.
-    lesson: lesson("Function applications can be nested, allowing the output type of one implication to become the input type of the next.", "Repeated `apply` tactics follow a chain of implications backward, exposing each intermediate premise as a new goal."),
+    lesson: lesson("Function applications can be nested, allowing the output type of one implication to become the input type of the next."),
     warrior: route(["fun hPQ => □", "fun hQR => □", "fun hP => □", "hQR (hPQ hP)"], ["(P → Q) → (Q → R) → P → R", "(Q → R) → P → R", "P → R", "R"], "fun hPQ hQR hP => hQR (hPQ hP)"),
     mage: route(["intro hPQ", "intro hQR", "intro hP", "apply hQR", "apply hPQ", "exact hP"], ["(P → Q) → (Q → R) → P → R", "(Q → R) → P → R", "P → R", "R", "Q", "P"], "by\n  intro hPQ hQR hP\n  apply hQR\n  apply hPQ\n  exact hP"),
     monster: monster("Three-Link Wraith", "Three spectral chains bind its victim to the wall.", "monsters.png", 9, 0, 34),
@@ -429,7 +440,7 @@ const existingLevelEntries = [
     intro: "A conjunction packages two proofs together.",
     // Intended Warrior term (shortest lesson route): `And.intro`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hQ → constructor → exact hP → exact hQ`.
-    lesson: lesson("`And.intro` builds a conjunction from one proof of its left side and one proof of its right side.", "On a conjunction goal, `constructor` creates separate goals for the left and right components."),
+    lesson: lesson("A proof of a conjunction contains one proof of its left side and one proof of its right side."),
     unlocks: {
       warrior: { moves: ["catalogue.andIntro"], text: "New catalogue term: `And.intro` is a function that accepts proofs of both sides of a conjunction; use ordinary application to supply them." },
       mage: { moves: ["tactic.constructor"], text: "New move: `constructor` creates one goal for each component of a constructor-shaped target." },
@@ -444,7 +455,7 @@ const existingLevelEntries = [
     intro: "A conjunction's projections retrieve the proofs stored inside it.",
     // Intended Warrior term (shortest lesson route): `And.left`.
     // Intended Mage moves (shortest lesson route): `intro h → apply □ → And.left → exact □ → h`.
-    lesson: lesson("`And.left` is a function that accepts evidence of a conjunction and returns the evidence stored on its left side.", "`And.left` can be supplied to `apply`, turning a left-component goal into a goal for the whole conjunction."),
+    lesson: lesson("`And.left` is a function that accepts evidence of a conjunction and returns the evidence stored on its left side."),
     unlocks: {
       shared: ["catalogue.andLeft"],
       warrior: { moves: [], text: "New catalogue term: `And.left` is a function from a conjunction proof to its left component, so it can be used through application." },
@@ -459,7 +470,7 @@ const existingLevelEntries = [
     intro: "Conjunctions can be rebuilt with their components reversed.",
     // Intended Warrior term (shortest lesson route): `fun h => And.intro h.right h.left`.
     // Intended Mage moves (shortest lesson route): `intro h → constructor → exact □ → h.right → exact □ → h.left`.
-    lesson: lesson("Lean's dot notation can write `value.function` when the value is the function's first explicit argument. Thus `h.left` means `And.left h`, while `h.right` means `And.right h`.", "Lean's dot notation can write `value.function` when the value is the function's first explicit argument. Thus `h.left` means `And.left h`; after `constructor`, these terms can provide the matching components."),
+    lesson: lesson("Lean's dot notation can write `value.function` when the value is the function's first explicit argument. Thus `h.left` means `And.left h`, while `h.right` means `And.right h`."),
     unlocks: {
       shared: ["catalogue.andRight", "term.dot"],
       warrior: { moves: [], text: "New move: `□.□` builds projection notation such as `h.left` and `h.right`; equivalence proofs later add `h.mp` and `h.mpr`." },
@@ -474,7 +485,7 @@ const existingLevelEntries = [
     intro: "A disjunction is proved by providing evidence for either one of its alternatives.",
     // Intended Warrior term (shortest lesson route): `Or.inl`.
     // Intended Mage moves (shortest lesson route): `intro hP → left → exact hP`.
-    lesson: lesson("`Or.inl` and `Or.inr` embed evidence into the left or right alternative of a disjunction.", "The `left` and `right` tactics select which alternative of a disjunction will be proved."),
+    lesson: lesson("A proof of a disjunction supplies evidence for either its left alternative or its right alternative."),
     unlocks: {
       warrior: { moves: ["catalogue.orIntro"], text: "New catalogue terms: `Or.inl` and `Or.inr` are functions that embed evidence into either side of a disjunction." },
       mage: { moves: ["tactic.orSides"], text: "New moves: `left` and `right` select a side of a disjunction goal." },
@@ -489,7 +500,7 @@ const existingLevelEntries = [
     intro: "Using a disjunction requires handling both possible forms of evidence.",
     // Intended Warrior term (shortest lesson route): `fun hPR hQR h => Or.elim h hPR hQR`.
     // Intended Mage moves: `intro hPR → intro hQR → intro h → cases □ → h → exact hPR hP → exact hQR hQ`.
-    lesson: lesson("`Or.elim` first accepts evidence of a disjunction, then a result-producing function for each possible alternative.", "The `cases` tactic splits a disjunction hypothesis into branches, adding the corresponding alternative to each branch's environment."),
+    lesson: lesson("Using a disjunction requires handling both alternatives and producing the same result from either one."),
     unlocks: {
       warrior: { moves: ["catalogue.orElim"], text: "New catalogue term: `Or.elim` is a function accepting disjunction evidence and one result-producing function for each alternative." },
       mage: { moves: ["tactic.cases"], text: "New move: `cases h` creates one branch for each possible form of disjunction evidence." },
@@ -507,7 +518,7 @@ const existingLevelEntries = [
     intro: "False has no constructors, so evidence for it can eliminate any goal.",
     // Intended Warrior term (shortest lesson route): `False.elim`.
     // Intended Mage moves (shortest lesson route): `intro hFalse → exfalso → exact hFalse`.
-    lesson: lesson("`False.elim` converts a proof of `False` into a proof of any proposition, reflecting that an impossible case has no inhabitants.", "A term produced by `False.elim` has whatever target type the current impossible branch requires."),
+    lesson: lesson("A proof of `False` can produce a proof of any proposition, reflecting that an impossible case has no inhabitants."),
     unlocks: {
       warrior: { moves: ["catalogue.falseElim"], text: "New catalogue term: `False.elim` is a function from `False` to any required proposition." },
       mage: { moves: ["tactic.exfalso"], text: "New move: `exfalso` changes the current goal to `False`, whose evidence can produce any proposition." },
@@ -522,7 +533,7 @@ const existingLevelEntries = [
     intro: "A biconditional packages implications in both directions.",
     // Intended Warrior term (shortest lesson route): `Iff.intro`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hQP → constructor → exact hPQ → exact hQP`.
-    lesson: lesson("`Iff.intro` builds an equivalence from implications in both the forward and backward directions.", "On an equivalence goal, `constructor` creates one goal for each direction of the equivalence."),
+    lesson: lesson("A proof of an equivalence contains implications in both the forward and backward directions."),
     unlocks: {
       warrior: { moves: ["catalogue.iffIntro"], text: "New catalogue term: `Iff.intro` is a function accepting proofs of both directions of an equivalence." },
     },
@@ -536,7 +547,7 @@ const existingLevelEntries = [
     intro: "Each direction of an equivalence can be projected and applied.",
     // Intended Warrior term (shortest lesson route): `Iff.mp`.
     // Intended Mage moves (shortest lesson route): `intro hIff → intro hP → apply hIff.mp → exact hP`.
-    lesson: lesson("An equivalence proof contains two functions: `.mp` applies the forward direction and `.mpr` applies the backward direction.", "The `.mp` and `.mpr` projections of an equivalence may be used with tactics just like other implication proofs."),
+    lesson: lesson("An equivalence proof contains two functions: `.mp` applies the forward direction and `.mpr` applies the backward direction."),
     unlocks: {
       shared: ["catalogue.iffProjection"],
       warrior: { moves: [], text: "New moves: `.mp` and `.mpr` project the forward and backward functions from an equivalence." },
@@ -551,7 +562,7 @@ const existingLevelEntries = [
     intro: "Negation `¬P` is definitionally the function type `P → False`.",
     // Intended Warrior term (shortest lesson route): `fun h => h.right h.left`.
     // Intended Mage moves (shortest lesson route): `intro h → apply h.right → exact h.left`.
-    lesson: lesson("Negation `¬P` is notation for the function type `P → False`, so a negative proof can be applied to positive evidence.", "A projected negated hypothesis can be supplied to `apply`, changing a `False` goal into a goal for the matching positive evidence."),
+    lesson: lesson("Negation `¬P` is notation for the function type `P → False`, so a negative proof can be applied to positive evidence."),
     warrior: route(["fun h => □", "h.right h.left"], ["P ∧ ¬P → False", "False"], "fun h => h.right h.left"),
     mage: route(["intro h", "apply □", "h.right", "exact □", "h.left"], ["P ∧ ¬P → False", "False", "(? → False)", "P", "P"], "by\n  intro h\n  apply h.right\n  exact h.left"),
     monster: monster("Boneplate Beetle", "Its shell bears two mutually impossible sigils.", "monsters-2.png", 2, 0, 34),
@@ -562,7 +573,7 @@ const existingLevelEntries = [
     intro: "Contraposition converts a route from `P` to `Q` into a route from `¬Q` to `¬P`.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hnQ hP => hnQ (hPQ hP)`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hnQ → intro hP → apply hnQ → apply hPQ → exact hP`.
-    lesson: lesson("Constructing a negation means constructing a function whose assumed input leads to `False`; implication proofs may be composed inside that function.", "Introducing a negation goal adds its positive proposition to the environment and changes the goal to `False`."),
+    lesson: lesson("Constructing a negation means constructing a function whose assumed input leads to `False`; implication proofs may be composed inside that function."),
     warrior: route(["fun hPQ => □", "fun hnQ => □", "fun hP => □", "hnQ (hPQ hP)"], ["(P → Q) → ¬Q → ¬P", "¬Q → ¬P", "¬P", "False"], "fun hPQ hnQ hP => hnQ (hPQ hP)"),
     mage: route(["intro hPQ", "intro hnQ", "intro hP", "apply hnQ", "apply hPQ", "exact hP"], ["(P → Q) → ¬Q → ¬P", "¬Q → ¬P", "¬P", "False", "Q", "P"], "by\n  intro hPQ hnQ hP\n  apply hnQ\n  apply hPQ\n  exact hP"),
     monster: monster("Raven Contrarian", "Every path toward it becomes a path away.", "monsters-2.png", 3, 0, 34),
@@ -573,7 +584,7 @@ const existingLevelEntries = [
     intro: "To deny a disjunction constructively, deny each alternative separately.",
     // Intended Warrior term (shortest lesson route): `fun hn => And.intro (fun hP => hn (Or.inl hP)) (fun hQ => hn (Or.inr hQ))`.
     // Intended Mage moves (shortest lesson route): `intro hn → constructor → intro hP → apply hn → left → exact hP → intro hQ → apply hn → right → exact hQ`.
-    lesson: lesson("Compound logical proofs can be assembled by nesting previously learned constructors, functions, and eliminators according to the target's shape.", "When `constructor` produces negation goals, each branch can introduce its own local assumption before deriving a contradiction."),
+    lesson: lesson("Compound logical proofs can be assembled by nesting previously learned constructors, functions, and eliminators according to the target's shape."),
     warrior: route(["fun hn => □", "And.intro □ □", "fun hP => hn (Or.inl hP)", "fun hQ => hn (Or.inr hQ)"], ["¬(P ∨ Q) → ¬P ∧ ¬Q", "¬P ∧ ¬Q", "¬P", "¬Q"], "fun hn => And.intro (fun hP => hn (Or.inl hP)) (fun hQ => hn (Or.inr hQ))"),
     mage: route(["intro hn", "constructor", "intro hP", "apply hn", "left", "exact hP", "intro hQ", "apply hn", "right", "exact hQ"], ["¬(P ∨ Q) → ¬P ∧ ¬Q", "¬P ∧ ¬Q", "¬P", "False", "P ∨ Q", "P", "¬Q", "False", "P ∨ Q", "Q"], "by\n  intro hn\n  constructor\n  · intro hP\n    apply hn\n    left\n    exact hP\n  · intro hQ\n    apply hn\n    right\n    exact hQ", {
       6: ["hn : ¬(P ∨ Q)"],
@@ -589,7 +600,7 @@ const existingLevelEntries = [
     intro: "Curried assumptions can be packaged when a function expects a conjunction.",
     // Intended Warrior term (shortest lesson route): `fun h hP hQ => h (And.intro hP hQ)`.
     // Intended Mage moves (shortest lesson route): `intro h → intro hP → intro hQ → apply h → constructor → exact hP → exact hQ`.
-    lesson: lesson("A constructed proof term can be supplied directly as the argument to another proof function, without first giving it a name.", "If `apply` exposes a conjunction as a premise, that new goal can be decomposed with `constructor` like any other conjunction goal."),
+    lesson: lesson("A constructed proof term can be supplied directly as the argument to another proof function, without first giving it a name."),
     warrior: route(["fun h => □", "fun hP => □", "fun hQ => □", "h (And.intro hP hQ)"], ["(P ∧ Q → R) → P → Q → R", "P → Q → R", "Q → R", "R"], "fun h hP hQ => h (And.intro hP hQ)"),
     mage: route(["intro h", "intro hP", "intro hQ", "apply h", "constructor", "exact hP", "exact hQ"], ["(P ∧ Q → R) → P → Q → R", "P → Q → R", "Q → R", "R", "P ∧ Q", "P", "Q"], "by\n  intro h hP hQ\n  apply h\n  constructor\n  · exact hP\n  · exact hQ"),
     monster: monster("Ice Golem", "Two frozen shards combine into its single heart.", "monsters-2.png", 5, 0, 34),
@@ -600,7 +611,7 @@ const existingLevelEntries = [
     intro: "A disjunction with `False` contains useful evidence only in its other branch.",
     // Intended Warrior term (shortest lesson route): `fun h => Or.elim h (fun hP => hP) False.elim`.
     // Intended Mage moves: `intro h → cases □ → h → exact hP → exfalso → exact hFalse`.
-    lesson: lesson("Different branches of an eliminator may be handled differently; a branch carrying `False` can produce the common result through `False.elim`.", "In the impossible branch, `exfalso` changes the goal to `False`, allowing the branch's `False` hypothesis to close it directly."),
+    lesson: lesson("Different branches may be handled differently; a branch carrying `False` can produce the common result because an impossible case implies any proposition."),
     warrior: route(["fun h => □", "Or.elim h (fun hP => hP) False.elim"], ["P ∨ False → P", "P"], "fun h => Or.elim h (fun hP => hP) False.elim"),
     mage: route(["intro h", "cases □", "h", "exact hP", "exfalso", "exact hFalse"], ["P ∨ False → P", "P", "P", "P", "P", "False"], "by\n  intro h\n  cases h with\n  | inl hP => exact hP\n  | inr hFalse =>\n      exfalso\n      exact hFalse", {
       2: ["hP : P"],
@@ -616,7 +627,7 @@ const existingLevelEntries = [
     intro: "Double-negation elimination requires classical reasoning in Lean.",
     // Intended Warrior term (shortest lesson route): `Classical.byContradiction`.
     // Intended Mage moves (shortest lesson route): `intro hnnP → by_contra hnP → exact hnnP hnP`.
-    lesson: lesson("`Classical.byContradiction` proves a proposition by accepting a function that turns its negation into `False`.", "The classical tactic `by_contra` replaces a proposition goal with `False` and adds the negation of the original goal to the environment."),
+    lesson: lesson("A classical proof by contradiction assumes the goal is false and derives `False` from that assumption."),
     unlocks: {
       warrior: { moves: ["catalogue.byContradiction"], text: "New catalogue term: `Classical.byContradiction` accepts a function from the goal's negation to `False`." },
       mage: { moves: ["tactic.byContra"], text: "New move: `by_contra h` adds the negated goal and changes the target to `False`." },
@@ -631,7 +642,7 @@ const existingLevelEntries = [
     intro: "A universal statement is a dependent function accepting an arbitrary value.",
     // Intended Warrior term (shortest lesson route): `Eq.refl`.
     // Intended Mage moves (shortest lesson route): `intro x → rfl`.
-    lesson: lesson("A proof of `∀ x, P x` is a dependent function that accepts an arbitrary value `x` and returns evidence of `P x`. `Eq.refl x` is the canonical proof that `x = x`.", "The `intro` tactic also introduces universally quantified values. The `rfl` tactic proves equality goals whose two sides are definitionally the same."),
+    lesson: lesson("A proof of `∀ x, P x` accepts an arbitrary value `x` and returns evidence of `P x`. Reflexivity proves the resulting equality `x = x`."),
     unlocks: {
       warrior: { moves: ["catalogue.eqRefl"], text: "New catalogue term: `Eq.refl` accepts a value and proves that it equals itself." },
       mage: { moves: ["tactic.rfl"], text: "New move: `rfl` closes equality goals whose two sides are definitionally equal." },
@@ -646,7 +657,7 @@ const existingLevelEntries = [
     intro: "A universal proof can be applied to any concrete value of the quantified type.",
     // Intended Warrior term (shortest lesson route): `fun hAll => hAll a`.
     // Intended Mage moves (shortest lesson route): `intro hAll → exact hAll a`.
-    lesson: lesson("A universally quantified proof behaves like a function and can be applied to any value of the quantified type.", "Supplying a value to a universal hypothesis specializes it, producing evidence for that particular value."),
+    lesson: lesson("A universally quantified proof behaves like a function and can be applied to any value of the quantified type."),
     warrior: route(["fun hAll => □", "hAll a"], ["(∀ x, P x) → P a", "P a"], "fun hAll => hAll a"),
     mage: route(["intro hAll", "exact hAll a"], ["(∀ x, P x) → P a", "P a"], "by\n  intro hAll\n  exact hAll a"),
     monster: monster("Spectral Knight", "Its universal oath applies to every challenger.", "monsters-2.png", 9, 0, 34),
@@ -657,7 +668,7 @@ const existingLevelEntries = [
     intro: "Pointwise implications can transform a universal family of proofs.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hP x => hPQ x (hP x)`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hP → intro x → apply hPQ x → exact hP x`.
-    lesson: lesson("Quantified implications can be specialized at an arbitrary value and then used as ordinary proof functions.", "A tactic argument may specialize a universal hypothesis before `apply` uses its resulting implication."),
+    lesson: lesson("Quantified implications can be specialized at an arbitrary value and then used as ordinary proof functions."),
     warrior: route(["fun hPQ => □", "fun hP => □", "fun x => □", "hPQ x (hP x)"], ["(∀ x, P x → Q x) → (∀ x, P x) → ∀ x, Q x", "(∀ x, P x) → ∀ x, Q x", "∀ x, Q x", "Q x"], "fun hPQ hP x => hPQ x (hP x)"),
     mage: route(["intro hPQ", "intro hP", "intro x", "apply hPQ x", "exact hP x"], ["(∀ x, P x → Q x) → (∀ x, P x) → ∀ x, Q x", "(∀ x, P x) → ∀ x, Q x", "∀ x, Q x", "Q x", "P x"], "by\n  intro hPQ hP x\n  apply hPQ x\n  exact hP x"),
     monster: monster("Cinder Salamander", "Its rule spreads from one scale to every scale.", "monsters-3.png", 0, 0, 34),
@@ -668,7 +679,7 @@ const existingLevelEntries = [
     intro: "An existential proof contains a witness together with evidence about it.",
     // Intended Warrior term (shortest lesson route): `fun hPa => Exists.intro a hPa`.
     // Intended Mage moves (shortest lesson route): `intro hPa → use a → exact hPa`.
-    lesson: lesson("`Exists.intro` builds an existential proof by packaging a witness together with evidence that the witness has the required property.", "The `use` tactic chooses a witness for an existential goal and leaves its required property as the new goal."),
+    lesson: lesson("An existential proof packages a witness together with evidence that the witness has the required property."),
     unlocks: {
       warrior: { moves: ["catalogue.existsIntro"], text: "New catalogue term: `Exists.intro` accepts a witness and then evidence about that witness." },
       mage: { moves: ["tactic.use"], text: "New move: `use □` chooses a witness and leaves its required property as the goal." },
@@ -683,7 +694,7 @@ const existingLevelEntries = [
     intro: "Using an existential means reasoning from an arbitrary hidden witness and its evidence.",
     // Intended Warrior term (shortest lesson route): `Exists.elim`.
     // Intended Mage moves: `intro hEx → intro hRule → rcases □ → hEx → exact hRule x hx`.
-    lesson: lesson("`Exists.elim` consumes an existential proof by providing its hidden witness and evidence to a function that handles any such pair.", "The `rcases` tactic unpacks structured evidence, introducing names for an existential witness and its accompanying proof."),
+    lesson: lesson("Using an existential proof reveals its hidden witness and the evidence that this witness has the required property."),
     unlocks: {
       warrior: { moves: ["catalogue.existsElim"], text: "New catalogue term: `Exists.elim` accepts existential evidence and a function handling any witness." },
       mage: { moves: ["tactic.rcases"], text: "New move: `rcases h with ⟨x, hx⟩` unpacks a witness and its evidence." },
@@ -700,7 +711,7 @@ const existingLevelEntries = [
     intro: "Existential witnesses may be concrete data such as a natural number.",
     // Intended Warrior term (shortest lesson route): `Exists.intro 0 (Eq.refl 0)`.
     // Intended Mage moves (shortest lesson route): `use 0 → rfl`.
-    lesson: lesson("An existential witness may be a concrete value; after choosing it, the remaining term must prove the property specialized to that value.", "The `use` tactic accepts concrete expressions as witnesses, and later tactics operate on the resulting specialized goal."),
+    lesson: lesson("An existential witness may be a concrete value; after choosing it, the remaining term must prove the property specialized to that value."),
     unlocks: {
       shared: ["term.naturalNumber"],
       warrior: { moves: [], text: "New move: `natural number` accepts one or more decimal digits and inserts the resulting `Nat` term into the focused hole." },
@@ -716,7 +727,7 @@ const existingLevelEntries = [
     intro: "Equality is symmetric: evidence can be reversed.",
     // Intended Warrior term (shortest lesson route): `Eq.symm`.
     // Intended Mage moves (shortest lesson route): `intro h → symm → exact h`.
-    lesson: lesson("`Eq.symm` transforms evidence of `a = b` into evidence of `b = a`.", "The `symm` tactic reverses the two sides of an equality goal."),
+    lesson: lesson("Equality is symmetric: evidence of `a = b` can be transformed into evidence of `b = a`."),
     unlocks: {
       warrior: { moves: ["catalogue.eqSymm"], text: "New catalogue term: `Eq.symm` accepts equality evidence and reverses it." },
       mage: { moves: ["tactic.symm"], text: "New move: `symm` reverses an equality goal." },
@@ -731,7 +742,7 @@ const existingLevelEntries = [
     intro: "Equality evidence composes through an intermediate value.",
     // Intended Warrior term (shortest lesson route): `Eq.trans`.
     // Intended Mage moves: `intro hab → intro hbc → trans □ → b → exact hab → exact hbc`.
-    lesson: lesson("`Eq.trans` composes two equalities that share a middle expression.", "The `trans` tactic chooses an intermediate expression and splits an equality goal into the two equalities on either side of it."),
+    lesson: lesson("Equality is transitive: two equalities that share a middle expression can be composed into one equality."),
     unlocks: {
       warrior: { moves: ["catalogue.eqTrans"], text: "New catalogue term: `Eq.trans` accepts two equalities that share a middle term." },
       mage: { moves: ["tactic.trans"], text: "New move: `trans x` splits an equality through a chosen middle expression." },
@@ -746,7 +757,7 @@ const existingLevelEntries = [
     intro: "Equal inputs remain equal when passed through the same function.",
     // Intended Warrior term (shortest lesson route): `fun h => congrArg f h`.
     // Intended Mage moves (shortest lesson route): `intro h → congr → exact h`.
-    lesson: lesson("`congrArg` transports equality through a function: equal inputs produce equal outputs under the same function.", "The `congr` tactic reduces equality between matching function applications to equality between their corresponding arguments."),
+    lesson: lesson("Congruence transports equality through a function: equal inputs produce equal outputs under the same function."),
     unlocks: {
       warrior: { moves: ["catalogue.congrArg"], text: "New catalogue term: `congrArg` accepts a function and equality evidence, transporting the equality through that function." },
       mage: { moves: ["tactic.congr"], text: "New move: `congr` reduces equality between matching applications to equality between their arguments." },
@@ -761,7 +772,7 @@ const existingLevelEntries = [
     intro: "Equality can rewrite a goal from one equal value to another.",
     // Intended Warrior term (shortest lesson route): `fun hab hPa => Eq.mp (congrArg P hab) hPa`.
     // Intended Mage moves: `intro hab → intro hPa → rw [← □] → hab → exact hPa`.
-    lesson: lesson("Equality can transport evidence between propositions obtained by substituting equal values; `Eq.mp` performs that transport across an equality of types.", "The `rw` tactic rewrites matching expressions in a chosen direction. Using `←` rewrites from the equality's right side to its left while keeping the original variables and equality available."),
+    lesson: lesson("Equality can transport evidence between propositions obtained by substituting equal values."),
     unlocks: {
       warrior: { moves: ["catalogue.eqMp"], text: "New catalogue term: `Eq.mp` accepts an equality of propositions and evidence to transport across it." },
       mage: { moves: ["tactic.rewrite"], text: "New moves: `rw [h]` and `rw [← h]` rewrite with equality evidence in either direction." },
@@ -776,7 +787,7 @@ const existingLevelEntries = [
     intro: "Long implication chains are ordinary function composition viewed as proof search.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hQR hRS hP => hRS (hQR (hPQ hP))`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hQR → intro hRS → intro hP → apply hRS → apply hQR → apply hPQ → exact hP`.
-    lesson: lesson("Long implication chains use the same application rule repeatedly, with intermediate proof terms nested from the inside outward.", "On a long chain, repeated `apply` continues working backward through one required premise at a time."),
+    lesson: lesson("Long implication chains use the same application rule repeatedly, with intermediate proof terms nested from the inside outward."),
     warrior: route(["fun hPQ => □", "fun hQR => □", "fun hRS => □", "fun hP => □", "hRS (hQR (hPQ hP))"], ["(P → Q) → (Q → R) → (R → S) → P → S", "(Q → R) → (R → S) → P → S", "(R → S) → P → S", "P → S", "S"], "fun hPQ hQR hRS hP => hRS (hQR (hPQ hP))"),
     mage: route(["intro hPQ", "intro hQR", "intro hRS", "intro hP", "apply hRS", "apply hQR", "apply hPQ", "exact hP"], ["(P → Q) → (Q → R) → (R → S) → P → S", "(Q → R) → (R → S) → P → S", "(R → S) → P → S", "P → S", "S", "R", "Q", "P"], "by\n  intro hPQ hQR hRS hP\n  apply hRS\n  apply hQR\n  apply hPQ\n  exact hP"),
     monster: monster("Three-Headed Hound", "Each throat guards the premise of the next.", "monsters-3.png", 8, 0, 34),
@@ -787,7 +798,7 @@ const existingLevelEntries = [
     intro: "Nested conjunctions are trees whose constructors determine their shape.",
     // Intended Warrior term (shortest lesson route): `fun hP hQ hR => And.intro hP (And.intro hQ hR)`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hQ → intro hR → constructor → exact hP → constructor → exact hQ → exact hR`.
-    lesson: lesson("Nested conjunctions are tree-shaped proof data, so each layer requires its own `And.intro` constructor.", "Each `constructor` tactic handles one outer layer of a nested conjunction before its component goals are considered."),
+    lesson: lesson("Nested conjunctions are tree-shaped proof data, so each layer requires proofs of both of its components."),
     warrior: route(["fun hP => □", "fun hQ => □", "fun hR => □", "And.intro hP (And.intro hQ hR)"], ["P → Q → R → P ∧ (Q ∧ R)", "Q → R → P ∧ (Q ∧ R)", "R → P ∧ (Q ∧ R)", "P ∧ (Q ∧ R)"], "fun hP hQ hR => And.intro hP (And.intro hQ hR)"),
     mage: route(["intro hP", "intro hQ", "intro hR", "constructor", "exact hP", "constructor", "exact hQ", "exact hR"], ["P → Q → R → P ∧ (Q ∧ R)", "Q → R → P ∧ (Q ∧ R)", "R → P ∧ (Q ∧ R)", "P ∧ (Q ∧ R)", "P", "Q ∧ R", "Q", "R"], "by\n  intro hP hQ hR\n  constructor\n  · exact hP\n  · constructor\n    · exact hQ\n    · exact hR"),
     monster: monster("White Dragonling", "Three nested scales protect its small bright heart.", "monsters-3.png", 9, 92, 126),
@@ -798,7 +809,7 @@ const existingLevelEntries = [
     intro: "Nested disjunctions require nested elimination, with one branch for every possible constructor.",
     // Intended Warrior term (shortest lesson route): `fun h => Or.elim h (fun hpq => Or.elim hpq (fun hP => Or.inr (Or.inr hP)) (fun hQ => Or.inr (Or.inl hQ))) Or.inl`.
     // Intended Mage moves: `intro h → cases □ → h → cases □ → hPQ → right → right → exact hP → right → left → exact hQ → left → exact hR`.
-    lesson: lesson("Nested disjunctions can be eliminated one layer at a time, with every possible constructor receiving its own result-producing branch.", "The `cases` tactic can be used again inside a branch when that branch hypothesis is itself a disjunction."),
+    lesson: lesson("Nested disjunctions can be eliminated one layer at a time, with every possible constructor receiving its own result-producing branch."),
     warrior: route(["fun h => □", "Or.elim h □ Or.inl", "fun hpq => Or.elim hpq □ □", "fun hP => Or.inr (Or.inr hP)", "fun hQ => Or.inr (Or.inl hQ)"], ["(P ∨ Q) ∨ R → R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P"], "fun h => Or.elim h (fun hpq => Or.elim hpq (fun hP => Or.inr (Or.inr hP)) (fun hQ => Or.inr (Or.inl hQ))) Or.inl"),
     mage: route(["intro h", "cases □", "h", "cases □", "hPQ", "right", "right", "exact hP", "right", "left", "exact hQ", "left", "exact hR"], ["(P ∨ Q) ∨ R → R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P", "R ∨ Q ∨ P", "Q ∨ P", "P", "R ∨ Q ∨ P", "Q ∨ P", "Q", "R ∨ Q ∨ P", "R"], "by\n  intro h\n  cases h with\n  | inl hPQ =>\n    cases hPQ with\n    | inl hP =>\n      right\n      right\n      exact hP\n    | inr hQ =>\n      right\n      left\n      exact hQ\n  | inr hR =>\n    left\n    exact hR", {
       2: ["hPQ : P ∨ Q"],
@@ -819,7 +830,7 @@ const existingLevelEntries = [
     intro: "An equivalence can replace a proposition even when it occurs inside a larger expression.",
     // Intended Warrior term (shortest lesson route): `fun h h2 => Or.elim h2 (fun hP => Or.inl (h.mp hP)) Or.inr`.
     // Intended Mage moves: `intro h → intro h2 → rw [← □] → h → exact h2`.
-    lesson: lesson("An equivalence can transport one branch of a larger proposition while the surrounding structure is preserved.", "The previously learned `rw` tactic also accepts equivalence evidence and can rewrite a matching proposition inside a larger goal; `←` still requests the reverse direction."),
+    lesson: lesson("An equivalence can transport one branch of a larger proposition while the surrounding structure is preserved."),
     warrior: route(["fun h => □", "fun h2 => □", "Or.elim h2 (fun hP => Or.inl (h.mp hP)) Or.inr"], ["(P ↔ Q) → P ∨ R → Q ∨ R", "P ∨ R → Q ∨ R", "Q ∨ R"], "fun h h2 => Or.elim h2 (fun hP => Or.inl (h.mp hP)) Or.inr"),
     mage: route(["intro h", "intro h2", "rw [← □]", "h", "exact h2"], ["(P ↔ Q) → P ∨ R → Q ∨ R", "P ∨ R → Q ∨ R", "Q ∨ R", "Q ∨ R", "P ∨ R"], "by\n  intro h h2\n  rw [← h]\n  exact h2"),
     monster: monster("Azure Hoarder", "Its stolen rune rewrites the door behind it.", "monsters.png", 1, 92, 126),
@@ -830,7 +841,7 @@ const existingLevelEntries = [
     intro: "An equality can eliminate one variable by replacing it everywhere with its equal value.",
     // Intended Warrior term (shortest lesson route): `fun h => congrArg g (congrArg f h)`.
     // Intended Mage moves: `intro h → subst □ → b → rfl`.
-    lesson: lesson("Congruence can be composed to transport equality through several surrounding functions.", "Unlike `rw`, which performs a directed rewrite while preserving the declarations, `subst b` finds an equality involving `b`, replaces `b` throughout the goal and context, and removes both `b` and the equality."),
+    lesson: lesson("Congruence can be composed to transport equality through several surrounding functions."),
     unlocks: { mage: { moves: ["tactic.subst"], text: "New move: `subst x` eliminates a variable using an equality and rewrites the entire goal and environment." } },
     warrior: route(["fun h => □", "congrArg g (congrArg f h)"], ["a = b → g (f a) = g (f b)", "g (f a) = g (f b)"], "fun h => congrArg g (congrArg f h)"),
     mage: route(["intro h", "subst □", "b", "rfl"], ["a = b → g (f a) = g (f b)", "g (f a) = g (f b)", "g (f a) = g (f b)", "g (f a) = g (f a)"], "by\n  intro h\n  subst b\n  rfl"),
@@ -842,7 +853,7 @@ const existingLevelEntries = [
     intro: "A calculation records intermediate equalities while congruence transports the result through a function.",
     // Intended Warrior term (shortest lesson route): `fun hab hbc => congrArg f (Eq.trans hab hbc)`.
     // Intended Mage moves (shortest lesson route): introduce both equalities, start a calculation through `f b`, and use `congr` in both steps.
-    lesson: lesson("Larger equality proofs can compose transitivity and congruence, using the output of one proof term as input to another.", "A `calc` block presents a chain of intermediate expressions and requires evidence for each adjacent equality in the chain."),
+    lesson: lesson("Larger equality proofs can compose transitivity and congruence, using the output of one proof term as input to another."),
     unlocks: { mage: { moves: ["tactic.calc"], text: "New move: a `calc` step records an intermediate equality and asks for its supporting evidence." } },
     warrior: route(["fun hab => □", "fun hbc => □", "congrArg f (Eq.trans hab hbc)"], ["a = b → b = c → f a = f c", "b = c → f a = f c", "f a = f c"], "fun hab hbc => congrArg f (Eq.trans hab hbc)"),
     mage: route(["intro hab", "intro hbc", "calc … = □ := □", "f b", "congr", "exact hab", "congr", "exact hbc"], ["a = b → b = c → f a = f c", "b = c → f a = f c", "f a = f c", "f a = f c", "f a = f b", "a = b", "f b = f c", "b = c"], "by\n  intro hab hbc\n  calc\n    f a = f b := by\n      congr\n    _ = f c := by\n      congr"),
@@ -854,7 +865,7 @@ const existingLevelEntries = [
     intro: "Classical excluded middle states that every proposition is true or false.",
     // Intended Warrior term (shortest lesson route): `Classical.em P`.
     // Intended Mage moves: `by_cases □ → P → left → exact hP → right → exact hP`.
-    lesson: lesson("`Classical.em P` provides a disjunction expressing that a proposition either holds or does not hold.", "The classical `by_cases` tactic creates two branches: one with evidence for the chosen proposition and one with evidence for its negation."),
+    lesson: lesson("Classical excluded middle states that every proposition either holds or does not hold."),
     unlocks: {
       warrior: { moves: ["catalogue.classicalEm"], text: "New catalogue term: `Classical.em` accepts a proposition and supplies its two alternatives." },
       mage: { moves: ["tactic.byCases"], text: "New move: `by_cases h : P` creates branches for positive and negative evidence." },
@@ -874,7 +885,7 @@ const existingLevelEntries = [
     intro: "Once both `P` and `¬P` are present, the contradiction proves any target.",
     // Intended Warrior term (shortest lesson route): `fun hnP hP => False.elim (hnP hP)`.
     // Intended Mage moves (shortest lesson route): `intro hnP → intro hP → contradiction`.
-    lesson: lesson("When positive and negative evidence for the same proposition are both available, applying the negative proof to the positive one produces `False`.", "The `contradiction` tactic searches the local environment for evidence that cannot consistently coexist."),
+    lesson: lesson("When positive and negative evidence for the same proposition are both available, applying the negative proof to the positive one produces `False`."),
     unlocks: { mage: { moves: ["tactic.contradiction"], text: "New move: `contradiction` closes a goal when the environment contains incompatible evidence." } },
     warrior: route(["fun hnP => □", "fun hP => □", "False.elim (hnP hP)"], ["¬P → P → Q", "P → Q", "Q"], "fun hnP hP => False.elim (hnP hP)"),
     mage: route(["intro hnP", "intro hP", "contradiction"], ["¬P → P → Q", "P → Q", "Q"], "by\n  intro hnP hP\n  contradiction"),
@@ -886,7 +897,10 @@ const existingLevelEntries = [
     intro: "Some equalities hold because both sides reduce to the same expression by definition.",
     // Intended Warrior term (shortest lesson route): `Eq.refl`.
     // Intended Mage moves (shortest lesson route): `intro n → rfl`.
-    lesson: lesson("`Eq.refl` can prove equalities whose sides reduce to the same expression by computation, even when they are written differently.", "The `rfl` tactic unfolds definitions as needed and closes an equality when both sides are definitionally equal."),
+    lesson: lesson("Reflexivity proves equalities whose sides reduce to the same expression by computation, even when they are written differently.", {
+      warrior: "The term `Eq.refl` constructs a reflexivity proof.",
+      mage: "The `rfl` tactic asks Lean to close the goal by reflexivity.",
+    }),
     unlocks: {
       completion: ["catalogue.natAddZero"],
       warrior: { moves: [], text: "Completion reward: `Nat.add_zero` records this fact as a reusable catalogue theorem." },
@@ -902,7 +916,7 @@ const existingLevelEntries = [
     intro: "When computation follows a recursive argument, induction mirrors the definition's two cases.",
     // Intended Warrior term (shortest lesson route): `fun n => Nat.rec (motive := fun n => 0 + n = n) (Eq.refl 0) (fun k ih => congrArg Nat.succ ih) n`.
     // Intended Mage moves: introduce and induct on `n`; use `rfl` at zero, then reduce the successor case and prove the reduced argument equality with `ih`.
-    lesson: lesson("`Nat.rec` proves a property of every natural number from a proof at zero and a step that extends the property from one number to its successor.", "The `induction` tactic creates constructor cases and an induction hypothesis. LeanQuest's restricted `simp` performs built-in reductions only: it never uses hypotheses or catalogue theorems, closes a goal made trivial by reduction, and otherwise leaves the reduced goal for explicit tactics."),
+    lesson: lesson("Natural-number induction proves a property from a base case at zero and a step that extends the property from one number to its successor."),
     unlocks: {
       shared: ["catalogue.dataConstructors"],
       completion: ["catalogue.natZeroAdd"],
@@ -922,7 +936,7 @@ const existingLevelEntries = [
     intro: "Natural-number addition is defined by recursion on its second argument.",
     // Intended Warrior term (shortest lesson route): `fun n m => Eq.refl (n + Nat.succ m)`.
     // Intended Mage moves (shortest lesson route): `intro n → intro m → rfl`.
-    lesson: lesson("A recursive definition may compute immediately when its recursive argument is already in constructor form, making reflexivity sufficient.", "The `rfl` tactic performs definitional reduction, so a single recursive computation step does not necessarily require induction."),
+    lesson: lesson("A recursive definition may compute immediately when its recursive argument is already in constructor form, making reflexivity sufficient."),
     unlocks: {
       completion: ["catalogue.natAddSucc"],
       warrior: { moves: [], text: "Completion reward: `Nat.add_succ` records this reduction rule as a reusable catalogue theorem." },
@@ -938,7 +952,7 @@ const existingLevelEntries = [
     intro: "Associativity follows by induction on the recursive final argument.",
     // Intended Warrior term (shortest lesson route): `fun c b a => Nat.rec (motive := fun c => (a + b) + c = a + (b + c)) (Eq.refl ((a + b) + 0)) (fun k ih => congrArg Nat.succ ih) c`.
     // Intended Mage moves: introduce the values, induct on `c`, use `rfl` at zero, then reduce, use congruence, and supply `ih`.
-    lesson: lesson("In an inductive step, the induction hypothesis is ordinary equality evidence and can be transported through surrounding functions with `congrArg`.", "After `induction`, the successor branch may use its induction hypothesis just like any other local hypothesis."),
+    lesson: lesson("In an inductive step, the induction hypothesis is ordinary equality evidence that can be transported through surrounding functions by congruence."),
     unlocks: {
       completion: ["catalogue.natAddAssoc"],
       warrior: { moves: [], text: "Completion reward: `Nat.add_assoc` adds the proved associativity fact to the catalogue." },
@@ -957,7 +971,7 @@ const existingLevelEntries = [
     intro: "Larger developments reuse earlier theorems rather than reconstructing every proof.",
     // Intended Warrior term: induction on `b`, using `Nat.zero_add`, `Nat.succ_add`, and congruence in the two cases.
     // Intended Mage route: introduce both numbers, induct on `b`, reduce each case, and explicitly rewrite with the proved zero fact, `ih`, and `Nat.succ_add`.
-    lesson: lesson("Previously proved theorems can handle the zero case, while `Nat.succ_add` and congruence align the successor case.", "Induction reduces commutativity to the previously proved zero facts and the supporting rule `Nat.succ_add`."),
+    lesson: lesson("Previously proved theorems can handle the zero case, while `Nat.succ_add` and congruence align the successor case."),
     unlocks: {
       shared: ["catalogue.natSuccAdd"],
       completion: ["catalogue.natAddComm"],
@@ -974,7 +988,7 @@ const existingLevelEntries = [
     intro: "Lists have empty and cons constructors, so list induction follows those two shapes.",
     // Intended Warrior term (shortest lesson route): `fun xs => List.rec (motive := fun xs => xs ++ [] = xs) (Eq.refl []) (fun x xs ih => congrArg (List.cons x) ih) xs`.
     // Intended Mage moves: introduce and induct on `xs`; reduce the cons case, then rewrite explicitly with `ih`.
-    lesson: lesson("`List.rec` proves a property for every list from an empty-list proof and a step for extending a list by one element.", "Induction on a list follows its `nil` and `cons` constructors, providing an induction hypothesis about the tail in the `cons` branch."),
+    lesson: lesson("List induction proves a property from an empty-list case and a step for extending a list by one element."),
     unlocks: {
       completion: ["catalogue.listAppendNil"],
       warrior: { moves: [], text: "Completion reward: `List.append_nil` adds the proved empty-append fact to the catalogue." },
@@ -993,7 +1007,7 @@ const existingLevelEntries = [
     intro: "List append is associative, and its reusable theorem accepts three lists.",
     // Intended Warrior term: list induction on `xs`, using reflexivity and congruence for the two constructors.
     // Intended Mage moves: introduce the lists and induct on `xs`; reduce the cons case, then rewrite explicitly with `ih`.
-    lesson: lesson("Append associativity follows the recursive structure of its first list; congruence carries the tail result beneath a shared head.", "Induction on the first list exposes the defining equations of append in both constructor cases."),
+    lesson: lesson("Append associativity follows the recursive structure of its first list; congruence carries the tail result beneath a shared head."),
     unlocks: {
       completion: ["catalogue.listAppendAssoc"],
       warrior: { moves: [], text: "Completion reward: `List.append_assoc` adds the proved associativity fact to the catalogue." },
@@ -1009,7 +1023,7 @@ const existingLevelEntries = [
     intro: "Recursive functions on inductive values often produce equations that simplification can solve.",
     // Intended Warrior term: list induction on `xs`, combining the tail equality with `Nat.succ_add` in the cons case.
     // Intended Mage moves: induct on `xs`, use `simp` only for reductions, and rewrite explicitly with the zero, successor, and induction facts.
-    lesson: lesson("List induction relates the length of an appended tail to the whole list; `Nat.succ_add` aligns the arithmetic in the cons case.", "Restricted `simp` exposes the recursive length and append equations without using facts. The zero theorem, induction hypothesis, and `Nat.succ_add` must then be selected explicitly with `rw`."),
+    lesson: lesson("List induction relates the length of an appended tail to the whole list; `Nat.succ_add` aligns the arithmetic in the cons case."),
     unlocks: {
       completion: ["catalogue.listLengthAppend"],
       warrior: { moves: [], text: "Completion reward: `List.length_append` adds the proved length formula to the catalogue." },
@@ -1025,7 +1039,7 @@ const existingLevelEntries = [
     intro: "The new function `sum` returns zero for `[]` and adds each head to the sum of its tail.",
     // Intended Warrior term (32 catalogue selections; shortest lesson route): introduce `xs` and `ys`, use one `List.rec` on `xs`, then use `Nat.zero_add`, `congrArg`, and `Nat.add_assoc` in its cases; this contains one recursor.
     // Intended Mage moves: induct on `xs`, use `simp` for constructor reduction only, and select the zero, induction, and associativity rewrites explicitly.
-    lesson: lesson("The equations `sum [] = 0` and `sum (x :: xs) = x + sum xs` let a list recursor expose one addition at a time. After Lean checks a theorem, later theorems can use its name as a proof term instead of repeating its proof.", "Restricted `simp` unfolds the defining equations at constructors but uses no facts. Close each branch by explicitly rewriting with `Nat.zero_add`, the induction hypothesis, and `Nat.add_assoc`."),
+    lesson: lesson("The equations `sum [] = 0` and `sum (x :: xs) = x + sum xs` expose one addition at a time. After Lean checks a theorem, later theorems can reuse its name instead of repeating its proof."),
     unlocks: {
       shared: ["catalogue.sum", "catalogue.natAddLemmas"],
       completion: ["catalogue.sumAppend"],
@@ -1042,7 +1056,7 @@ const existingLevelEntries = [
     intro: "`List.Perm xs ys` is evidence that `ys` can be obtained from `xs` without adding or removing elements.",
     // Intended Warrior term (45 catalogue selections; shortest lesson route): introduce the lists and permutation proof, then use one `List.Perm.rec`; its cases use reflexivity, congruence, `Nat.add_left_comm`, and transitivity.
     // Intended Mage moves: induct on `h`, use `simp` only to expose constructor definitions, and handle each equality with explicit hypotheses or named arithmetic rewrites.
-    lesson: lesson("`List.Perm.rec` follows the evidence for an unchanged list, a shared head, a neighboring swap, or a transitive chain. Each case preserves `sum` for a different equality reason. A binder such as `fun {xs} =>` names an implicit value used by a recursor branch.", "Induction can follow a proof object such as `h : List.Perm xs ys`, producing one goal for each way permutation evidence can be built."),
+    lesson: lesson("Induction on permutation evidence follows its four possible forms: an unchanged list, a shared head, a neighboring swap, or a transitive chain. Each case preserves `sum` for a different equality reason."),
     unlocks: {
       shared: ["catalogue.natAddLeftComm"],
       warrior: { moves: ["catalogue.listPermRec"], text: "New catalogue terms: the genuine `List.Perm.rec` eliminator and `Nat.add_left_comm`." },
@@ -1058,7 +1072,7 @@ const existingLevelEntries = [
     intro: "Two entire caravans may exchange places without changing the combined weight of their cargo.",
     // Intended Warrior term (25 catalogue selections; shortest lesson route): introduce `xs` and `ys`, chain `sum_append xs ys`, commutativity, and the symmetry of `sum_append ys xs`; this contains no recursor.
     // Intended Mage moves: introduce the lists, rewrite both append sums explicitly, rewrite by commutativity, and close the reflexive result.
-    lesson: lesson("The catalogued equality `sum_append` can be specialized in both orders and joined to commutativity with `Eq.trans`. Symmetry turns the second append equation toward the desired destination.", "Use `rw` to select `sum_append` for each side and then `Nat.add_comm`. Restricted `simp` will not select any of these catalogue theorems automatically."),
+    lesson: lesson("The equality `sum_append` can be specialized in both orders and joined to commutativity. Symmetry turns the second append equation toward the desired destination."),
     warrior: route(["fun xs => □", "fun ys => □", "Eq.trans (sum_append xs ys) (Eq.trans (Nat.add_comm (sum xs) (sum ys)) (Eq.symm (sum_append ys xs)))"], Array.from({ length: 3 }, () => "∀ xs ys : List Nat, sum (xs ++ ys) = sum (ys ++ xs)"), "fun xs ys => Eq.trans (sum_append xs ys) (Eq.trans (Nat.add_comm (sum xs) (sum ys)) (Eq.symm (sum_append ys xs)))"),
     mage: route(["intro xs", "intro ys", "rw [□]", "sum_append", "rw [□]", "sum_append", "rw [□]", "Nat.add_comm", "rfl"], Array.from({ length: 9 }, () => "sum (xs ++ ys) = sum (ys ++ xs)"), "by\n  intro xs ys\n  rw [sum_append, sum_append, Nat.add_comm]"),
     monster: monster("Caravan-Swapping Djinn", "It exchanges two processions at once, but their combined burden never changes.", "monsters-3.png", 7, 184, 218),
@@ -1069,7 +1083,7 @@ const existingLevelEntries = [
     intro: "`List.replicate n x` constructs a list containing exactly `n` copies of `x`.",
     // Intended Warrior term (37 catalogue selections; shortest lesson route): introduce `n` and `x`, use one `Nat.rec` on `n`, and combine congruence, commutativity, and `Nat.succ_mul` in the successor case.
     // Intended Mage moves: induct on `n`, reduce each constructor case, and explicitly rewrite with the multiplication laws, `ih`, and commutativity.
-    lesson: lesson("`List.replicate` reduces to `[]` at zero and adds one copy at a successor. The theorem `Nat.succ_mul` describes the matching successor behavior of multiplication.", "Induct on the copy count and use restricted `simp` only for constructor reduction. Then explicitly select `Nat.zero_mul`, the induction hypothesis, `Nat.succ_mul`, and `Nat.add_comm` with `rw`."),
+    lesson: lesson("`List.replicate` reduces to `[]` at zero and adds one copy at a successor. The theorem `Nat.succ_mul` describes the matching successor behavior of multiplication."),
     unlocks: {
       shared: ["catalogue.listReplicate"],
       completion: ["catalogue.sumReplicate"],
@@ -1085,7 +1099,7 @@ const existingLevelEntries = [
     theorem: "∀ xs : List Nat, ∀ n : Nat, sum (repeatEach n xs) = n * sum xs", context: [],
     intro: "`repeatEach n xs` replaces every value in `xs` with `n` consecutive copies of that value.",
     // Intended Warrior proof uses nested recursion; the Mage route inducts on the source list and explicitly reuses the previously proved block theorems.
-    lesson: lesson("`repeatEach n [] = []`, while `repeatEach n (x :: xs) = List.replicate n x ++ repeatEach n xs`. Recurse over the source list, using the catalogued `sum_replicate` result for each head block and natural recursion in the empty branch.", "Induct on the source list. Restricted `simp` exposes the empty and cons definitions, after which `sum_append`, `sum_replicate`, the outer induction hypothesis, and `Nat.mul_add` must each be selected explicitly."),
+    lesson: lesson("`repeatEach n [] = []`, while `repeatEach n (x :: xs) = List.replicate n x ++ repeatEach n xs`. Follow the source list's structure, using `sum_replicate` for each head block and the induction hypothesis for the tail."),
     unlocks: {
       shared: ["catalogue.repeatEach"],
       warrior: { moves: [], text: "New catalogue terms: `repeatEach` and `Nat.mul_add`, which distributes a repeated count across a sum." },
@@ -1247,11 +1261,14 @@ for (const exercise of exercises) {
   if (buildTermProof(exercise.warrior.moves).includes("□")) {
     throw new Error(`Level ${exercise.id} has an incomplete warrior proof route.`);
   }
+  if (!exercise.lesson.common.length) {
+    throw new Error(`Level ${exercise.id} must include common lesson text.`);
+  }
   for (const hero of ["warrior", "mage"] as HeroClass[]) {
     if (exercise[hero].moves.length !== exercise[hero].targets.length) {
       throw new Error(`Level ${exercise.id} has an invalid ${hero} proof route.`);
     }
-    if (exercise.lesson[hero].length > 3) {
+    if (lessonTextFor(exercise.lesson, hero).length > 3) {
       throw new Error(`Level ${exercise.id} exceeds the three-sentence lesson limit.`);
     }
   }

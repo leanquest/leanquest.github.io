@@ -7,6 +7,7 @@ import {
   catalogueMoveDefinitions,
   depthNames,
   exercises,
+  lessonTextFor,
   newMoveText,
   unlockedMoves,
   storySequences,
@@ -1030,7 +1031,7 @@ export default function Home() {
             <div className="lesson-copy">
               <p className="eyebrow">LESSON {String(level.id).padStart(2, "0")} · {level.chapter}</p>
               <h2 id="lesson-title">{level.title}</h2>
-              {level.lesson[heroClass].map((sentence) => <p key={sentence}>{sentence}</p>)}
+              {lessonTextFor(level.lesson, heroClass).map((sentence) => <p key={sentence}>{sentence}</p>)}
               {newMoveText(level, heroClass) && <p>{newMoveText(level, heroClass)}</p>}
               <button className="primary-button" onClick={closeLesson}>FACE {level.monster.name.toUpperCase()} ▶</button>
             </div>

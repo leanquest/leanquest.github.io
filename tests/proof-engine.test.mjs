@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   curriculum,
   exercises,
+  lessonTextFor,
   newMoveText,
   storySequences,
   unlockedMoves,
@@ -140,6 +141,17 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
   assert.match(newMoveText(exercises[8], "warrior"), /application/);
   assert.match(newMoveText(exercises[43], "warrior"), /Nat\.zero_add/);
   assert.match(newMoveText(exercises[43], "mage"), /without using any hypothesis or catalogue theorem/);
+
+  assert.deepEqual(exercises[0].lesson, {
+    common: ["`Nat` is the type of natural numbers. Enter any whole number to build a term of this type."],
+  });
+  assert.deepEqual(lessonTextFor(exercises[0].lesson, "warrior"), lessonTextFor(exercises[0].lesson, "mage"));
+
+  const reflexivityLesson = exercises.find((exercise) => exercise.title === "Close by Reduction")?.lesson;
+  assert.ok(reflexivityLesson);
+  assert.equal(lessonTextFor(reflexivityLesson, "warrior").length, 2);
+  assert.match(lessonTextFor(reflexivityLesson, "warrior")[1], /Eq\.refl/);
+  assert.match(lessonTextFor(reflexivityLesson, "mage")[1], /rfl/);
 
   const warriorOnlyProofTerms = [
     "catalogue.andIntro", "catalogue.orIntro", "catalogue.orElim", "catalogue.falseElim",
