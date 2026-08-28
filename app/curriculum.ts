@@ -11,7 +11,7 @@ export const basicPropositionTerms = [
 ];
 
 export type MoveId =
-  | "term.context" | "term.lambda" | "term.application" | "term.dot" | "term.naturalNumber"
+  | "term.environment" | "term.lambda" | "term.application" | "term.dot" | "term.naturalNumber"
   | "term.emptyList" | "term.basicPropositions"
   | "catalogue.trueIntro" | "catalogue.andIntro" | "catalogue.andLeft" | "catalogue.andRight"
   | "catalogue.orIntro" | "catalogue.orElim" | "catalogue.falseElim"
@@ -40,7 +40,7 @@ export type CatalogueMoveDefinition =
 // Unlock IDs control availability; this registry controls how unlocked moves are
 // described in the library. New moves added to MoveId must add an entry here.
 export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> = {
-  "term.context": { kind: "term", group: "Term building", entries: [{ name: "Environment term", type: "Any local term whose type matches the focused hole" }] },
+  "term.environment": { kind: "term", group: "Term building", entries: [{ name: "Environment term", type: "Any local term whose type matches the focused hole" }] },
   "term.lambda": { kind: "term", group: "Term building", entries: [{ name: "Function term", type: "A → B  becomes  fun x => proof-of-B" }] },
   "term.application": { kind: "term", group: "Term building", entries: [{ name: "Application", type: "(A → B) → A → B" }] },
   "term.dot": { kind: "term", group: "Term building", entries: [{ name: "Projection dot notation", type: "h.left, h.right, h.mp, and h.mpr abbreviate logical projections" }] },
@@ -118,13 +118,13 @@ export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> =
   ] },
 
   "tactic.exact": { kind: "tactic", group: "Core tactics", label: "exact", description: "Closes the current goal with a term of exactly the required type." },
-  "tactic.intro": { kind: "tactic", group: "Core tactics", label: "intro", description: "Introduces an implication premise or universally quantified value into the context." },
+  "tactic.intro": { kind: "tactic", group: "Core tactics", label: "intro", description: "Introduces an implication premise or universally quantified value into the environment." },
   "tactic.apply": { kind: "tactic", group: "Core tactics", label: "apply", description: "Uses a function whose conclusion matches the goal and creates goals for its premises." },
   "tactic.constructor": { kind: "tactic", group: "Logic", label: "constructor", description: "Builds a conjunction or equivalence by opening one goal for each constructor field." },
   "tactic.orSides": { kind: "tactic", group: "Logic", label: "left / right", description: "Chooses the left or right branch when proving a disjunction." },
   "tactic.cases": { kind: "tactic", group: "Logic", label: "cases", description: "Splits structured evidence into one goal for each possible constructor." },
   "tactic.exfalso": { kind: "tactic", group: "Logic", label: "exfalso", description: "Changes the current goal to False, which can prove any proposition." },
-  "tactic.contradiction": { kind: "tactic", group: "Logic", label: "contradiction", description: "Closes a goal when the context contains incompatible evidence." },
+  "tactic.contradiction": { kind: "tactic", group: "Logic", label: "contradiction", description: "Closes a goal when the environment contains incompatible evidence." },
   "tactic.byContra": { kind: "tactic", group: "Logic", label: "by_contra", description: "Assumes the negation of the goal and asks you to derive False." },
   "tactic.rfl": { kind: "tactic", group: "Equality", label: "rfl", description: "Closes an equality whose two sides become definitionally equal." },
   "tactic.use": { kind: "tactic", group: "Quantifiers", label: "use", description: "Chooses a witness for an existential goal, leaving its property to prove." },
@@ -132,7 +132,7 @@ export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> =
   "tactic.symm": { kind: "tactic", group: "Equality", label: "symm", description: "Reverses the two sides of an equality goal." },
   "tactic.trans": { kind: "tactic", group: "Equality", label: "trans", description: "Splits an equality goal through a chosen intermediate expression." },
   "tactic.congr": { kind: "tactic", group: "Equality", label: "congr", description: "Reduces equality between matching function applications to equality of their arguments." },
-  "tactic.subst": { kind: "tactic", group: "Equality", label: "subst", description: "Replaces an equal value throughout the goal and local context." },
+  "tactic.subst": { kind: "tactic", group: "Equality", label: "subst", description: "Replaces an equal value throughout the goal and local environment." },
   "tactic.rewrite": { kind: "tactic", group: "Equality", label: "rw", description: "Rewrites matching expressions with an equality or equivalence, in either direction." },
   "tactic.byCases": { kind: "tactic", group: "Logic", label: "by_cases", description: "Creates one branch assuming a proposition and another assuming its negation." },
   "tactic.induction": { kind: "tactic", group: "Recursion", label: "induction", description: "Creates constructor cases and an induction hypothesis for a recursive value." },
@@ -161,7 +161,7 @@ export type ProofRoute = {
   selections: readonly string[];
   targets: string[];
   proof: string;
-  contextOverrides?: Record<number, string[]>;
+  environmentOverrides?: Record<number, string[]>;
 };
 
 export type Lesson = {
@@ -178,7 +178,7 @@ export type Exercise = {
   title: string;
   topic: string;
   theorem: string;
-  context: string[];
+  environment: string[];
   intro: string;
   lesson: Lesson;
   unlocks?: LevelUnlocks;
@@ -224,13 +224,13 @@ const route = (
   moves: string[],
   targets: string[],
   proof: string,
-  contextOverrides?: Record<number, string[]>,
+  environmentOverrides?: Record<number, string[]>,
 ): ProofRoute => ({
   moves,
   selections: [],
   targets,
   proof,
-  contextOverrides,
+  environmentOverrides,
 });
 
 export function buildTermProof(moves: string[]) {
@@ -296,9 +296,9 @@ const sumRepeatEachProof = "fun xs => List.rec " +
 const tutorialEntries = [
   {
     id: 1, depth: 1, chapter: "First Steps", title: "Choose a Number", topic: "Natural numbers",
-    theorem: "Nat", context: [],
+    theorem: "Nat", environment: [],
     intro: "A goal is a type. To complete it, choose a value of that type.",
-    lesson: lesson("`Nat` is the type of natural numbers. Enter any whole number to build a term of this type."),
+    lesson: lesson("`Nat` is the type of natural numbers. Enter any number to build a term of this type."),
     unlocks: {
       shared: ["term.naturalNumber"],
       warrior: { moves: [], text: "New move: `natural number` lets you enter a value of type `Nat`." },
@@ -310,11 +310,11 @@ const tutorialEntries = [
   },
   {
     id: 2, depth: 1, chapter: "First Steps", title: "Use the Number", topic: "Environment values",
-    theorem: "Nat", context: ["n : Nat"],
+    theorem: "Nat", environment: ["n : Nat"],
     intro: "The environment can already contain a value with the type your goal requests.",
     lesson: lesson("The environment contains `n : Nat`, so choosing `n` completes a goal of type `Nat`."),
     unlocks: {
-      shared: ["term.context"],
+      shared: ["term.environment"],
       warrior: { moves: [], text: "New move: choose a matching value from the environment." },
       mage: { moves: [], text: "New term choice: `exact` can use a matching value from the environment." },
     },
@@ -324,9 +324,9 @@ const tutorialEntries = [
   },
   {
     id: 3, depth: 1, chapter: "First Steps", title: "Pack an Empty List", topic: "Lists",
-    theorem: "List Nat", context: [],
-    intro: "A list may contain many values—or none at all.",
-    lesson: lesson("`[]` is the empty list. With a goal of `List Nat`, Lean knows this empty list is a list of natural numbers."),
+    theorem: "List Nat", environment: [],
+    intro: "A list is a possibly empty sequence of values.",
+    lesson: lesson("`[]` constructs the empty list. With a goal of `List Nat`, Lean knows this empty list is a list of natural numbers."),
     unlocks: {
       shared: ["term.emptyList"],
       warrior: { moves: [], text: "New term: `[]` constructs an empty `List Nat`." },
@@ -338,9 +338,9 @@ const tutorialEntries = [
   },
   {
     id: 4, depth: 1, chapter: "First Steps", title: "Name a Proposition", topic: "Propositions",
-    theorem: "Prop", context: [],
-    intro: "Propositions are themselves values of the type `Prop`.",
-    lesson: lesson("A `Prop` is a statement that may be true or false. This goal asks for a proposition itself, not yet for a proof that the statement is true."),
+    theorem: "Prop", environment: [],
+    intro: "Propositions are values of the type `Prop`.",
+    lesson: lesson("A `Prop` (short for proposition) is a statement that may be true or false. This goal asks for a proposition, not for a proof that the statement is true."),
     unlocks: {
       shared: ["term.basicPropositions"],
       warrior: { moves: [], text: "New terms: several true and false statements are available as values of type `Prop`." },
@@ -352,7 +352,7 @@ const tutorialEntries = [
   },
   {
     id: 5, depth: 1, chapter: "First Steps", title: "Prove the Truth", topic: "Constructor proofs",
-    theorem: "True", context: [],
+    theorem: "True", environment: [],
     intro: "Now the goal asks for a proof of the proposition `True`.",
     lesson: lesson("`True.intro` is the constructor for `True`: it directly builds a proof of that proposition."),
     unlocks: {
@@ -368,23 +368,19 @@ const tutorialEntries = [
 
 const existingLevelEntries = [
   {
-    id: 1, depth: 1, chapter: "Propositions as Types", title: "The Given Fact", topic: "Using a hypothesis",
-    theorem: "P", context: ["P : Prop", "hp : P"],
+    id: 6, depth: 1, chapter: "Propositions as Types", title: "The Given Fact", topic: "Using a hypothesis",
+    theorem: "P", environment: ["P : Prop", "hp : P"],
     intro: "The environment lists the declarations and hypotheses currently available to you.",
     // Intended Warrior term (shortest lesson route): `hp`.
     // Intended Mage moves (shortest lesson route): `exact hp`.
     lesson: lesson("The environment lists available declarations and hypotheses. An entry `hp : P` is already a proof of `P`, so the term `hp` can fill any hole expecting that type."),
-    unlocks: {
-      warrior: { moves: ["term.context"], text: "New moves: choose any environment term whose type matches the focused hole." },
-      mage: { moves: ["tactic.exact"], text: "New move: `exact □` opens a term-selection view and closes the goal when the chosen term has the required type." },
-    },
     warrior: route(["hp"], ["P"], "hp"),
     mage: route(["exact hp"], ["P"], "by\n  exact hp"),
     monster: monster("Chalk Imp", "The proof you need is already written on its stolen slate.", "monsters.png", 1, 0, 34),
   },
   {
-    id: 2, depth: 1, chapter: "Propositions as Types", title: "The First Assumption", topic: "Identity",
-    theorem: "P → P", context: ["P : Prop"],
+    id: 7, depth: 1, chapter: "Propositions as Types", title: "The First Assumption", topic: "Identity",
+    theorem: "P → P", environment: ["P : Prop"],
     intro: "A proposition is a type, and a proof is a term inhabiting that type.",
     // Intended Warrior term (shortest lesson route): `fun hP => hP`.
     // Intended Mage moves (shortest lesson route): `intro hP → exact hP`.
@@ -398,8 +394,8 @@ const existingLevelEntries = [
     monster: monster("Mossbound Eye", "It watches for the first unguarded assumption.", "monsters.png", 0, 0, 34),
   },
   {
-    id: 3, depth: 1, chapter: "Propositions as Types", title: "Keep the First", topic: "Nested implication",
-    theorem: "P → Q → P", context: ["P Q : Prop"],
+    id: 8, depth: 1, chapter: "Propositions as Types", title: "Keep the First", topic: "Nested implication",
+    theorem: "P → Q → P", environment: ["P Q : Prop"],
     intro: "Arrows associate to the right, so this theorem accepts two proofs in sequence.",
     // Intended Warrior term (shortest lesson route): `fun hP hQ => hP`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hQ → exact hP`.
@@ -409,8 +405,8 @@ const existingLevelEntries = [
     monster: monster("Grix the Hoarder", "It keeps the first treasure and ignores the second.", "monsters.png", 1, 46, 70),
   },
   {
-    id: 4, depth: 1, chapter: "Propositions as Types", title: "The Relay", topic: "Application",
-    theorem: "P → (P → Q) → Q", context: ["P Q : Prop"],
+    id: 9, depth: 1, chapter: "Propositions as Types", title: "The Relay", topic: "Application",
+    theorem: "P → (P → Q) → Q", environment: ["P Q : Prop"],
     intro: "A proof of an implication behaves like a function from proofs to proofs.",
     // Intended Warrior term (shortest lesson route): `fun hP hPQ => hPQ hP`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hPQ → apply hPQ → exact hP`.
@@ -424,8 +420,8 @@ const existingLevelEntries = [
     monster: monster("Relay Lich", "Every spell it receives is passed deeper into the crypt.", "monsters.png", 2, 0, 34),
   },
   {
-    id: 5, depth: 1, chapter: "Propositions as Types", title: "Chain of Three", topic: "Composition",
-    theorem: "(P → Q) → (Q → R) → P → R", context: ["P Q R : Prop"],
+    id: 10, depth: 1, chapter: "Propositions as Types", title: "Chain of Three", topic: "Composition",
+    theorem: "(P → Q) → (Q → R) → P → R", environment: ["P Q R : Prop"],
     intro: "Implications compose just like ordinary functions.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hQR hP => hQR (hPQ hP)`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hQR → intro hP → apply hQR → apply hPQ → exact hP`.
@@ -435,8 +431,8 @@ const existingLevelEntries = [
     monster: monster("Three-Link Wraith", "Three spectral chains bind its victim to the wall.", "monsters.png", 9, 0, 34),
   },
   {
-    id: 6, depth: 1, chapter: "Propositions as Types", title: "Forge a Pair", topic: "Conjunction introduction",
-    theorem: "P → Q → P ∧ Q", context: ["P Q : Prop"],
+    id: 11, depth: 1, chapter: "Propositions as Types", title: "Forge a Pair", topic: "Conjunction introduction",
+    theorem: "P → Q → P ∧ Q", environment: ["P Q : Prop"],
     intro: "A conjunction packages two proofs together.",
     // Intended Warrior term (shortest lesson route): `And.intro`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hQ → constructor → exact hP → exact hQ`.
@@ -450,8 +446,8 @@ const existingLevelEntries = [
     monster: monster("Stitched Pair", "Two creatures were sewn into one proposition.", "monsters.png", 3, 0, 34),
   },
   {
-    id: 7, depth: 1, chapter: "Propositions as Types", title: "Open the Left Seal", topic: "Projection",
-    theorem: "P ∧ Q → P", context: ["P Q : Prop"],
+    id: 12, depth: 1, chapter: "Propositions as Types", title: "Open the Left Seal", topic: "Projection",
+    theorem: "P ∧ Q → P", environment: ["P Q : Prop"],
     intro: "A conjunction's projections retrieve the proofs stored inside it.",
     // Intended Warrior term (shortest lesson route): `And.left`.
     // Intended Mage moves (shortest lesson route): `intro h → apply □ → And.left → exact □ → h`.
@@ -465,8 +461,8 @@ const existingLevelEntries = [
     monster: monster("Left-Locked Gnawer", "Its first mouth guards the only useful key.", "monsters.png", 3, 46, 70),
   },
   {
-    id: 8, depth: 1, chapter: "Propositions as Types", title: "Turn the Seal", topic: "Conjunction symmetry",
-    theorem: "P ∧ Q → Q ∧ P", context: ["P Q : Prop"],
+    id: 13, depth: 1, chapter: "Propositions as Types", title: "Turn the Seal", topic: "Conjunction symmetry",
+    theorem: "P ∧ Q → Q ∧ P", environment: ["P Q : Prop"],
     intro: "Conjunctions can be rebuilt with their components reversed.",
     // Intended Warrior term (shortest lesson route): `fun h => And.intro h.right h.left`.
     // Intended Mage moves (shortest lesson route): `intro h → constructor → exact □ → h.right → exact □ → h.left`.
@@ -480,8 +476,8 @@ const existingLevelEntries = [
     monster: monster("Mirror Gargoyle", "Everything shown to it returns in reverse.", "monsters.png", 4, 0, 34),
   },
   {
-    id: 9, depth: 1, chapter: "Propositions as Types", title: "Take the Left Path", topic: "Disjunction introduction",
-    theorem: "P → P ∨ Q", context: ["P Q : Prop"],
+    id: 14, depth: 1, chapter: "Propositions as Types", title: "Take the Left Path", topic: "Disjunction introduction",
+    theorem: "P → P ∨ Q", environment: ["P Q : Prop"],
     intro: "A disjunction is proved by providing evidence for either one of its alternatives.",
     // Intended Warrior term (shortest lesson route): `Or.inl`.
     // Intended Mage moves (shortest lesson route): `intro hP → left → exact hP`.
@@ -495,8 +491,8 @@ const existingLevelEntries = [
     monster: monster("Emberhorn", "The left-hand tunnel is scorched by its passing.", "monsters.png", 6, 0, 34),
   },
   {
-    id: 10, depth: 1, chapter: "Propositions as Types", title: "Answer Both Heads", topic: "Disjunction elimination",
-    theorem: "(P → R) → (Q → R) → P ∨ Q → R", context: ["P Q R : Prop"],
+    id: 15, depth: 1, chapter: "Propositions as Types", title: "Answer Both Heads", topic: "Disjunction elimination",
+    theorem: "(P → R) → (Q → R) → P ∨ Q → R", environment: ["P Q R : Prop"],
     intro: "Using a disjunction requires handling both possible forms of evidence.",
     // Intended Warrior term (shortest lesson route): `fun hPR hQR h => Or.elim h hPR hQR`.
     // Intended Mage moves: `intro hPR → intro hQR → intro h → cases □ → h → exact hPR hP → exact hQR hQ`.
@@ -513,8 +509,8 @@ const existingLevelEntries = [
     monster: monster("Forked Adder", "Whichever head strikes, the answer must be ready.", "monsters.png", 8, 0, 34),
   },
   {
-    id: 11, depth: 1, chapter: "Propositions as Types", title: "Empty the Void", topic: "False elimination",
-    theorem: "False → P", context: ["P : Prop"],
+    id: 16, depth: 1, chapter: "Propositions as Types", title: "Empty the Void", topic: "False elimination",
+    theorem: "False → P", environment: ["P : Prop"],
     intro: "False has no constructors, so evidence for it can eliminate any goal.",
     // Intended Warrior term (shortest lesson route): `False.elim`.
     // Intended Mage moves (shortest lesson route): `intro hFalse → exfalso → exact hFalse`.
@@ -528,8 +524,8 @@ const existingLevelEntries = [
     monster: monster("Void Warden", "Its heart contains evidence that cannot exist.", "monsters.png", 9, 46, 70),
   },
   {
-    id: 12, depth: 2, chapter: "Logical Connectives", title: "Bind Both Directions", topic: "Biconditional",
-    theorem: "(P → Q) → (Q → P) → (P ↔ Q)", context: ["P Q : Prop"],
+    id: 17, depth: 2, chapter: "Logical Connectives", title: "Bind Both Directions", topic: "Biconditional",
+    theorem: "(P → Q) → (Q → P) → (P ↔ Q)", environment: ["P Q : Prop"],
     intro: "A biconditional packages implications in both directions.",
     // Intended Warrior term (shortest lesson route): `Iff.intro`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hQP → constructor → exact hPQ → exact hQP`.
@@ -542,8 +538,8 @@ const existingLevelEntries = [
     monster: monster("Mushroom Sentinel", "Its shield opens only when both runes agree.", "monsters-2.png", 0, 0, 34),
   },
   {
-    id: 13, depth: 2, chapter: "Logical Connectives", title: "Use the Forward Rune", topic: "Iff elimination",
-    theorem: "(P ↔ Q) → P → Q", context: ["P Q : Prop"],
+    id: 18, depth: 2, chapter: "Logical Connectives", title: "Use the Forward Rune", topic: "Iff elimination",
+    theorem: "(P ↔ Q) → P → Q", environment: ["P Q : Prop"],
     intro: "Each direction of an equivalence can be projected and applied.",
     // Intended Warrior term (shortest lesson route): `Iff.mp`.
     // Intended Mage moves (shortest lesson route): `intro hIff → intro hP → apply hIff.mp → exact hP`.
@@ -557,8 +553,8 @@ const existingLevelEntries = [
     monster: monster("Book Mimic", "Only the forward page contains the needed incantation.", "monsters-2.png", 1, 0, 34),
   },
   {
-    id: 14, depth: 2, chapter: "Logical Connectives", title: "Meet Contradiction", topic: "Negation",
-    theorem: "P ∧ ¬P → False", context: ["P : Prop"],
+    id: 19, depth: 2, chapter: "Logical Connectives", title: "Meet Contradiction", topic: "Negation",
+    theorem: "P ∧ ¬P → False", environment: ["P : Prop"],
     intro: "Negation `¬P` is definitionally the function type `P → False`.",
     // Intended Warrior term (shortest lesson route): `fun h => h.right h.left`.
     // Intended Mage moves (shortest lesson route): `intro h → apply h.right → exact h.left`.
@@ -568,8 +564,8 @@ const existingLevelEntries = [
     monster: monster("Boneplate Beetle", "Its shell bears two mutually impossible sigils.", "monsters-2.png", 2, 0, 34),
   },
   {
-    id: 15, depth: 2, chapter: "Logical Connectives", title: "Turn the Arrow Back", topic: "Contraposition",
-    theorem: "(P → Q) → ¬Q → ¬P", context: ["P Q : Prop"],
+    id: 20, depth: 2, chapter: "Logical Connectives", title: "Turn the Arrow Back", topic: "Contraposition",
+    theorem: "(P → Q) → ¬Q → ¬P", environment: ["P Q : Prop"],
     intro: "Contraposition converts a route from `P` to `Q` into a route from `¬Q` to `¬P`.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hnQ hP => hnQ (hPQ hP)`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hnQ → intro hP → apply hnQ → apply hPQ → exact hP`.
@@ -579,8 +575,8 @@ const existingLevelEntries = [
     monster: monster("Raven Contrarian", "Every path toward it becomes a path away.", "monsters-2.png", 3, 0, 34),
   },
   {
-    id: 16, depth: 2, chapter: "Logical Connectives", title: "Deny Both Doors", topic: "De Morgan",
-    theorem: "¬(P ∨ Q) → ¬P ∧ ¬Q", context: ["P Q : Prop"],
+    id: 21, depth: 2, chapter: "Logical Connectives", title: "Deny Both Doors", topic: "De Morgan",
+    theorem: "¬(P ∨ Q) → ¬P ∧ ¬Q", environment: ["P Q : Prop"],
     intro: "To deny a disjunction constructively, deny each alternative separately.",
     // Intended Warrior term (shortest lesson route): `fun hn => And.intro (fun hP => hn (Or.inl hP)) (fun hQ => hn (Or.inr hQ))`.
     // Intended Mage moves (shortest lesson route): `intro hn → constructor → intro hP → apply hn → left → exact hP → intro hQ → apply hn → right → exact hQ`.
@@ -595,8 +591,8 @@ const existingLevelEntries = [
     monster: monster("Bronze Minotaur", "It bars both exits of the logical maze.", "monsters-2.png", 4, 0, 34),
   },
   {
-    id: 17, depth: 2, chapter: "Logical Connectives", title: "Curry the Pair", topic: "Currying",
-    theorem: "(P ∧ Q → R) → P → Q → R", context: ["P Q R : Prop"],
+    id: 22, depth: 2, chapter: "Logical Connectives", title: "Curry the Pair", topic: "Currying",
+    theorem: "(P ∧ Q → R) → P → Q → R", environment: ["P Q R : Prop"],
     intro: "Curried assumptions can be packaged when a function expects a conjunction.",
     // Intended Warrior term (shortest lesson route): `fun h hP hQ => h (And.intro hP hQ)`.
     // Intended Mage moves (shortest lesson route): `intro h → intro hP → intro hQ → apply h → constructor → exact hP → exact hQ`.
@@ -606,8 +602,8 @@ const existingLevelEntries = [
     monster: monster("Ice Golem", "Two frozen shards combine into its single heart.", "monsters-2.png", 5, 0, 34),
   },
   {
-    id: 18, depth: 2, chapter: "Logical Connectives", title: "Discard the Empty Branch", topic: "False in disjunction",
-    theorem: "P ∨ False → P", context: ["P : Prop"],
+    id: 23, depth: 2, chapter: "Logical Connectives", title: "Discard the Empty Branch", topic: "False in disjunction",
+    theorem: "P ∨ False → P", environment: ["P : Prop"],
     intro: "A disjunction with `False` contains useful evidence only in its other branch.",
     // Intended Warrior term (shortest lesson route): `fun h => Or.elim h (fun hP => hP) False.elim`.
     // Intended Mage moves: `intro h → cases □ → h → exact hP → exfalso → exact hFalse`.
@@ -622,8 +618,8 @@ const existingLevelEntries = [
     monster: monster("Skullweb Spider", "One strand is silk; the other leads nowhere.", "monsters-2.png", 6, 0, 34),
   },
   {
-    id: 19, depth: 2, chapter: "Logical Connectives", title: "Break Double Negation", topic: "Classical logic",
-    theorem: "¬¬P → P", context: ["P : Prop"],
+    id: 24, depth: 2, chapter: "Logical Connectives", title: "Break Double Negation", topic: "Classical logic",
+    theorem: "¬¬P → P", environment: ["P : Prop"],
     intro: "Double-negation elimination requires classical reasoning in Lean.",
     // Intended Warrior term (shortest lesson route): `Classical.byContradiction`.
     // Intended Mage moves (shortest lesson route): `intro hnnP → by_contra hnP → exact hnnP hnP`.
@@ -637,8 +633,8 @@ const existingLevelEntries = [
     monster: monster("Mummy Scholar", "Two layers of denial wrap the truth in linen.", "monsters-2.png", 7, 0, 34),
   },
   {
-    id: 20, depth: 3, chapter: "Quantifiers and Equality", title: "Name the Arbitrary", topic: "Universal introduction",
-    theorem: "∀ x : α, x = x", context: ["α : Type"],
+    id: 25, depth: 3, chapter: "Quantifiers and Equality", title: "Name the Arbitrary", topic: "Universal introduction",
+    theorem: "∀ x : α, x = x", environment: ["α : Type"],
     intro: "A universal statement is a dependent function accepting an arbitrary value.",
     // Intended Warrior term (shortest lesson route): `Eq.refl`.
     // Intended Mage moves (shortest lesson route): `intro x → rfl`.
@@ -652,8 +648,8 @@ const existingLevelEntries = [
     monster: monster("Thorn Troll", "Every thorn is equal only to itself.", "monsters-2.png", 8, 0, 34),
   },
   {
-    id: 21, depth: 3, chapter: "Quantifiers and Equality", title: "Choose an Instance", topic: "Universal elimination",
-    theorem: "(∀ x : α, P x) → P a", context: ["α : Type", "P : α → Prop", "a : α"],
+    id: 26, depth: 3, chapter: "Quantifiers and Equality", title: "Choose an Instance", topic: "Universal elimination",
+    theorem: "(∀ x : α, P x) → P a", environment: ["α : Type", "P : α → Prop", "a : α"],
     intro: "A universal proof can be applied to any concrete value of the quantified type.",
     // Intended Warrior term (shortest lesson route): `fun hAll => hAll a`.
     // Intended Mage moves (shortest lesson route): `intro hAll → exact hAll a`.
@@ -663,8 +659,8 @@ const existingLevelEntries = [
     monster: monster("Spectral Knight", "Its universal oath applies to every challenger.", "monsters-2.png", 9, 0, 34),
   },
   {
-    id: 22, depth: 3, chapter: "Quantifiers and Equality", title: "Lift the Rule", topic: "Quantified implication",
-    theorem: "(∀ x : α, P x → Q x) → (∀ x : α, P x) → ∀ x : α, Q x", context: ["α : Type", "P Q : α → Prop"],
+    id: 27, depth: 3, chapter: "Quantifiers and Equality", title: "Lift the Rule", topic: "Quantified implication",
+    theorem: "(∀ x : α, P x → Q x) → (∀ x : α, P x) → ∀ x : α, Q x", environment: ["α : Type", "P Q : α → Prop"],
     intro: "Pointwise implications can transform a universal family of proofs.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hP x => hPQ x (hP x)`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hP → intro x → apply hPQ x → exact hP x`.
@@ -674,8 +670,8 @@ const existingLevelEntries = [
     monster: monster("Cinder Salamander", "Its rule spreads from one scale to every scale.", "monsters-3.png", 0, 0, 34),
   },
   {
-    id: 23, depth: 3, chapter: "Quantifiers and Equality", title: "Offer a Witness", topic: "Existential introduction",
-    theorem: "P a → ∃ x : α, P x", context: ["α : Type", "P : α → Prop", "a : α"],
+    id: 28, depth: 3, chapter: "Quantifiers and Equality", title: "Offer a Witness", topic: "Existential introduction",
+    theorem: "P a → ∃ x : α, P x", environment: ["α : Type", "P : α → Prop", "a : α"],
     intro: "An existential proof contains a witness together with evidence about it.",
     // Intended Warrior term (shortest lesson route): `fun hPa => Exists.intro a hPa`.
     // Intended Mage moves (shortest lesson route): `intro hPa → use a → exact hPa`.
@@ -689,8 +685,8 @@ const existingLevelEntries = [
     monster: monster("Horned Boneguard", "No one passes without presenting a witness.", "monsters-3.png", 1, 0, 34),
   },
   {
-    id: 24, depth: 3, chapter: "Quantifiers and Equality", title: "Open the Witness", topic: "Existential elimination",
-    theorem: "(∃ x : α, P x) → (∀ x : α, P x → Q) → Q", context: ["α : Type", "P : α → Prop", "Q : Prop"],
+    id: 29, depth: 3, chapter: "Quantifiers and Equality", title: "Open the Witness", topic: "Existential elimination",
+    theorem: "(∃ x : α, P x) → (∀ x : α, P x → Q) → Q", environment: ["α : Type", "P : α → Prop", "Q : Prop"],
     intro: "Using an existential means reasoning from an arbitrary hidden witness and its evidence.",
     // Intended Warrior term (shortest lesson route): `Exists.elim`.
     // Intended Mage moves: `intro hEx → intro hRule → rcases □ → hEx → exact hRule x hx`.
@@ -706,8 +702,8 @@ const existingLevelEntries = [
     monster: monster("Lantern Bog Witch", "A hidden name flickers inside her lantern.", "monsters-3.png", 2, 0, 34),
   },
   {
-    id: 25, depth: 3, chapter: "Quantifiers and Equality", title: "Find Zero", topic: "Concrete witness",
-    theorem: "∃ n : Nat, n = 0", context: [],
+    id: 30, depth: 3, chapter: "Quantifiers and Equality", title: "Find Zero", topic: "Concrete witness",
+    theorem: "∃ n : Nat, n = 0", environment: [],
     intro: "Existential witnesses may be concrete data such as a natural number.",
     // Intended Warrior term (shortest lesson route): `Exists.intro 0 (Eq.refl 0)`.
     // Intended Mage moves (shortest lesson route): `use 0 → rfl`.
@@ -722,8 +718,8 @@ const existingLevelEntries = [
     monster: monster("Iron Boar", "The zero carved into its plate is the only clue.", "monsters-3.png", 3, 0, 34),
   },
   {
-    id: 26, depth: 3, chapter: "Quantifiers and Equality", title: "Reverse Equality", topic: "Symmetry",
-    theorem: "a = b → b = a", context: ["α : Type", "a b : α"],
+    id: 31, depth: 3, chapter: "Quantifiers and Equality", title: "Reverse Equality", topic: "Symmetry",
+    theorem: "a = b → b = a", environment: ["α : Type", "a b : α"],
     intro: "Equality is symmetric: evidence can be reversed.",
     // Intended Warrior term (shortest lesson route): `Eq.symm`.
     // Intended Mage moves (shortest lesson route): `intro h → symm → exact h`.
@@ -737,8 +733,8 @@ const existingLevelEntries = [
     monster: monster("Many-Eyed Orb", "Every gaze returns along the direction it came.", "monsters-3.png", 4, 0, 34),
   },
   {
-    id: 27, depth: 3, chapter: "Quantifiers and Equality", title: "Cross Two Equalities", topic: "Transitivity",
-    theorem: "a = b → b = c → a = c", context: ["α : Type", "a b c : α"],
+    id: 32, depth: 3, chapter: "Quantifiers and Equality", title: "Cross Two Equalities", topic: "Transitivity",
+    theorem: "a = b → b = c → a = c", environment: ["α : Type", "a b c : α"],
     intro: "Equality evidence composes through an intermediate value.",
     // Intended Warrior term (shortest lesson route): `Eq.trans`.
     // Intended Mage moves: `intro hab → intro hbc → trans □ → b → exact hab → exact hbc`.
@@ -752,8 +748,8 @@ const existingLevelEntries = [
     monster: monster("Ivy Automaton", "Two wooden bridges meet at its iron core.", "monsters-3.png", 5, 0, 34),
   },
   {
-    id: 28, depth: 3, chapter: "Quantifiers and Equality", title: "Carry Equality Through", topic: "Congruence",
-    theorem: "a = b → f a = f b", context: ["α β : Type", "f : α → β", "a b : α"],
+    id: 33, depth: 3, chapter: "Quantifiers and Equality", title: "Carry Equality Through", topic: "Congruence",
+    theorem: "a = b → f a = f b", environment: ["α β : Type", "f : α → β", "a b : α"],
     intro: "Equal inputs remain equal when passed through the same function.",
     // Intended Warrior term (shortest lesson route): `fun h => congrArg f h`.
     // Intended Mage moves (shortest lesson route): `intro h → congr → exact h`.
@@ -767,8 +763,8 @@ const existingLevelEntries = [
     monster: monster("Crimson Scorpion", "Its mirrored claws move as one function.", "monsters-3.png", 6, 0, 34),
   },
   {
-    id: 29, depth: 3, chapter: "Quantifiers and Equality", title: "Rewrite the Equal", topic: "Equality rewriting",
-    theorem: "a = b → P a → P b", context: ["α : Type", "P : α → Prop", "a b : α"],
+    id: 34, depth: 3, chapter: "Quantifiers and Equality", title: "Rewrite the Equal", topic: "Equality rewriting",
+    theorem: "a = b → P a → P b", environment: ["α : Type", "P : α → Prop", "a b : α"],
     intro: "Equality can rewrite a goal from one equal value to another.",
     // Intended Warrior term (shortest lesson route): `fun hab hPa => Eq.mp (congrArg P hab) hPa`.
     // Intended Mage moves: `intro hab → intro hPa → rw [← □] → hab → exact hPa`.
@@ -782,8 +778,8 @@ const existingLevelEntries = [
     monster: monster("Masked Djinn", "It changes one true name into another without loss.", "monsters-3.png", 7, 0, 34),
   },
   {
-    id: 30, depth: 4, chapter: "Tactic Craft", title: "Long Application", topic: "Apply chains",
-    theorem: "(P → Q) → (Q → R) → (R → S) → P → S", context: ["P Q R S : Prop"],
+    id: 35, depth: 4, chapter: "Tactic Craft", title: "Long Application", topic: "Apply chains",
+    theorem: "(P → Q) → (Q → R) → (R → S) → P → S", environment: ["P Q R S : Prop"],
     intro: "Long implication chains are ordinary function composition viewed as proof search.",
     // Intended Warrior term (shortest lesson route): `fun hPQ hQR hRS hP => hRS (hQR (hPQ hP))`.
     // Intended Mage moves (shortest lesson route): `intro hPQ → intro hQR → intro hRS → intro hP → apply hRS → apply hQR → apply hPQ → exact hP`.
@@ -793,8 +789,8 @@ const existingLevelEntries = [
     monster: monster("Three-Headed Hound", "Each throat guards the premise of the next.", "monsters-3.png", 8, 0, 34),
   },
   {
-    id: 31, depth: 4, chapter: "Tactic Craft", title: "Nested Pair", topic: "Nested constructors",
-    theorem: "P → Q → R → P ∧ (Q ∧ R)", context: ["P Q R : Prop"],
+    id: 36, depth: 4, chapter: "Tactic Craft", title: "Nested Pair", topic: "Nested constructors",
+    theorem: "P → Q → R → P ∧ (Q ∧ R)", environment: ["P Q R : Prop"],
     intro: "Nested conjunctions are trees whose constructors determine their shape.",
     // Intended Warrior term (shortest lesson route): `fun hP hQ hR => And.intro hP (And.intro hQ hR)`.
     // Intended Mage moves (shortest lesson route): `intro hP → intro hQ → intro hR → constructor → exact hP → constructor → exact hQ → exact hR`.
@@ -804,8 +800,8 @@ const existingLevelEntries = [
     monster: monster("White Dragonling", "Three nested scales protect its small bright heart.", "monsters-3.png", 9, 92, 126),
   },
   {
-    id: 32, depth: 4, chapter: "Tactic Craft", title: "Unwind the Forks", topic: "Nested cases",
-    theorem: "(P ∨ Q) ∨ R → R ∨ Q ∨ P", context: ["P Q R : Prop"],
+    id: 37, depth: 4, chapter: "Tactic Craft", title: "Unwind the Forks", topic: "Nested cases",
+    theorem: "(P ∨ Q) ∨ R → R ∨ Q ∨ P", environment: ["P Q R : Prop"],
     intro: "Nested disjunctions require nested elimination, with one branch for every possible constructor.",
     // Intended Warrior term (shortest lesson route): `fun h => Or.elim h (fun hpq => Or.elim hpq (fun hP => Or.inr (Or.inr hP)) (fun hQ => Or.inr (Or.inl hQ))) Or.inl`.
     // Intended Mage moves: `intro h → cases □ → h → cases □ → hPQ → right → right → exact hP → right → left → exact hQ → left → exact hR`.
@@ -825,8 +821,8 @@ const existingLevelEntries = [
     monster: monster("Ashen Eye", "Every pupil opens into another forked corridor.", "monsters-3.png", 4, 92, 126),
   },
   {
-    id: 33, depth: 4, chapter: "Tactic Craft", title: "Rewrite by Equivalence", topic: "Iff rewriting",
-    theorem: "(P ↔ Q) → P ∨ R → Q ∨ R", context: ["P Q R : Prop"],
+    id: 38, depth: 4, chapter: "Tactic Craft", title: "Rewrite by Equivalence", topic: "Iff rewriting",
+    theorem: "(P ↔ Q) → P ∨ R → Q ∨ R", environment: ["P Q R : Prop"],
     intro: "An equivalence can replace a proposition even when it occurs inside a larger expression.",
     // Intended Warrior term (shortest lesson route): `fun h h2 => Or.elim h2 (fun hP => Or.inl (h.mp hP)) Or.inr`.
     // Intended Mage moves: `intro h → intro h2 → rw [← □] → h → exact h2`.
@@ -836,8 +832,8 @@ const existingLevelEntries = [
     monster: monster("Azure Hoarder", "Its stolen rune rewrites the door behind it.", "monsters.png", 1, 92, 126),
   },
   {
-    id: 34, depth: 4, chapter: "Tactic Craft", title: "Eliminate the Equal", topic: "Variable elimination",
-    theorem: "a = b → g (f a) = g (f b)", context: ["α β γ : Type", "f : α → β", "g : β → γ", "a b : α"],
+    id: 39, depth: 4, chapter: "Tactic Craft", title: "Eliminate the Equal", topic: "Variable elimination",
+    theorem: "a = b → g (f a) = g (f b)", environment: ["α β γ : Type", "f : α → β", "g : β → γ", "a b : α"],
     intro: "An equality can eliminate one variable by replacing it everywhere with its equal value.",
     // Intended Warrior term (shortest lesson route): `fun h => congrArg g (congrArg f h)`.
     // Intended Mage moves: `intro h → subst □ → b → rfl`.
@@ -848,8 +844,8 @@ const existingLevelEntries = [
     monster: monster("Violet Relay Lich", "Its wand changes every symbol caught in the beam.", "monsters.png", 2, 92, 126),
   },
   {
-    id: 35, depth: 4, chapter: "Tactic Craft", title: "Chain the Equalities", topic: "Calculational proofs",
-    theorem: "a = b → b = c → f a = f c", context: ["α β : Type", "f : α → β", "a b c : α"],
+    id: 40, depth: 4, chapter: "Tactic Craft", title: "Chain the Equalities", topic: "Calculational proofs",
+    theorem: "a = b → b = c → f a = f c", environment: ["α β : Type", "f : α → β", "a b c : α"],
     intro: "A calculation records intermediate equalities while congruence transports the result through a function.",
     // Intended Warrior term (shortest lesson route): `fun hab hbc => congrArg f (Eq.trans hab hbc)`.
     // Intended Mage moves (shortest lesson route): introduce both equalities, start a calculation through `f b`, and use `congr` in both steps.
@@ -860,8 +856,8 @@ const existingLevelEntries = [
     monster: monster("Crowned Proof-Knight", "Every equality in the dungeon ends at its throne.", "monsters-2.png", 9, 92, 126),
   },
   {
-    id: 36, depth: 4, chapter: "Tactic Craft", title: "Split on Truth", topic: "Excluded middle",
-    theorem: "P ∨ ¬P", context: ["P : Prop"],
+    id: 41, depth: 4, chapter: "Tactic Craft", title: "Split on Truth", topic: "Excluded middle",
+    theorem: "P ∨ ¬P", environment: ["P : Prop"],
     intro: "Classical excluded middle states that every proposition is true or false.",
     // Intended Warrior term (shortest lesson route): `Classical.em P`.
     // Intended Mage moves: `by_cases □ → P → left → exact hP → right → exact hP`.
@@ -880,8 +876,8 @@ const existingLevelEntries = [
     monster: monster("Copper Mirror Gargoyle", "Its mirror always shows one of two possible worlds.", "monsters.png", 4, 92, 126),
   },
   {
-    id: 37, depth: 4, chapter: "Tactic Craft", title: "Explode the Clash", topic: "Contradiction tactic",
-    theorem: "¬P → P → Q", context: ["P Q : Prop"],
+    id: 42, depth: 4, chapter: "Tactic Craft", title: "Explode the Clash", topic: "Contradiction tactic",
+    theorem: "¬P → P → Q", environment: ["P Q : Prop"],
     intro: "Once both `P` and `¬P` are present, the contradiction proves any target.",
     // Intended Warrior term (shortest lesson route): `fun hnP hP => False.elim (hnP hP)`.
     // Intended Mage moves (shortest lesson route): `intro hnP → intro hP → contradiction`.
@@ -892,8 +888,8 @@ const existingLevelEntries = [
     monster: monster("Frozen Stitched Pair", "The seams cannot contain its opposing halves.", "monsters.png", 3, 92, 126),
   },
   {
-    id: 38, depth: 4, chapter: "Tactic Craft", title: "Close by Reduction", topic: "Definitional equality",
-    theorem: "∀ n : Nat, n + 0 = n", context: [],
+    id: 43, depth: 4, chapter: "Tactic Craft", title: "Close by Reduction", topic: "Definitional equality",
+    theorem: "∀ n : Nat, n + 0 = n", environment: [],
     intro: "Some equalities hold because both sides reduce to the same expression by definition.",
     // Intended Warrior term (shortest lesson route): `Eq.refl`.
     // Intended Mage moves (shortest lesson route): `intro n → rfl`.
@@ -911,8 +907,8 @@ const existingLevelEntries = [
     monster: monster("Amber Emberhorn", "Its final step vanishes by simple reduction.", "monsters.png", 6, 92, 126),
   },
   {
-    id: 39, depth: 5, chapter: "Induction and Calculation", title: "Zero on the Left", topic: "Natural-number induction",
-    theorem: "∀ n : Nat, 0 + n = n", context: [],
+    id: 44, depth: 5, chapter: "Induction and Calculation", title: "Zero on the Left", topic: "Natural-number induction",
+    theorem: "∀ n : Nat, 0 + n = n", environment: [],
     intro: "When computation follows a recursive argument, induction mirrors the definition's two cases.",
     // Intended Warrior term (shortest lesson route): `fun n => Nat.rec (motive := fun n => 0 + n = n) (Eq.refl 0) (fun k ih => congrArg Nat.succ ih) n`.
     // Intended Mage moves: introduce and induct on `n`; use `rfl` at zero, then reduce the successor case and prove the reduced argument equality with `ih`.
@@ -931,8 +927,8 @@ const existingLevelEntries = [
     monster: monster("Glacial Frosthorn", "It returns once for zero and once for every successor.", "monsters.png", 7, 92, 126),
   },
   {
-    id: 40, depth: 5, chapter: "Induction and Calculation", title: "Successor Addition", topic: "Recursive reduction",
-    theorem: "∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)", context: [],
+    id: 45, depth: 5, chapter: "Induction and Calculation", title: "Successor Addition", topic: "Recursive reduction",
+    theorem: "∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)", environment: [],
     intro: "Natural-number addition is defined by recursion on its second argument.",
     // Intended Warrior term (shortest lesson route): `fun n m => Eq.refl (n + Nat.succ m)`.
     // Intended Mage moves (shortest lesson route): `intro n → intro m → rfl`.
@@ -947,8 +943,8 @@ const existingLevelEntries = [
     monster: monster("Teal Forked Adder", "The second head always reveals the next successor.", "monsters.png", 8, 92, 126),
   },
   {
-    id: 41, depth: 5, chapter: "Induction and Calculation", title: "Associate the Sums", topic: "Inductive equality",
-    theorem: "∀ c b a : Nat, (a + b) + c = a + (b + c)", context: [],
+    id: 46, depth: 5, chapter: "Induction and Calculation", title: "Associate the Sums", topic: "Inductive equality",
+    theorem: "∀ c b a : Nat, (a + b) + c = a + (b + c)", environment: [],
     intro: "Associativity follows by induction on the recursive final argument.",
     // Intended Warrior term (shortest lesson route): `fun c b a => Nat.rec (motive := fun c => (a + b) + c = a + (b + c)) (Eq.refl ((a + b) + 0)) (fun k ih => congrArg Nat.succ ih) c`.
     // Intended Mage moves: introduce the values, induct on `c`, use `rfl` at zero, then reduce, use congruence, and supply `ih`.
@@ -966,8 +962,8 @@ const existingLevelEntries = [
     monster: monster("Elder Void Warden", "Three sums bend around its ancient shadow.", "monsters.png", 9, 92, 126),
   },
   {
-    id: 42, depth: 5, chapter: "Induction and Calculation", title: "Commute the Sums", topic: "Using proved theorems",
-    theorem: "∀ a b : Nat, a + b = b + a", context: [],
+    id: 47, depth: 5, chapter: "Induction and Calculation", title: "Commute the Sums", topic: "Using proved theorems",
+    theorem: "∀ a b : Nat, a + b = b + a", environment: [],
     intro: "Larger developments reuse earlier theorems rather than reconstructing every proof.",
     // Intended Warrior term: induction on `b`, using `Nat.zero_add`, `Nat.succ_add`, and congruence in the two cases.
     // Intended Mage route: introduce both numbers, induct on `b`, reduce each case, and explicitly rewrite with the proved zero fact, `ih`, and `Nat.succ_add`.
@@ -983,8 +979,8 @@ const existingLevelEntries = [
     monster: monster("Fungal Sentinel", "It swaps every pair of stones in its fairy ring.", "monsters-2.png", 0, 92, 126),
   },
   {
-    id: 43, depth: 5, chapter: "Induction and Calculation", title: "Append Nothing", topic: "List induction",
-    theorem: "∀ xs : List α, xs ++ [] = xs", context: ["α : Type"],
+    id: 48, depth: 5, chapter: "Induction and Calculation", title: "Append Nothing", topic: "List induction",
+    theorem: "∀ xs : List α, xs ++ [] = xs", environment: ["α : Type"],
     intro: "Lists have empty and cons constructors, so list induction follows those two shapes.",
     // Intended Warrior term (shortest lesson route): `fun xs => List.rec (motive := fun xs => xs ++ [] = xs) (Eq.refl []) (fun x xs ih => congrArg (List.cons x) ih) xs`.
     // Intended Mage moves: introduce and induct on `xs`; reduce the cons case, then rewrite explicitly with `ih`.
@@ -1002,8 +998,8 @@ const existingLevelEntries = [
     monster: monster("Indigo Book Mimic", "Its last page is empty, yet the story remains unchanged.", "monsters-2.png", 1, 92, 126),
   },
   {
-    id: 44, depth: 5, chapter: "Induction and Calculation", title: "Associate the Lists", topic: "Structural theorem reuse",
-    theorem: "∀ xs ys zs : List α, (xs ++ ys) ++ zs = xs ++ (ys ++ zs)", context: ["α : Type"],
+    id: 49, depth: 5, chapter: "Induction and Calculation", title: "Associate the Lists", topic: "Structural theorem reuse",
+    theorem: "∀ xs ys zs : List α, (xs ++ ys) ++ zs = xs ++ (ys ++ zs)", environment: ["α : Type"],
     intro: "List append is associative, and its reusable theorem accepts three lists.",
     // Intended Warrior term: list induction on `xs`, using reflexivity and congruence for the two constructors.
     // Intended Mage moves: introduce the lists and induct on `xs`; reduce the cons case, then rewrite explicitly with `ih`.
@@ -1018,8 +1014,8 @@ const existingLevelEntries = [
     monster: monster("Onyx Cave Beetle", "Three chains of carapace connect in either grouping.", "monsters-2.png", 2, 92, 126),
   },
   {
-    id: 45, depth: 5, chapter: "Induction and Calculation", title: "Measure the Append", topic: "Simplification",
-    theorem: "∀ xs ys : List α, (xs ++ ys).length = xs.length + ys.length", context: ["α : Type"],
+    id: 50, depth: 5, chapter: "Induction and Calculation", title: "Measure the Append", topic: "Simplification",
+    theorem: "∀ xs ys : List α, (xs ++ ys).length = xs.length + ys.length", environment: ["α : Type"],
     intro: "Recursive functions on inductive values often produce equations that simplification can solve.",
     // Intended Warrior term: list induction on `xs`, combining the tail equality with `Nat.succ_add` in the cons case.
     // Intended Mage moves: induct on `xs`, use `simp` only for reductions, and rewrite explicitly with the zero, successor, and induction facts.
@@ -1034,8 +1030,8 @@ const existingLevelEntries = [
     monster: monster("Gilded Raven Cultist", "It counts every feather sewn onto its cloak.", "monsters-2.png", 3, 92, 126),
   },
   {
-    id: 46, depth: 6, chapter: "The Capstone Abyss", title: "Sum the Joined Hoards", topic: "Defining sum and append induction",
-    theorem: sumAppendTheorem, context: [],
+    id: 51, depth: 6, chapter: "The Capstone Abyss", title: "Sum the Joined Hoards", topic: "Defining sum and append induction",
+    theorem: sumAppendTheorem, environment: [],
     intro: "The new function `sum` returns zero for `[]` and adds each head to the sum of its tail.",
     // Intended Warrior term (32 catalogue selections; shortest lesson route): introduce `xs` and `ys`, use one `List.rec` on `xs`, then use `Nat.zero_add`, `congrArg`, and `Nat.add_assoc` in its cases; this contains one recursor.
     // Intended Mage moves: induct on `xs`, use `simp` for constructor reduction only, and select the zero, induction, and associativity rewrites explicitly.
@@ -1051,8 +1047,8 @@ const existingLevelEntries = [
     monster: monster("Hoard-Sum Automaton", "Its brass ledger fuses two treasure trains without losing a single coin.", "monsters-3.png", 5, 184, 218),
   },
   {
-    id: 47, depth: 6, chapter: "The Capstone Abyss", title: "Weight of a Permutation", topic: "Induction on permutation evidence",
-    theorem: "∀ xs ys : List Nat, List.Perm xs ys → sum xs = sum ys", context: [],
+    id: 52, depth: 6, chapter: "The Capstone Abyss", title: "Weight of a Permutation", topic: "Induction on permutation evidence",
+    theorem: "∀ xs ys : List Nat, List.Perm xs ys → sum xs = sum ys", environment: [],
     intro: "`List.Perm xs ys` is evidence that `ys` can be obtained from `xs` without adding or removing elements.",
     // Intended Warrior term (45 catalogue selections; shortest lesson route): introduce the lists and permutation proof, then use one `List.Perm.rec`; its cases use reflexivity, congruence, `Nat.add_left_comm`, and transitivity.
     // Intended Mage moves: induct on `h`, use `simp` only to expose constructor definitions, and handle each equality with explicit hypotheses or named arithmetic rewrites.
@@ -1067,8 +1063,8 @@ const existingLevelEntries = [
     monster: monster("Permutation Scorpion Matriarch", "Every shuffle of its jeweled segments leaves their total weight unchanged.", "monsters-3.png", 6, 184, 218),
   },
   {
-    id: 48, depth: 6, chapter: "The Capstone Abyss", title: "Swap the Caravans", topic: "Composing sum equalities",
-    theorem: "∀ xs ys : List Nat, sum (xs ++ ys) = sum (ys ++ xs)", context: [],
+    id: 53, depth: 6, chapter: "The Capstone Abyss", title: "Swap the Caravans", topic: "Composing sum equalities",
+    theorem: "∀ xs ys : List Nat, sum (xs ++ ys) = sum (ys ++ xs)", environment: [],
     intro: "Two entire caravans may exchange places without changing the combined weight of their cargo.",
     // Intended Warrior term (25 catalogue selections; shortest lesson route): introduce `xs` and `ys`, chain `sum_append xs ys`, commutativity, and the symmetry of `sum_append ys xs`; this contains no recursor.
     // Intended Mage moves: introduce the lists, rewrite both append sums explicitly, rewrite by commutativity, and close the reflexive result.
@@ -1078,8 +1074,8 @@ const existingLevelEntries = [
     monster: monster("Caravan-Swapping Djinn", "It exchanges two processions at once, but their combined burden never changes.", "monsters-3.png", 7, 184, 218),
   },
   {
-    id: 49, depth: 6, chapter: "The Capstone Abyss", title: "Count the Copies", topic: "Replication and multiplication",
-    theorem: "∀ n x : Nat, sum (List.replicate n x) = n * x", context: [],
+    id: 54, depth: 6, chapter: "The Capstone Abyss", title: "Count the Copies", topic: "Replication and multiplication",
+    theorem: "∀ n x : Nat, sum (List.replicate n x) = n * x", environment: [],
     intro: "`List.replicate n x` constructs a list containing exactly `n` copies of `x`.",
     // Intended Warrior term (37 catalogue selections; shortest lesson route): introduce `n` and `x`, use one `Nat.rec` on `n`, and combine congruence, commutativity, and `Nat.succ_mul` in the successor case.
     // Intended Mage moves: induct on `n`, reduce each constructor case, and explicitly rewrite with the multiplication laws, `ih`, and commutativity.
@@ -1095,8 +1091,8 @@ const existingLevelEntries = [
     monster: monster("Replication Hound Triumvirate", "Every head counts another identical row of coins.", "monsters-3.png", 8, 184, 218),
   },
   {
-    id: 50, depth: 6, chapter: "The Capstone Abyss", title: "Echo Every Wagon", topic: "Nested list and natural-number induction",
-    theorem: "∀ xs : List Nat, ∀ n : Nat, sum (repeatEach n xs) = n * sum xs", context: [],
+    id: 55, depth: 6, chapter: "The Capstone Abyss", title: "Echo Every Wagon", topic: "Nested list and natural-number induction",
+    theorem: "∀ xs : List Nat, ∀ n : Nat, sum (repeatEach n xs) = n * sum xs", environment: [],
     intro: "`repeatEach n xs` replaces every value in `xs` with `n` consecutive copies of that value.",
     // Intended Warrior proof uses nested recursion; the Mage route inducts on the source list and explicitly reuses the previously proved block theorems.
     lesson: lesson("`repeatEach n [] = []`, while `repeatEach n (x :: xs) = List.replicate n x ++ repeatEach n xs`. Follow the source list's structure, using `sum_replicate` for each head block and the induction hypothesis for the tail."),
@@ -1113,7 +1109,7 @@ const existingLevelEntries = [
 
 const levelEntries = [
   ...tutorialEntries,
-  ...existingLevelEntries.map((exercise) => ({ ...exercise, id: exercise.id + 5 })),
+  ...existingLevelEntries,
 ];
 
 const levels: Exercise[] = levelEntries.map((exercise) => {

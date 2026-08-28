@@ -18,7 +18,7 @@ import {
   type StorySequence,
 } from "./curriculum";
 import {
-  contextLines,
+  environmentLines,
   createProofState,
   currentModeLabel,
   currentTarget,
@@ -141,7 +141,7 @@ export default function Home() {
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const [levelIndex, setLevelIndex] = useState(0);
   const [proofState, setProofState] = useState<ProofState>(() =>
-    createProofState(exercises[0].theorem, exercises[0].context),
+    createProofState(exercises[0].theorem, exercises[0].environment),
   );
   const [undoStack, setUndoStack] = useState<ProofState[]>([]);
   const [message, setMessage] = useState<Message>(null);
@@ -169,7 +169,7 @@ export default function Home() {
   const proofFailed = RESOURCE_CONSUMPTION_ENABLED && hp === 0 && !solved;
   const target = solved ? "No goals" : currentTarget(proofState);
   const requiredArgumentType = pendingArgumentType(proofState);
-  const displayedContext = contextLines(proofState);
+  const displayedEnvironment = environmentLines(proofState);
   const history = proofState.moves;
   const choices = heroClass && !solved && !proofFailed
     ? getMoveChoices(proofState, heroClass, level.id)
@@ -245,7 +245,7 @@ export default function Home() {
             setVisionPoints(visionFor(restored.selectedClass));
             const restoredIndex = Math.min(restored.level[restored.selectedClass], exercises.length - 1);
             setLevelIndex(restoredIndex);
-            setProofState(createProofState(exercises[restoredIndex].theorem, exercises[restoredIndex].context));
+            setProofState(createProofState(exercises[restoredIndex].theorem, exercises[restoredIndex].environment));
           }
         } else {
           setSave(emptySave);
@@ -309,7 +309,7 @@ export default function Home() {
     const nextIndex = Math.min(save.level[nextClass], exercises.length - 1);
     setHeroClass(nextClass);
     setLevelIndex(nextIndex);
-    setProofState(createProofState(exercises[nextIndex].theorem, exercises[nextIndex].context));
+    setProofState(createProofState(exercises[nextIndex].theorem, exercises[nextIndex].environment));
     setUndoStack([]);
     setMessage(null);
     setMonsterPhase("idle");
@@ -425,7 +425,7 @@ export default function Home() {
     setHp(heroClass ? MAX_HP[heroClass] : MAX_HP.warrior);
     setMana(heroClass ? maxManaFor(heroClass) : 0);
     setVisionPoints(heroClass ? visionFor(heroClass) : MAX_VISION_POINTS);
-    setProofState(createProofState(level.theorem, level.context));
+    setProofState(createProofState(level.theorem, level.environment));
     setUndoStack([]);
     setMessage(null);
     setEnteringNaturalNumber(false);
@@ -480,7 +480,7 @@ export default function Home() {
     clearAnimations();
     setLevelIndex(index);
     setShowMap(false);
-    setProofState(createProofState(exercises[index].theorem, exercises[index].context));
+    setProofState(createProofState(exercises[index].theorem, exercises[index].environment));
     setUndoStack([]);
     setMessage(null);
     setMonsterPhase("idle");
@@ -866,7 +866,7 @@ export default function Home() {
                 <div className="victory-state"><div className="victory-sigil">✦</div><div><strong>MONSTER DEFEATED</strong><p>No goals remain. The proof is complete.</p></div></div>
               ) : (
                 <>
-                  <div className={`context-list${tutorialClass("environment")}`}>{displayedContext.length ? displayedContext.map((item) => <code key={item}>{item}</code>) : <code>empty context</code>}</div>
+                  <div className={`environment-list${tutorialClass("environment")}`}>{displayedEnvironment.length ? displayedEnvironment.map((item) => <code key={item}>{item}</code>) : <code>empty environment</code>}</div>
                   <div className="goal-divider" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined} />
                   <div className="goal-stack" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><div className="goal focused"><span>{heroClass === "warrior" ? "□" : "⊢"}</span><code>{target}</code></div></div>
                 </>

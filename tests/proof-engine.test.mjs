@@ -11,7 +11,7 @@ import {
 } from "../app/curriculum.ts";
 
 import {
-  contextLines,
+  environmentLines,
   createProofState,
   currentModeLabel,
   currentTarget,
@@ -57,7 +57,7 @@ function inputMove(state, hero, level, label, value) {
 }
 
 function replayIntendedRoute(level, hero) {
-  let state = createProofState(level.theorem, level.context);
+  let state = createProofState(level.theorem, level.environment);
   let mana = 0;
   for (const label of level[hero].selections) {
     const choices = getMoveChoices(state, hero, level.id);
@@ -73,13 +73,13 @@ function replayIntendedRoute(level, hero) {
 
 test("five basic tutorials begin both proof paths", () => {
   assert.deepEqual(
-    exercises.slice(0, 5).map(({ id, theorem, context }) => ({ id, theorem, context })),
+    exercises.slice(0, 5).map(({ id, theorem, environment }) => ({ id, theorem, environment })),
     [
-      { id: 1, theorem: "Nat", context: [] },
-      { id: 2, theorem: "Nat", context: ["n : Nat"] },
-      { id: 3, theorem: "List Nat", context: [] },
-      { id: 4, theorem: "Prop", context: [] },
-      { id: 5, theorem: "True", context: [] },
+      { id: 1, theorem: "Nat", environment: [] },
+      { id: 2, theorem: "Nat", environment: ["n : Nat"] },
+      { id: 3, theorem: "List Nat", environment: [] },
+      { id: 4, theorem: "Prop", environment: [] },
+      { id: 5, theorem: "True", environment: [] },
     ],
   );
 
@@ -143,7 +143,7 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
   assert.match(newMoveText(exercises[43], "mage"), /without using any hypothesis or catalogue theorem/);
 
   assert.deepEqual(exercises[0].lesson, {
-    common: ["`Nat` is the type of natural numbers. Enter any whole number to build a term of this type."],
+    common: ["`Nat` is the type of natural numbers. Enter any number to build a term of this type."],
   });
   assert.deepEqual(lessonTextFor(exercises[0].lesson, "warrior"), lessonTextFor(exercises[0].lesson, "mage"));
 
@@ -223,10 +223,10 @@ test("catalogue moves expose class-appropriate mana costs", () => {
 
 test("the sum-append capstone provides sum_append through the catalogue, not the environment", () => {
   const level = exercises.find((exercise) => exercise.id === 53);
-  const state = createProofState(level.theorem, level.context);
+  const state = createProofState(level.theorem, level.environment);
 
-  assert.equal(level.context.some((declaration) => declaration.startsWith("sum_append :")), false);
-  assert.equal(contextLines(state).some((line) => line.startsWith("sum_append :")), false);
+  assert.equal(level.environment.some((declaration) => declaration.startsWith("sum_append :")), false);
+  assert.equal(environmentLines(state).some((line) => line.startsWith("sum_append :")), false);
   assert.equal(unlockedMoves(level.id, "warrior").has("catalogue.sumAppend"), true);
 
   let introduced = move(state, "warrior", level.id, "fun xs => □");
@@ -354,7 +354,7 @@ test("repeatEach unfolds one source-list constructor", () => {
 
 test("completed argument placeholders cannot reappear as selectable terms", () => {
   const level = exercises.find((exercise) => exercise.id === 53);
-  let state = createProofState(level.theorem, level.context);
+  let state = createProofState(level.theorem, level.environment);
   const moves = [
     "fun xs => □", "fun ys => □",
     "(□ □)", "(□ □)", "Eq.trans",
@@ -385,12 +385,12 @@ test("proof completion rejects unresolved metas, constraints, and the wrong root
   const closed = { ...base, root: { kind: "term", text: "0", type: "Nat" } };
   assert.equal(isSolved(closed), true);
   assert.equal(isSolved({ ...closed, root: { kind: "term", text: "?a1", type: "Nat" } }), false);
-  assert.equal(isSolved({ ...closed, constraints: [{ left: "0", right: "1", context: [] }] }), false);
+  assert.equal(isSolved({ ...closed, constraints: [{ left: "0", right: "1", environment: [] }] }), false);
   assert.equal(isSolved({ ...closed, root: { kind: "term", text: "0", type: "Prop" } }), false);
 });
 
-test("dependent catalogue recursors are inferred from the target without context evidence", () => {
-  let state = createProofState(exercises[51].theorem, exercises[51].context);
+test("dependent catalogue recursors are inferred from the target without environment evidence", () => {
+  let state = createProofState(exercises[51].theorem, exercises[51].environment);
   state = move(state, "warrior", 52, "fun xs => □");
   state = move(state, "warrior", 52, "fun ys => □");
   for (let index = 0; index < 4; index += 1) state = move(state, "warrior", 52, "(□ □)");
@@ -401,7 +401,7 @@ test("dependent catalogue recursors are inferred from the target without context
   assert.equal(currentTarget(state), "sum [] = sum []");
 });
 
-test("congrArg infers a shared unary context from an equality target", () => {
+test("congrArg infers a shared unary function from an equality target", () => {
   let state = createProofState(
     "(x + y) + sum l = (y + x) + sum l",
     ["x y : Nat", "l : List Nat"],
@@ -424,14 +424,14 @@ test("the list-sum capstones use no more than two nested recursors", () => {
   );
   assert.deepEqual(recursorCounts, [1, 1, 0, 1, 2]);
 
-  let appendState = createProofState(exercises[50].theorem, exercises[50].context);
+  let appendState = createProofState(exercises[50].theorem, exercises[50].environment);
   appendState = move(appendState, "mage", 51, "intro xs");
   appendState = move(appendState, "mage", 51, "intro ys");
   const appendChoices = getMoveChoices(appendState, "mage", 51).map((choice) => choice.label);
   assert.equal(appendChoices.includes("simp"), false);
   assert.ok(appendChoices.includes("induction □"));
 
-  let replicateState = createProofState(exercises[53].theorem, exercises[53].context);
+  let replicateState = createProofState(exercises[53].theorem, exercises[53].environment);
   replicateState = move(replicateState, "mage", 54, "intro n");
   replicateState = move(replicateState, "mage", 54, "intro x");
   assert.equal(getMoveChoices(replicateState, "mage", 54).some((choice) => choice.label === "simp"), false);
@@ -454,7 +454,7 @@ test("all five Mage capstones replay with their intended move and mana counts", 
 
   for (const [index, route] of routes.entries()) {
     const level = exercises[index + 50];
-    let state = createProofState(level.theorem, level.context);
+    let state = createProofState(level.theorem, level.environment);
     let mana = 0;
     for (const label of route.labels) {
       const choice = getMoveChoices(state, "mage", level.id).find((candidate) => candidate.label === label);
@@ -469,7 +469,7 @@ test("all five Mage capstones replay with their intended move and mana counts", 
 
 test("Mage induction chapter routes use explicit facts after restricted simp", () => {
   for (const level of exercises.slice(38, 45)) {
-    let state = createProofState(level.theorem, level.context);
+    let state = createProofState(level.theorem, level.environment);
     for (const label of level.mage.selections) {
       state = move(state, "mage", level.id, label);
     }
@@ -480,7 +480,7 @@ test("Mage induction chapter routes use explicit facts after restricted simp", (
 test("all five Warrior capstones replay with their intended selection counts", () => {
   const replay = (levelIndex, build) => {
     const level = exercises[levelIndex];
-    let state = createProofState(level.theorem, level.context);
+    let state = createProofState(level.theorem, level.environment);
     let selections = 0;
     const exact = (label) => {
       const choices = getMoveChoices(state, "warrior", level.id);
@@ -593,7 +593,7 @@ test("an environment term can close the first warrior level", () => {
 test("intro extends the mage environment before exact chooses a term", () => {
   let state = createProofState("P → P", ["P : Prop"]);
   state = move(state, "mage", 7, "intro hP");
-  assert.ok(contextLines(state).includes("hP : P"));
+  assert.ok(environmentLines(state).includes("hP : P"));
   state = move(state, "mage", 7, "exact □");
   assert.deepEqual(state.tacticScript, ["intro hP", "exact □"]);
   state = move(state, "mage", 7, "hP");
@@ -665,7 +665,7 @@ test("mage term-taking tactics stage and type-check their arguments", () => {
   assert.deepEqual(renderTacticProofLines(state), ["by", "  intro h", "  intro h2", "  trans b"]);
 });
 
-test("mage structural and equality tactics do not preselect context terms", () => {
+test("mage structural and equality tactics do not preselect environment terms", () => {
   let casesState = createProofState("(P ∨ Q) → R", ["P Q R : Prop"]);
   casesState = move(casesState, "mage", 15, "intro h");
   casesState = move(casesState, "mage", 15, "cases □");
@@ -750,18 +750,18 @@ test("mage subst offers every eliminable equality variable and rewrites the whol
 
   const eliminateA = move(state, "mage", 40, "a");
   assert.equal(currentTarget(eliminateA), "f b = f c");
-  assert.ok(contextLines(eliminateA).includes("h2 : b = c"));
-  assert.equal(contextLines(eliminateA).some((line) => line.startsWith("a :") || line.startsWith("h :")), false);
+  assert.ok(environmentLines(eliminateA).includes("h2 : b = c"));
+  assert.equal(environmentLines(eliminateA).some((line) => line.startsWith("a :") || line.startsWith("h :")), false);
 
   const eliminateB = move(state, "mage", 40, "b");
   assert.equal(currentTarget(eliminateB), "f a = f c");
-  assert.ok(contextLines(eliminateB).includes("h2 : a = c"));
-  assert.equal(contextLines(eliminateB).some((line) => line.startsWith("b :") || line.startsWith("h :")), false);
+  assert.ok(environmentLines(eliminateB).includes("h2 : a = c"));
+  assert.equal(environmentLines(eliminateB).some((line) => line.startsWith("b :") || line.startsWith("h :")), false);
 
   const eliminateC = move(state, "mage", 40, "c");
   assert.equal(currentTarget(eliminateC), "f a = f b");
-  assert.ok(contextLines(eliminateC).includes("h : a = b"));
-  assert.equal(contextLines(eliminateC).some((line) => line.startsWith("c :") || line.startsWith("h2 :")), false);
+  assert.ok(environmentLines(eliminateC).includes("h : a = b"));
+  assert.equal(environmentLines(eliminateC).some((line) => line.startsWith("c :") || line.startsWith("h2 :")), false);
 });
 
 test("mage learns rewriting before substitution on the existing equality levels", () => {
@@ -1062,19 +1062,19 @@ test("catalogue functions never arrive with pre-filled argument holes", () => {
     { level: 16, theorem: "False → P", expected: "False.elim" },
     { level: 17, theorem: "(P → Q) → (Q → P) → (P ↔ Q)", expected: "Iff.intro" },
     { level: 24, theorem: "(¬P → False) → P", expected: "Classical.byContradiction" },
-    { level: 25, theorem: "∀ x : α, x = x", context: ["α : Type"], expected: "Eq.refl" },
-    { level: 28, theorem: "∀ x : α, P x → ∃ y : α, P y", context: ["α : Type", "P : α → Prop"], expected: "Exists.intro" },
-    { level: 29, theorem: "(∃ x : α, P x) → (∀ x : α, P x → Q) → Q", context: ["α : Type", "P : α → Prop", "Q : Prop"], expected: "Exists.elim" },
-    { level: 31, theorem: "a = b → b = a", context: ["α : Type", "a b : α"], expected: "Eq.symm" },
-    { level: 32, theorem: "a = b → b = c → a = c", context: ["α : Type", "a b c : α"], expected: "Eq.trans" },
-    { level: 33, theorem: "(α → β) → a = b → f a = f b", context: ["α β : Type", "f : α → β", "a b : α"], expected: "congrArg" },
-    { level: 34, theorem: "(P a = P b) → P a → P b", context: ["α : Type", "P : α → Prop", "a b : α", "hab : a = b"], expected: "Eq.mp" },
-    { level: 41, theorem: "∀ p : Prop, p ∨ ¬p", context: [], expected: "Classical.em" },
-    { level: 48, theorem: "∀ a b : Nat, a + b = b + a", context: [], expected: "Nat.add_comm" },
+    { level: 25, theorem: "∀ x : α, x = x", environment: ["α : Type"], expected: "Eq.refl" },
+    { level: 28, theorem: "∀ x : α, P x → ∃ y : α, P y", environment: ["α : Type", "P : α → Prop"], expected: "Exists.intro" },
+    { level: 29, theorem: "(∃ x : α, P x) → (∀ x : α, P x → Q) → Q", environment: ["α : Type", "P : α → Prop", "Q : Prop"], expected: "Exists.elim" },
+    { level: 31, theorem: "a = b → b = a", environment: ["α : Type", "a b : α"], expected: "Eq.symm" },
+    { level: 32, theorem: "a = b → b = c → a = c", environment: ["α : Type", "a b c : α"], expected: "Eq.trans" },
+    { level: 33, theorem: "(α → β) → a = b → f a = f b", environment: ["α β : Type", "f : α → β", "a b : α"], expected: "congrArg" },
+    { level: 34, theorem: "(P a = P b) → P a → P b", environment: ["α : Type", "P : α → Prop", "a b : α", "hab : a = b"], expected: "Eq.mp" },
+    { level: 41, theorem: "∀ p : Prop, p ∨ ¬p", environment: [], expected: "Classical.em" },
+    { level: 48, theorem: "∀ a b : Nat, a + b = b + a", environment: [], expected: "Nat.add_comm" },
   ];
 
   for (const item of cases) {
-    const state = createProofState(item.theorem, item.context ?? ["P Q R : Prop"]);
+    const state = createProofState(item.theorem, item.environment ?? ["P Q R : Prop"]);
     const labels = getMoveChoices(state, "warrior", item.level).map((choice) => choice.label);
     assert.ok(labels.includes(item.expected), `Expected bare ${item.expected} in ${labels.join(", ")}`);
     assert.equal(labels.some((label) => label.startsWith(`${item.expected} `)), false);
@@ -1417,8 +1417,8 @@ test("unification normalizes terms inside applications and list expressions", ()
 });
 
 test("definitional normalization follows recursive equations without algebraic reassociation", () => {
-  const offersEqRefl = (theorem, context = []) => {
-    let state = createProofState(theorem, context);
+  const offersEqRefl = (theorem, environment = []) => {
+    let state = createProofState(theorem, environment);
     state = move(state, "warrior", 48, "(□ □)");
     return getMoveChoices(state, "warrior", 48).some((choice) => choice.label === "Eq.refl");
   };
@@ -1579,11 +1579,11 @@ test("metavariable beta reduction traverses operator-bearing arguments", () => {
       expected: "List.length xs = 0",
     },
   ];
-  const context = [
+  const environment = [
     "α : Type", "head : α", "tail xs ys : List α", "a b : Nat", "P : List α → Prop",
   ];
   for (const item of cases) {
-    const state = createProofState(item.goal, context);
+    const state = createProofState(item.goal, environment);
     state.substitutions[0] = item.replacement;
     assert.equal(currentTarget(state), item.expected);
   }

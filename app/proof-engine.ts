@@ -13,10 +13,10 @@ function hasMove(unlocks: UnlockedMoves, move: MoveId) {
   return unlocks.has(move);
 }
 
-export type ContextEntry = { name: string; type: string };
+export type EnvironmentEntry = { name: string; type: string };
 
 export type ProofNode =
-  | { kind: "hole"; id: number; expected: string; context: ContextEntry[]; allowedTexts?: string[]; applicationArgumentId?: number; applicationTarget?: string; termPlaceholder?: string }
+  | { kind: "hole"; id: number; expected: string; environment: EnvironmentEntry[]; allowedTexts?: string[]; applicationArgumentId?: number; applicationTarget?: string; termPlaceholder?: string }
   | { kind: "term"; text: string; type: string; termPlaceholder?: string }
   | { kind: "template"; type: string; format: string; children: ProofNode[]; precedence?: "lambda" | "application"; termPlaceholder?: string; tacticBranches?: boolean };
 
@@ -28,7 +28,7 @@ type Pending =
   | { kind: "witness"; holeId: number; witnessType: string; binder: string; body: string }
   | { kind: "tactic-argument"; holeId: number; key: string; argumentTypes: string[] };
 
-type TypeConstraint = { left: string; right: string; context: ContextEntry[] };
+type TypeConstraint = { left: string; right: string; environment: EnvironmentEntry[] };
 
 type TacticScriptLayout = {
   kind: "calc";
@@ -194,14 +194,14 @@ function splitTop(value: string, operator: string): [string, string] | null {
     : [text.slice(0, index).trim(), text.slice(index + operator.length).trim()];
 }
 
-function inferImplicitBinderType(body: string, context: ContextEntry[]) {
+function inferImplicitBinderType(body: string, environment: EnvironmentEntry[]) {
   if (/\bNat\b|\+/.test(body)) return "Nat";
   if (/\bList\b|\+\+/.test(body)) {
-    const typeName = context.find((entry) => entry.type === "Type")?.name ?? "α";
+    const typeName = environment.find((entry) => entry.type === "Type")?.name ?? "α";
     return `List ${typeName}`;
   }
-  return context.filter((entry) => entry.type === "Type").length === 1
-    ? context.find((entry) => entry.type === "Type")!.name
+  return environment.filter((entry) => entry.type === "Type").length === 1
+    ? environment.find((entry) => entry.type === "Type")!.name
     : "_";
 }
 
@@ -279,18 +279,18 @@ function splitTopLevelApplication(value: string) {
 
 const parsedTypeCache = new Map<string, ParsedType>();
 
-function parseType(type: string, context: ContextEntry[]): ParsedType {
+function parseType(type: string, environment: EnvironmentEntry[]): ParsedType {
   const source = stripTypeParens(type);
-  const contextKey = context.map((entry) => `${entry.name}:${entry.type}`).join("|");
-  const key = `${contextKey}\u0000${source}`;
+  const environmentKey = environment.map((entry) => `${entry.name}:${entry.type}`).join("|");
+  const key = `${environmentKey}\u0000${source}`;
   const cached = parsedTypeCache.get(key);
   if (cached) return cached;
-  const parsed = parseTypeUncached(source, context);
+  const parsed = parseTypeUncached(source, environment);
   parsedTypeCache.set(key, parsed);
   return parsed;
 }
 
-function parseTypeUncached(type: string, context: ContextEntry[]): ParsedType {
+function parseTypeUncached(type: string, environment: EnvironmentEntry[]): ParsedType {
   const source = stripTypeParens(type);
 
   const meta = source.match(/^\?u(\d+)$/);
@@ -305,7 +305,7 @@ function parseTypeUncached(type: string, context: ContextEntry[]): ParsedType {
         kind: "lambda",
         source,
         binder,
-        body: parseType(source.slice(arrow + 2).trim(), context),
+        body: parseType(source.slice(arrow + 2).trim(), environment),
       };
     }
   }
@@ -320,7 +320,7 @@ function parseTypeUncached(type: string, context: ContextEntry[]): ParsedType {
       const colon = topLevelIndex(binderText, ":");
       const names = (colon < 0 ? binderText : binderText.slice(0, colon)).trim().split(/\s+/);
       const domain = colon < 0
-        ? inferImplicitBinderType(body, context)
+        ? inferImplicitBinderType(body, environment)
         : binderText.slice(colon + 1).trim();
       const remainingBody = names.length === 1
         ? body
@@ -331,8 +331,8 @@ function parseTypeUncached(type: string, context: ContextEntry[]): ParsedType {
         kind: source[0] === "∀" ? "forall" : "exists",
         source,
         binder: names[0],
-        domain: parseType(domain, context),
-        body: parseType(remainingBody, context),
+        domain: parseType(domain, environment),
+        body: parseType(remainingBody, environment),
         implicit,
       };
     }
@@ -352,35 +352,35 @@ function parseTypeUncached(type: string, context: ContextEntry[]): ParsedType {
       return {
         kind: "arrow",
         source,
-        domain: parseType(parts[0], context),
-        codomain: parseType(parts[1], context),
+        domain: parseType(parts[0], environment),
+        codomain: parseType(parts[1], environment),
       };
     }
     return {
       kind: operator.kind,
       source,
-      left: parseType(parts[0], context),
-      right: parseType(parts[1], context),
+      left: parseType(parts[0], environment),
+      right: parseType(parts[1], environment),
     };
   }
 
   if (source.startsWith("¬")) {
-    return { kind: "negation", source, body: parseType(source.slice(1), context) };
+    return { kind: "negation", source, body: parseType(source.slice(1), environment) };
   }
   const application = splitTopLevelApplication(source);
   if (application) {
     return {
       kind: "application",
       source,
-      fn: parseType(application[0], context),
-      argument: parseType(application[1], context),
+      fn: parseType(application[0], environment),
+      argument: parseType(application[1], environment),
     };
   }
   return { kind: "atom", source };
 }
 
-export function peelFunction(type: string, context: ContextEntry[]): FunctionShape | null {
-  const parsed = parseType(type, context);
+export function peelFunction(type: string, environment: EnvironmentEntry[]): FunctionShape | null {
+  const parsed = parseType(type, environment);
   if (parsed.kind === "arrow") {
     return { domain: parsed.domain.source, codomain: parsed.codomain.source };
   }
@@ -393,8 +393,8 @@ export function peelFunction(type: string, context: ContextEntry[]): FunctionSha
   return null;
 }
 
-function parseExists(type: string, context: ContextEntry[]) {
-  const parsed = parseType(type, context);
+function parseExists(type: string, environment: EnvironmentEntry[]) {
+  const parsed = parseType(type, environment);
   return parsed.kind === "exists"
     ? { binder: parsed.binder, witnessType: parsed.domain.source, body: parsed.body.source }
     : null;
@@ -511,9 +511,9 @@ function metaApplication(node: ParsedType) {
   return current.kind === "meta" ? { id: current.id, args } : null;
 }
 
-function inferredTermType(term: string, context: ContextEntry[]) {
+function inferredTermType(term: string, environment: EnvironmentEntry[]) {
   const expression = parseTermExpression(term);
-  return expression ? inferTermExpressionType(expression, context) : null;
+  return expression ? inferTermExpressionType(expression, environment) : null;
 }
 
 function elaborateTermNotation(expression: TermExpression): TermExpression {
@@ -583,7 +583,7 @@ function printElaboratedTerm(expression: TermExpression) {
 function unifyTypeConstraints(
   left: string,
   right: string,
-  context: ContextEntry[],
+  environment: EnvironmentEntry[],
   initial: Record<number, string>,
   metaTypes: Record<number, string> = {},
   allowDeferred = false,
@@ -609,7 +609,7 @@ function unifyTypeConstraints(
     const rendered = printElaboratedTerm(value);
     if (occurs(id, rendered)) return false;
     const declaredType = resolveType(metaTypes[id] ?? "", substitutions);
-    const actualType = inferredTermType(rendered, context);
+    const actualType = inferredTermType(rendered, environment);
     if (declaredType && actualType && !unify(declaredType, actualType)) return false;
     substitutions[id] = rendered;
     return true;
@@ -669,7 +669,7 @@ function unifyTypeConstraints(
     return printElaboratedTerm(leftTerm) === printElaboratedTerm(rightTerm);
   }
 
-  function inferSharedUnaryContext(leftTerm: TermExpression, rightTerm: TermExpression) {
+  function inferSharedUnaryFunction(leftTerm: TermExpression, rightTerm: TermExpression) {
     const marker: TermExpression = { kind: "atom", value: "__leanquest_arg" };
 
     function infer(leftNode: TermExpression, rightNode: TermExpression): {
@@ -730,7 +730,7 @@ function unifyTypeConstraints(
     const actualLeft = parseTermExpression(actual.left.source);
     const actualRight = parseTermExpression(actual.right.source);
     if (!actualLeft || !actualRight) return false;
-    const shared = inferSharedUnaryContext(
+    const shared = inferSharedUnaryFunction(
       elaborateTermNotation(normalizeTermExpression(actualLeft)),
       elaborateTermNotation(normalizeTermExpression(actualRight)),
     );
@@ -747,9 +747,9 @@ function unifyTypeConstraints(
     const functionBody = `fun __leanquest_arg => ${printElaboratedTerm(shared.body)}`;
     if (patternLeft.implicitId !== undefined) {
       const functionType = resolveType(metaTypes[patternLeft.implicitId] ?? "", substitutions);
-      const functionShape = peelFunction(functionType, context);
-      const argumentType = inferredTermType(printElaboratedTerm(shared.leftArgument), context);
-      const resultType = inferredTermType(printElaboratedTerm(actualLeft), context);
+      const functionShape = peelFunction(functionType, environment);
+      const argumentType = inferredTermType(printElaboratedTerm(shared.leftArgument), environment);
+      const resultType = inferredTermType(printElaboratedTerm(actualLeft), environment);
       if ((functionShape && argumentType && !unify(functionShape.domain, argumentType)) ||
           (functionShape && resultType && !unify(functionShape.codomain, resultType))) {
         for (const id of Object.keys(substitutions)) delete substitutions[Number(id)];
@@ -775,8 +775,8 @@ function unifyTypeConstraints(
     if (typesEqual(resolvedLeft, resolvedRight)) return true;
     if (/^\?a\d+$/.test(resolvedLeft)) return bindTermMeta(resolvedLeft, resolvedRight);
     if (/^\?a\d+$/.test(resolvedRight)) return bindTermMeta(resolvedRight, resolvedLeft);
-    const leftParsed = parseType(resolvedLeft, context);
-    const rightParsed = parseType(resolvedRight, context);
+    const leftParsed = parseType(resolvedLeft, environment);
+    const rightParsed = parseType(resolvedRight, environment);
 
     if (leftParsed.kind === "meta") {
       if (occurs(leftParsed.id, resolvedRight)) return false;
@@ -801,15 +801,15 @@ function unifyTypeConstraints(
         return false;
       }
       if (allowDeferred && argumentNames.some((argument) => /^\?a\d+$/.test(argument))) {
-        deferred.push({ left: resolvedLeft, right: resolvedRight, context });
+        deferred.push({ left: resolvedLeft, right: resolvedRight, environment });
         return true;
       }
       let declaredType = resolveType(metaTypes[application.id] ?? "", substitutions);
       for (const argument of argumentNames) {
         if (declaredType) {
-          const shape = peelFunction(declaredType, context);
+          const shape = peelFunction(declaredType, environment);
           if (!shape) return false;
-          const actualType = inferredTermType(argument, context);
+          const actualType = inferredTermType(argument, environment);
           if (actualType && !unify(shape.domain, actualType)) return false;
           declaredType = shape.codomain;
         }
@@ -896,13 +896,13 @@ function unifyTypeConstraints(
     if (leftParsed.kind === "atom" && rightParsed.kind === "atom") {
       if (unifyTermText(leftParsed.source, rightParsed.source)) return true;
       if (allowDeferred && /\?a\d+/.test(`${resolvedLeft} ${resolvedRight}`)) {
-        deferred.push({ left: resolvedLeft, right: resolvedRight, context });
+        deferred.push({ left: resolvedLeft, right: resolvedRight, environment });
         return true;
       }
       return normalForm(leftParsed.source) === normalForm(rightParsed.source);
     }
     if (allowDeferred && /\?a\d+/.test(`${resolvedLeft} ${resolvedRight}`)) {
-      deferred.push({ left: resolvedLeft, right: resolvedRight, context });
+      deferred.push({ left: resolvedLeft, right: resolvedRight, environment });
       return true;
     }
     return false;
@@ -914,12 +914,12 @@ function unifyTypeConstraints(
 function unifyTypes(
   left: string,
   right: string,
-  context: ContextEntry[],
+  environment: EnvironmentEntry[],
   initial: Record<number, string>,
   metaTypes: Record<number, string> = {},
   termSubstitutions: Record<string, string> = {},
 ) {
-  const unified = unifyTypeConstraints(left, right, context, initial, metaTypes, false, termSubstitutions);
+  const unified = unifyTypeConstraints(left, right, environment, initial, metaTypes, false, termSubstitutions);
   return unified && !unified.deferred.length ? unified.substitutions : null;
 }
 
@@ -937,7 +937,7 @@ function zonkNode(
       applicationTarget: node.applicationTarget
         ? resolve(node.applicationTarget)
         : undefined,
-      context: node.context.map((entry) => ({ ...entry, type: resolve(entry.type) })),
+      environment: node.environment.map((entry) => ({ ...entry, type: resolve(entry.type) })),
       allowedTexts: node.allowedTexts?.map(resolve),
     };
   }
@@ -967,11 +967,11 @@ function withSubstitutions(state: ProofState, substitutions: Record<number, stri
   };
 }
 
-function canUnify(state: ProofState, left: string, right: string, context: ContextEntry[]) {
+function canUnify(state: ProofState, left: string, right: string, environment: EnvironmentEntry[]) {
   return Boolean(unifyTypes(
     left,
     right,
-    context,
+    environment,
     state.substitutions,
     state.metaTypes,
     state.termSubstitutions,
@@ -981,14 +981,14 @@ function canUnify(state: ProofState, left: string, right: string, context: Conte
 function unifyPairs(
   state: ProofState,
   pairs: [string, string][],
-  context: ContextEntry[],
+  environment: EnvironmentEntry[],
 ) {
   let substitutions = state.substitutions;
   for (const [left, right] of pairs) {
     const unified = unifyTypes(
       left,
       right,
-      context,
+      environment,
       substitutions,
       state.metaTypes,
       state.termSubstitutions,
@@ -1180,32 +1180,32 @@ function propositionName(type: string) {
   return "h";
 }
 
-function freshName(base: string, context: ContextEntry[]) {
-  const used = new Set(context.map((entry) => entry.name));
+function freshName(base: string, environment: EnvironmentEntry[]) {
+  const used = new Set(environment.map((entry) => entry.name));
   if (!used.has(base)) return base;
   let suffix = 2;
   while (used.has(`${base}${suffix}`)) suffix += 1;
   return `${base}${suffix}`;
 }
 
-function binderName(shape: FunctionShape, context: ContextEntry[]) {
-  if (shape.binder && shape.binder !== "_") return freshName(shape.binder, context);
-  if (shape.domain === "Nat") return freshName("n", context);
-  if (shape.domain.startsWith("List ")) return freshName("xs", context);
+function binderName(shape: FunctionShape, environment: EnvironmentEntry[]) {
+  if (shape.binder && shape.binder !== "_") return freshName(shape.binder, environment);
+  if (shape.domain === "Nat") return freshName("n", environment);
+  if (shape.domain.startsWith("List ")) return freshName("xs", environment);
   if (["False", "True"].includes(shape.domain)) {
-    return freshName(propositionName(shape.domain), context);
+    return freshName(propositionName(shape.domain), environment);
   }
-  if (context.some((entry) => entry.name === shape.domain && entry.type === "Prop")) {
-    return freshName(propositionName(shape.domain), context);
+  if (environment.some((entry) => entry.name === shape.domain && entry.type === "Prop")) {
+    return freshName(propositionName(shape.domain), environment);
   }
   if (/^[α-ωA-Za-z][A-Za-z0-9_]*$/.test(shape.domain) && shape.domain !== "Prop") {
-    return freshName("x", context);
+    return freshName("x", environment);
   }
-  return freshName(propositionName(shape.domain), context);
+  return freshName(propositionName(shape.domain), environment);
 }
 
-export function parseContext(declarations: string[]): ContextEntry[] {
-  const entries: ContextEntry[] = [];
+export function parseEnvironment(declarations: string[]): EnvironmentEntry[] {
+  const entries: EnvironmentEntry[] = [];
   for (const declaration of declarations) {
     const colon = declaration.indexOf(":");
     if (colon < 0) continue;
@@ -1219,7 +1219,7 @@ export function parseContext(declarations: string[]): ContextEntry[] {
 export function createProofState(theorem: string, declarations: string[]): ProofState {
   return {
     theorem,
-    root: { kind: "hole", id: 1, expected: theorem, context: parseContext(declarations) },
+    root: { kind: "hole", id: 1, expected: theorem, environment: parseEnvironment(declarations) },
     nextId: 2,
     nextMetaId: 0,
     substitutions: {},
@@ -1527,7 +1527,7 @@ function substituteTermPlaceholder(node: ProofNode, placeholder: string, replace
       applicationTarget: node.applicationTarget
         ? replacePlaceholder(node.applicationTarget, placeholder, replacement)
         : undefined,
-      context: node.context.map((entry) => ({
+      environment: node.environment.map((entry) => ({
         ...entry,
         type: replacePlaceholder(entry.type, placeholder, replacement),
       })),
@@ -1566,7 +1566,7 @@ function applyTermSolutionsToNode(
       ...node,
       expected: resolve(node.expected),
       applicationTarget: node.applicationTarget ? resolve(node.applicationTarget) : undefined,
-      context: node.context.map((entry) => ({ ...entry, type: resolve(entry.type) })),
+      environment: node.environment.map((entry) => ({ ...entry, type: resolve(entry.type) })),
       allowedTexts: inferred
         ? [inferred]
         : node.allowedTexts?.map(resolve),
@@ -1587,7 +1587,7 @@ function solveDeferredConstraints(state: ProofState) {
     const unified = unifyTypeConstraints(
       constraint.left,
       constraint.right,
-      constraint.context,
+      constraint.environment,
       substitutions,
       state.metaTypes,
       true,
@@ -1683,21 +1683,21 @@ function fill(state: ProofState, holeId: number, node: ProofNode, label: string,
   );
 }
 
-function newHole(state: ProofState, expected: string, context: ContextEntry[], allowedTexts?: string[]) {
+function newHole(state: ProofState, expected: string, environment: EnvironmentEntry[], allowedTexts?: string[]) {
   return {
-    hole: { kind: "hole" as const, id: state.nextId, expected, context, allowedTexts },
+    hole: { kind: "hole" as const, id: state.nextId, expected, environment, allowedTexts },
     nextId: state.nextId + 1,
   };
 }
 
 function candidateTerms(
   _state: ProofState,
-  context: ContextEntry[],
+  environment: EnvironmentEntry[],
   unlocks: UnlockedMoves,
   target = "",
 ): TermCandidate[] {
   return collectCandidateTerms({
-    context,
+    environment,
     unlocks,
     includeCatalogue: Boolean(target),
     libraryTermTypes,
@@ -1713,33 +1713,33 @@ const dotNotationFunctions = new Set([
 
 function projectionCandidates(
   state: ProofState,
-  context: ContextEntry[],
+  environment: EnvironmentEntry[],
   unlocks: UnlockedMoves,
   includeCatalogueSources = true,
 ): ProjectionCandidate<ProofState>[] {
   if (!hasMove(unlocks, "term.dot")) return [];
-  const candidates = candidateTerms(state, context, unlocks, "projection");
+  const candidates = candidateTerms(state, environment, unlocks, "projection");
   const functions = candidates
     .filter((candidate) => dotNotationFunctions.has(candidate.text));
   const sources = includeCatalogueSources
     ? candidates
-    : candidateTerms(state, context, unlocks);
+    : candidateTerms(state, environment, unlocks);
   return projectionCandidateProvider({
     state,
-    context,
+    environment,
     sources,
     functions,
     prepareFunction: instantiateCandidateImplicits,
-    firstExplicitShape: (type, shapeContext) => peelFunction(type, shapeContext),
-    unifyDomain: (candidateState, domain, sourceType, shapeContext) =>
-      unifyPairs(candidateState, [[domain, sourceType]], shapeContext),
+    firstExplicitShape: (type, shapeEnvironment) => peelFunction(type, shapeEnvironment),
+    unifyDomain: (candidateState, domain, sourceType, shapeEnvironment) =>
+      unifyPairs(candidateState, [[domain, sourceType]], shapeEnvironment),
     applySubstitutions: withSubstitutions,
     resolveType,
   });
 }
 
-function dotOptions(state: ProofState, context: ContextEntry[], target: string, unlocks: UnlockedMoves) {
-  const projections = projectionCandidates(state, context, unlocks);
+function dotOptions(state: ProofState, environment: EnvironmentEntry[], target: string, unlocks: UnlockedMoves) {
+  const projections = projectionCandidates(state, environment, unlocks);
   return projections.flatMap((projection, index) => {
     if (projections.findIndex((candidate) =>
       candidate.source.text === projection.source.text &&
@@ -1748,7 +1748,7 @@ function dotOptions(state: ProofState, context: ContextEntry[], target: string, 
     const compatible = projections.flatMap((candidate) => {
       if (candidate.source.text !== projection.source.text ||
           candidate.source.type !== projection.source.type) return [];
-      const substitutions = unifyPairs(candidate.state, [[candidate.type, target]], context);
+      const substitutions = unifyPairs(candidate.state, [[candidate.type, target]], environment);
       return substitutions ? [{
         candidate: candidate.projection,
         candidateState: candidate.state,
@@ -1761,8 +1761,8 @@ function dotOptions(state: ProofState, context: ContextEntry[], target: string, 
   });
 }
 
-function dotTermCandidates(state: ProofState, context: ContextEntry[], target: string, unlocks: UnlockedMoves) {
-  return dotOptions(state, context, target, unlocks).flatMap(({ source, functions }) =>
+function dotTermCandidates(state: ProofState, environment: EnvironmentEntry[], target: string, unlocks: UnlockedMoves) {
+  return dotOptions(state, environment, target, unlocks).flatMap(({ source, functions }) =>
     functions.map(({ name, shape, substitutions }) => ({
       text: `${source.text}.${name}`,
       type: resolveType(shape.codomain, substitutions),
@@ -1837,14 +1837,14 @@ type ApplicableCandidate = TermCandidate & { candidateState?: ProofState };
 
 function applicableFunctions(
   state: ProofState,
-  context: ContextEntry[],
+  environment: EnvironmentEntry[],
   target: string,
   unlocks: UnlockedMoves,
   allPremises: boolean,
 ): ApplicableFunction[] {
   const results: ApplicableFunction[] = [];
-  const ordinaryCandidates: ApplicableCandidate[] = candidateTerms(state, context, unlocks, target);
-  const projectedCandidates: ApplicableCandidate[] = projectionCandidates(state, context, unlocks, false)
+  const ordinaryCandidates: ApplicableCandidate[] = candidateTerms(state, environment, unlocks, target);
+  const projectedCandidates: ApplicableCandidate[] = projectionCandidates(state, environment, unlocks, false)
     .map((candidate) => ({
       text: candidate.text,
       type: candidate.type,
@@ -1866,7 +1866,7 @@ function applicableFunctions(
     for (let depth = 0; depth < 8; depth += 1) {
       const shape = peelFunction(
         resolveSyntax(current, substitutions, termSubstitutions),
-        context,
+        environment,
       );
       if (!shape) break;
       const argumentId = prepared.state.nextId + domains.length;
@@ -1883,7 +1883,7 @@ function applicableFunctions(
       const unified = unifyTypeConstraints(
         current,
         target,
-        context,
+        environment,
         substitutions,
         prepared.state.metaTypes,
         false,
@@ -1900,12 +1900,12 @@ function applicableFunctions(
             termSubstitutions[domain.termPlaceholder],
             termSubstitutions,
           );
-          const inferredType = inferredTermType(inferredText, context);
+          const inferredType = inferredTermType(inferredText, environment);
           if (!inferredType) continue;
           const domainMatch = unifyTypeConstraints(
             domain.type,
             inferredType,
-            context,
+            environment,
             substitutions,
             prepared.state.metaTypes,
             false,
@@ -2132,11 +2132,11 @@ function printTermExpression(expression: TermExpression, minimumPrecedence = 0):
   return precedence < minimumPrecedence ? `(${text})` : text;
 }
 
-function inferTermExpressionType(expression: TermExpression, context: ContextEntry[]): string | null {
-  const elementType = context.find((entry) => entry.type === "Type")?.name ??
-    (context.some((entry) => entry.type === "Nat" || entry.type === "List Nat") ? "Nat" : undefined);
+function inferTermExpressionType(expression: TermExpression, environment: EnvironmentEntry[]): string | null {
+  const elementType = environment.find((entry) => entry.type === "Type")?.name ??
+    (environment.some((entry) => entry.type === "Nat" || entry.type === "List Nat") ? "Nat" : undefined);
   if (expression.kind === "atom") {
-    const local = context.find((entry) => entry.name === expression.value);
+    const local = environment.find((entry) => entry.name === expression.value);
     if (local) return local.type;
     if (/^\d+$/.test(expression.value)) return "Nat";
     if (expression.value === "Nat.succ") return "Nat → Nat";
@@ -2154,22 +2154,22 @@ function inferTermExpressionType(expression: TermExpression, context: ContextEnt
   }
   if (expression.kind === "add" || expression.kind === "mul") return "Nat";
   if (expression.kind === "append") {
-    return inferTermExpressionType(expression.left, context) ??
-      inferTermExpressionType(expression.right, context) ??
+    return inferTermExpressionType(expression.left, environment) ??
+      inferTermExpressionType(expression.right, environment) ??
       (elementType ? `List ${elementType}` : null);
   }
   if (expression.kind === "cons") {
-    return inferTermExpressionType(expression.right, context) ??
+    return inferTermExpressionType(expression.right, environment) ??
       (elementType ? `List ${elementType}` : null);
   }
   if (expression.fn.kind === "atom" && expression.fn.value === "List.length") return "Nat";
   if (expression.fn.kind === "atom" && expression.fn.value === "sum") return "Nat";
   if (expression.fn.kind === "atom" && expression.fn.value === "Nat.succ") return "Nat";
   if (expression.fn.kind === "atom" && expression.fn.value === "List.reverse") {
-    return inferTermExpressionType(expression.argument, context);
+    return inferTermExpressionType(expression.argument, environment);
   }
-  const functionType = inferTermExpressionType(expression.fn, context);
-  const shape = functionType ? peelFunction(functionType, context) : null;
+  const functionType = inferTermExpressionType(expression.fn, environment);
+  const shape = functionType ? peelFunction(functionType, environment) : null;
   return shape?.codomain ?? null;
 }
 
@@ -2318,8 +2318,8 @@ function normalizeTerm(value: string): string {
     : stripTypeParens(value);
 }
 
-function normalizeTermsInType(type: string, context: ContextEntry[]): string {
-  const parsed = parseType(type, context);
+function normalizeTermsInType(type: string, environment: EnvironmentEntry[]): string {
+  const parsed = parseType(type, environment);
   if (parsed.kind === "meta") return parsed.source;
   if (parsed.kind === "atom" || parsed.kind === "application") return normalizeTerm(parsed.source);
   if (parsed.kind === "equality") {
@@ -2327,28 +2327,28 @@ function normalizeTermsInType(type: string, context: ContextEntry[]): string {
   }
   if (parsed.kind === "forall" || parsed.kind === "exists") {
     const quantifier = parsed.kind === "forall" ? "∀" : "∃";
-    const binder = `${parsed.binder} : ${normalizeTermsInType(parsed.domain.source, context)}`;
+    const binder = `${parsed.binder} : ${normalizeTermsInType(parsed.domain.source, environment)}`;
     const renderedBinder = parsed.implicit ? `{${binder}}` : binder;
-    return `${quantifier} ${renderedBinder}, ${normalizeTermsInType(parsed.body.source, context)}`;
+    return `${quantifier} ${renderedBinder}, ${normalizeTermsInType(parsed.body.source, environment)}`;
   }
   if (parsed.kind === "lambda") {
-    return `fun ${parsed.binder} => ${normalizeTermsInType(parsed.body.source, context)}`;
+    return `fun ${parsed.binder} => ${normalizeTermsInType(parsed.body.source, environment)}`;
   }
   if (parsed.kind === "negation") {
-    const body = normalizeTermsInType(parsed.body.source, context);
-    return ["atom", "application", "negation"].includes(parseType(body, context).kind)
+    const body = normalizeTermsInType(parsed.body.source, environment);
+    return ["atom", "application", "negation"].includes(parseType(body, environment).kind)
       ? `¬${body}`
       : `¬(${body})`;
   }
   if (parsed.kind === "arrow") {
-    const domain = normalizeTermsInType(parsed.domain.source, context);
-    const codomain = normalizeTermsInType(parsed.codomain.source, context);
-    const domainText = parseType(domain, context).kind === "arrow" ? `(${domain})` : domain;
+    const domain = normalizeTermsInType(parsed.domain.source, environment);
+    const codomain = normalizeTermsInType(parsed.codomain.source, environment);
+    const domainText = parseType(domain, environment).kind === "arrow" ? `(${domain})` : domain;
     return `${domainText} → ${codomain}`;
   }
   const operator = { and: "∧", or: "∨", iff: "↔" }[parsed.kind];
-  const left = normalizeTermsInType(parsed.left.source, context);
-  const right = normalizeTermsInType(parsed.right.source, context);
+  const left = normalizeTermsInType(parsed.left.source, environment);
+  const right = normalizeTermsInType(parsed.right.source, environment);
   return `${left} ${operator} ${right}`;
 }
 
@@ -2431,7 +2431,7 @@ function acceptsNaturalNumber(
   hole: Extract<ProofNode, { kind: "hole" }>,
 ) {
   if (hole.allowedTexts) return hole.allowedTexts.some((text) => /^\d+$/.test(text));
-  return canUnify(state, "Nat", hole.expected, hole.context) &&
+  return canUnify(state, "Nat", hole.expected, hole.environment) &&
     satisfiesPlaceholderConstraints(state, hole, "0");
 }
 
@@ -2454,8 +2454,8 @@ function dependentApplicationMatch(
   candidate: TermCandidate,
 ) {
   if (!hole.applicationArgumentId || !hole.applicationTarget) return null;
-  const candidateShape = peelFunction(candidate.type, hole.context);
-  const expectedShape = peelFunction(hole.expected, hole.context);
+  const candidateShape = peelFunction(candidate.type, hole.environment);
+  const expectedShape = peelFunction(hole.expected, hole.environment);
   if (!candidateShape?.binder || !expectedShape) return null;
   const inferred = reflexiveArgument(
     candidateShape.codomain,
@@ -2472,7 +2472,7 @@ function dependentApplicationMatch(
   const substitutions = unifyTypes(
     expectedShape.domain,
     candidateShape.domain,
-    hole.context,
+    hole.environment,
     state.substitutions,
     state.metaTypes,
   );
@@ -2485,8 +2485,8 @@ function unresolvedDependentApplicationMatch(
   candidate: TermCandidate,
 ) {
   if (!hole.applicationArgumentId || !hole.applicationTarget) return null;
-  const candidateShape = peelFunction(candidate.type, hole.context);
-  const expectedShape = peelFunction(hole.expected, hole.context);
+  const candidateShape = peelFunction(candidate.type, hole.environment);
+  const expectedShape = peelFunction(hole.expected, hole.environment);
   if (!candidateShape?.binder || !expectedShape) return null;
 
   const placeholder = `?a${hole.applicationArgumentId}`;
@@ -2500,17 +2500,17 @@ function unresolvedDependentApplicationMatch(
   const substitutions = unifyPairs(state, [
     [candidateShape.domain, expectedShape.domain],
     [instantiatedCodomain, expectedShape.codomain],
-  ], hole.context);
+  ], hole.environment);
   return substitutions
     ? { substitutions, placeholder, domain: candidateShape.domain }
     : null;
 }
 
-function instantiateLeadingImplicits(state: ProofState, type: string, context: ContextEntry[]) {
+function instantiateLeadingImplicits(state: ProofState, type: string, environment: EnvironmentEntry[]) {
   let nextState = state;
   let instantiatedType = type;
   for (;;) {
-    const shape = peelFunction(instantiatedType, context);
+    const shape = peelFunction(instantiatedType, environment);
     if (!shape?.implicit || !shape.binder) break;
     const metaId = nextState.nextMetaId;
     const meta = `?u${metaId}`;
@@ -2567,18 +2567,18 @@ function matchCandidateApplicationSpine(
     const instantiated = instantiateLeadingImplicits(
       withSubstitutions(candidateState, substitutions),
       resolveType(candidateResult, substitutions),
-      hole.context,
+      hole.environment,
     );
     candidateState = instantiated.state;
     candidateResult = instantiated.type;
-    const candidateShape = peelFunction(resolveType(candidateResult, substitutions), hole.context);
-    const expectedShape = peelFunction(resolveType(expectedResult, substitutions), hole.context);
+    const candidateShape = peelFunction(resolveType(candidateResult, substitutions), hole.environment);
+    const expectedShape = peelFunction(resolveType(expectedResult, substitutions), hole.environment);
     if (!candidateShape || candidateShape.implicit || !expectedShape) return null;
 
     const domainMatch = unifyTypeConstraints(
       candidateShape.domain,
       expectedShape.domain,
-      hole.context,
+      hole.environment,
       substitutions,
       candidateState.metaTypes,
       true,
@@ -2592,13 +2592,13 @@ function matchCandidateApplicationSpine(
     const placeholder = candidateShape.binder ? `?a${argumentHole.id}` : undefined;
     let inferredArgument: string | undefined;
     if (placeholder && stripTypeParens(candidateShape.domain).startsWith("List.Perm ") &&
-        parseType(expectedShape.domain, hole.context).kind === "meta" &&
+        parseType(expectedShape.domain, hole.environment).kind === "meta" &&
         replaceToken(candidateShape.codomain, candidateShape.binder!, placeholder) !== candidateShape.codomain) {
-      const compatibleContext = hole.context.flatMap((entry) => {
+      const compatibleEnvironment = hole.environment.flatMap((entry) => {
         const match = unifyTypeConstraints(
           candidateShape.domain,
           entry.type,
-          hole.context,
+          hole.environment,
           substitutions,
           candidateState.metaTypes,
           true,
@@ -2606,8 +2606,8 @@ function matchCandidateApplicationSpine(
         );
         return match ? [{ entry, match }] : [];
       });
-      if (compatibleContext.length === 1) {
-        const inferred = compatibleContext[0];
+      if (compatibleEnvironment.length === 1) {
+        const inferred = compatibleEnvironment[0];
         substitutions = inferred.match.substitutions;
         termSubstitutions = { ...inferred.match.termSubstitutions, [placeholder]: inferred.entry.name };
         inferredArgument = inferred.entry.name;
@@ -2630,7 +2630,7 @@ function matchCandidateApplicationSpine(
   const instantiatedResult = instantiateLeadingImplicits(
     withSubstitutions(candidateState, substitutions),
     resolveType(candidateResult, substitutions),
-    hole.context,
+    hole.environment,
   );
   candidateState = instantiatedResult.state;
   candidateResult = instantiatedResult.type;
@@ -2638,7 +2638,7 @@ function matchCandidateApplicationSpine(
   const resultMatch = unifyTypeConstraints(
     candidateResult,
     expectedResult,
-    hole.context,
+    hole.environment,
     substitutions,
     candidateState.metaTypes,
     true,
@@ -2652,13 +2652,13 @@ function matchCandidateApplicationSpine(
     if (!argument.placeholder || !termSubstitutions[argument.placeholder]) continue;
     const inferredType = inferredTermType(
       resolveTermSubstitutions(termSubstitutions[argument.placeholder], termSubstitutions),
-      hole.context,
+      hole.environment,
     );
     if (!inferredType) continue;
     const typeMatch = unifyTypeConstraints(
       argument.expected,
       inferredType,
-      hole.context,
+      hole.environment,
       substitutions,
       candidateState.metaTypes,
       true,
@@ -2705,7 +2705,7 @@ function candidateFits(
     return Boolean(matchCandidateApplicationSpine(state, hole, candidate));
   }
   const prepared = instantiateCandidateImplicits(state, candidate);
-  return canUnify(prepared.state, prepared.candidate.type, hole.expected, hole.context) ||
+  return canUnify(prepared.state, prepared.candidate.type, hole.expected, hole.environment) ||
     Boolean(dependentApplicationMatch(prepared.state, hole, prepared.candidate));
 }
 
@@ -2780,7 +2780,7 @@ function fillCandidate(
   const substitutions = unifyTypes(
     candidate.type,
     hole.expected,
-    hole.context,
+    hole.environment,
     candidateState.substitutions,
     candidateState.metaTypes,
   );
@@ -2815,13 +2815,13 @@ function simpleTermCandidates(
     : [];
   const inferredTerms = [...new Set([...(hole.allowedTexts ?? []), ...constraintTerms])].flatMap((term) => {
     const text = normalizeTerm(term);
-    const type = inferredTermType(text, hole.context) ?? hole.expected;
+    const type = inferredTermType(text, hole.environment) ?? hole.expected;
     return [{ text, type }];
   });
   return [
-    ...candidateTerms(state, hole.context, unlocks, hole.expected),
+    ...candidateTerms(state, hole.environment, unlocks, hole.expected),
     ...inferredTerms,
-    ...(includeDotTerms ? dotTermCandidates(state, hole.context, hole.expected, unlocks) : []),
+    ...(includeDotTerms ? dotTermCandidates(state, hole.environment, hole.expected, unlocks) : []),
   ].filter((candidate) =>
     !containsInternalMetavariable(candidate.text) &&
     candidateFits(state, hole, candidate) &&
@@ -2844,7 +2844,7 @@ function satisfiesPlaceholderConstraints(
     const unified = unifyTypeConstraints(
       replacePlaceholder(constraint.left, hole.termPlaceholder, term),
       replacePlaceholder(constraint.right, hole.termPlaceholder, term),
-      constraint.context,
+      constraint.environment,
       substitutions,
       state.metaTypes,
       true,
@@ -2863,9 +2863,9 @@ function makeLambda(
   shape: FunctionShape,
   moveLabel?: string,
 ) {
-  const name = binderName(shape, hole.context);
+  const name = binderName(shape, hole.environment);
   const bodyType = shape.binder ? replaceToken(shape.codomain, shape.binder, name) : shape.codomain;
-  const child = newHole(state, bodyType, [...hole.context, { name, type: shape.domain }]);
+  const child = newHole(state, bodyType, [...hole.environment, { name, type: shape.domain }]);
   const node: ProofNode = {
     kind: "template",
     type: hole.expected,
@@ -2881,7 +2881,7 @@ function makeTemplate(
   hole: Extract<ProofNode, { kind: "hole" }>,
   label: string,
   format: string,
-  childSpecs: { expected: string; context?: ContextEntry[]; allowedTexts?: string[] }[],
+  childSpecs: { expected: string; environment?: EnvironmentEntry[]; allowedTexts?: string[] }[],
 ) {
   let nextId = state.nextId;
   const children: ProofNode[] = [];
@@ -2890,7 +2890,7 @@ function makeTemplate(
       kind: "hole",
       id: nextId,
       expected: spec.expected,
-      context: spec.context ?? hole.context,
+      environment: spec.environment ?? hole.environment,
       allowedTexts: spec.allowedTexts,
     });
     nextId += 1;
@@ -2910,7 +2910,7 @@ function witnessCandidates(
   witnessType: string,
   unlocks: UnlockedMoves,
 ) {
-  const values = candidateTerms(state, hole.context, unlocks)
+  const values = candidateTerms(state, hole.environment, unlocks)
     .filter((candidate) => typesEqual(candidate.type, witnessType));
   return [...new Map(values.map((candidate) => [candidate.text, candidate])).values()];
 }
@@ -2919,7 +2919,7 @@ function getNormalTermChoices(state: ProofState, unlocks: UnlockedMoves): Catalo
   const hole = activeHole(state);
   if (!hole) return [];
   const choices: CatalogueMoveChoice[] = [];
-  const direct = hasMove(unlocks, "term.context")
+  const direct = hasMove(unlocks, "term.environment")
     ? simpleTermCandidates(state, hole, unlocks)
     : [];
   direct.forEach((candidate) => choices.push(termChoice(state, hole, candidate)));
@@ -2928,9 +2928,9 @@ function getNormalTermChoices(state: ProofState, unlocks: UnlockedMoves): Catalo
   }
   if (hole.allowedTexts) return dedupe(choices);
 
-  const shape = peelFunction(hole.expected, hole.context);
+  const shape = peelFunction(hole.expected, hole.environment);
   if (hasMove(unlocks, "term.lambda") && shape) {
-    const name = binderName(shape, hole.context);
+    const name = binderName(shape, hole.environment);
     choices.push({
       id: "term-lambda",
       label: `fun ${name} => □`,
@@ -2956,7 +2956,7 @@ function getNormalTermChoices(state: ProofState, unlocks: UnlockedMoves): Catalo
           kind: "hole",
           id: state.nextId,
           expected: `${meta} → ${hole.expected}`,
-          context: hole.context,
+          environment: hole.environment,
           applicationArgumentId: state.nextId + 1,
           applicationTarget: hole.expected,
         };
@@ -2964,7 +2964,7 @@ function getNormalTermChoices(state: ProofState, unlocks: UnlockedMoves): Catalo
           kind: "hole",
           id: state.nextId + 1,
           expected: meta,
-          context: hole.context,
+          environment: hole.environment,
         };
         const application: ProofNode = {
           kind: "template",
@@ -2986,7 +2986,7 @@ function getNormalTermChoices(state: ProofState, unlocks: UnlockedMoves): Catalo
     });
   }
 
-  if (!blocksDependentConstraint && dotOptions(state, hole.context, hole.expected, unlocks).length) {
+  if (!blocksDependentConstraint && dotOptions(state, hole.environment, hole.expected, unlocks).length) {
     choices.push({
       id: "term-dot-notation",
       label: "□.□",
@@ -3058,11 +3058,11 @@ function addRecursorChoices(
   state: ProofState,
   hole: Extract<ProofNode, { kind: "hole" }>,
 ) {
-  for (const entry of hole.context) {
+  for (const entry of hole.environment) {
     const permutation = stripTypeParens(entry.type).match(/^List\.Perm\s+(\S+)\s+(\S+)$/);
     if (permutation) {
       const [, source, target] = permutation;
-      const withoutEvidence = hole.context.filter((item) =>
+      const withoutEvidence = hole.environment.filter((item) =>
         item.name !== entry.name && ![source, target].includes(item.name)
       );
       const x = freshName("x", withoutEvidence);
@@ -3083,17 +3083,17 @@ function addRecursorChoices(
         makeTemplate(state, hole, label,
           `List.Perm.rec {0} (fun ${x} h ih => {1}) (fun ${x} ${y} ${l} => {2}) (fun h1 h2 ih1 ih2 => {3}) ${entry.name}`,
           [
-            { expected: nilGoal, context: withoutEvidence },
-            { expected: consGoal, context: [
+            { expected: nilGoal, environment: withoutEvidence },
+            { expected: consGoal, environment: [
               ...withoutEvidence,
               { name: x, type: "Nat" }, { name: l1, type: "List Nat" }, { name: l2, type: "List Nat" },
               { name: "h", type: `List.Perm ${l1} ${l2}` }, { name: "ih", type: consHypothesis },
             ] },
-            { expected: swapGoal, context: [
+            { expected: swapGoal, environment: [
               ...withoutEvidence,
               { name: x, type: "Nat" }, { name: y, type: "Nat" }, { name: l, type: "List Nat" },
             ] },
-            { expected: transGoal, context: [
+            { expected: transGoal, environment: [
               ...withoutEvidence,
               { name: l1, type: "List Nat" }, { name: l2, type: "List Nat" }, { name: l3, type: "List Nat" },
               { name: "h1", type: `List.Perm ${l1} ${l2}` }, { name: "h2", type: `List.Perm ${l2} ${l3}` },
@@ -3105,7 +3105,7 @@ function addRecursorChoices(
       continue;
     }
     if (entry.type === "Nat") {
-      const rest = hole.context.filter((item) => item.name !== entry.name);
+      const rest = hole.environment.filter((item) => item.name !== entry.name);
       const stepName = freshName(entry.name, rest);
       const base = replaceToken(hole.expected, entry.name, "0");
       const hypothesis = replaceToken(hole.expected, entry.name, stepName);
@@ -3114,14 +3114,14 @@ function addRecursorChoices(
       const label = `induction ${entry.name}`;
       choices.push({ id: `tactic-nat-rec-${entry.name}`, label, category: "tactic", apply: () =>
         makeTemplate(state, hole, label, `Nat.rec {0} (fun ${stepName} ${ih} => {1}) ${entry.name}`, [
-          { expected: base, context: rest },
-          { expected: step, context: [...rest, { name: stepName, type: "Nat" }, { name: ih, type: hypothesis }] },
+          { expected: base, environment: rest },
+          { expected: step, environment: [...rest, { name: stepName, type: "Nat" }, { name: ih, type: hypothesis }] },
         ]), tacticArgument: {
           key: "induction", placeholderLabel: "induction □", term: entry.name, type: entry.type,
         } });
     }
     if (entry.type.startsWith("List ") && state.moves.length >= 0) {
-      const rest = hole.context.filter((item) => item.name !== entry.name);
+      const rest = hole.environment.filter((item) => item.name !== entry.name);
       const elementType = entry.type.slice(5).trim();
       const xs = freshName("xs", rest);
       const x = freshName("x", rest);
@@ -3132,8 +3132,8 @@ function addRecursorChoices(
       const label = `induction ${entry.name}`;
       choices.push({ id: `tactic-list-rec-${entry.name}`, label, category: "tactic", apply: () =>
         makeTemplate(state, hole, label, `List.rec {0} (fun ${x} ${xs} ${ih} => {1}) ${entry.name}`, [
-          { expected: base, context: rest },
-          { expected: step, context: [...rest, { name: x, type: elementType }, { name: xs, type: entry.type }, { name: ih, type: hypothesis }] },
+          { expected: base, environment: rest },
+          { expected: step, environment: [...rest, { name: x, type: elementType }, { name: xs, type: entry.type }, { name: ih, type: hypothesis }] },
         ]), tacticArgument: {
           key: "induction", placeholderLabel: "induction □", term: entry.name, type: entry.type,
         } });
@@ -3141,29 +3141,29 @@ function addRecursorChoices(
   }
 }
 
-function contradictionTerm(context: ContextEntry[]) {
-  const impossible = context.find((entry) => entry.type === "False");
+function contradictionTerm(environment: EnvironmentEntry[]) {
+  const impossible = environment.find((entry) => entry.type === "False");
   if (impossible) return impossible.name;
-  for (const negative of context) {
-    const shape = peelFunction(negative.type, context);
+  for (const negative of environment) {
+    const shape = peelFunction(negative.type, environment);
     if (!shape || shape.codomain !== "False") continue;
-    const positive = context.find((entry) => typesEqual(entry.type, shape.domain));
+    const positive = environment.find((entry) => typesEqual(entry.type, shape.domain));
     if (positive) return `${negative.name} ${positive.name}`;
   }
   return null;
 }
 
 type SubstitutionOption = {
-  variable: ContextEntry;
-  equality: ContextEntry;
+  variable: EnvironmentEntry;
+  equality: EnvironmentEntry;
   replacement: string;
   variableOnLeft: boolean;
 };
 
-function substitutionOptions(context: ContextEntry[]): SubstitutionOption[] {
+function substitutionOptions(environment: EnvironmentEntry[]): SubstitutionOption[] {
   const options: SubstitutionOption[] = [];
-  for (const variable of context) {
-    for (const equality of context) {
+  for (const variable of environment) {
+    for (const equality of environment) {
       const equation = parseEquality(equality.type);
       if (!equation) continue;
       const leftIsVariable = stripTypeParens(equation.left) === variable.name;
@@ -3197,14 +3197,14 @@ function tacticChoices(
       advance(state, "exact □", state.root, state.nextId, { kind: "exact", holeId: hole.id }) });
   }
 
-  const shape = peelFunction(hole.expected, hole.context);
+  const shape = peelFunction(hole.expected, hole.environment);
   if (hasMove(unlocks, "tactic.intro") && shape) {
-    const name = binderName(shape, hole.context);
+    const name = binderName(shape, hole.environment);
     choices.push({ id: "tactic-intro", label: `intro ${name}`, category: "tactic", apply: () => makeLambda(state, hole, shape, `intro ${name}`) });
   }
 
   const applicable = hasMove(unlocks, "tactic.apply")
-    ? applicableFunctions(state, hole.context, hole.expected, unlocks, true)
+    ? applicableFunctions(state, hole.environment, hole.expected, unlocks, true)
     : [];
   if (applicable.length) {
     choices.push({ id: "tactic-apply", label: "apply □", category: "tactic", apply: () =>
@@ -3236,15 +3236,15 @@ function tacticChoices(
   }
 
   if (hasMove(unlocks, "tactic.cases")) {
-    for (const entry of hole.context) {
+    for (const entry of hole.environment) {
       const alternatives = parseBinary(entry.type, "∨");
       if (!alternatives) continue;
-      const leftName = freshName(propositionName(alternatives.left), hole.context);
-      const rightName = freshName(propositionName(alternatives.right), hole.context);
+      const leftName = freshName(propositionName(alternatives.left), hole.environment);
+      const rightName = freshName(propositionName(alternatives.right), hole.environment);
       choices.push({ id: `tactic-cases-${entry.name}`, label: `cases ${entry.name}`, category: "tactic", apply: () =>
         makeTemplate(state, hole, `cases ${entry.name}`, `Or.elim ${entry.name} (fun ${leftName} => {0}) (fun ${rightName} => {1})`, [
-          { expected: hole.expected, context: [...hole.context.filter((item) => item.name !== entry.name), { name: leftName, type: alternatives.left }] },
-          { expected: hole.expected, context: [...hole.context.filter((item) => item.name !== entry.name), { name: rightName, type: alternatives.right }] },
+          { expected: hole.expected, environment: [...hole.environment.filter((item) => item.name !== entry.name), { name: leftName, type: alternatives.left }] },
+          { expected: hole.expected, environment: [...hole.environment.filter((item) => item.name !== entry.name), { name: rightName, type: alternatives.right }] },
         ]), tacticArgument: {
           key: "cases", placeholderLabel: "cases □", term: entry.name, type: entry.type,
         } });
@@ -3257,17 +3257,17 @@ function tacticChoices(
   }
 
   if (hasMove(unlocks, "tactic.contradiction")) {
-    const contradiction = contradictionTerm(hole.context);
+    const contradiction = contradictionTerm(hole.environment);
     if (contradiction) choices.push({ id: "tactic-contradiction", label: "contradiction", category: "tactic", apply: () =>
       fill(state, hole.id, { kind: "term", text: `False.elim (${contradiction})`, type: hole.expected }, "contradiction") });
   }
 
   if (hasMove(unlocks, "tactic.byContra") && hole.expected !== "False") {
-    const name = freshName(propositionName(negate(hole.expected)), hole.context);
-    const context = [...hole.context, { name, type: negate(hole.expected) }];
+    const name = freshName(propositionName(negate(hole.expected)), hole.environment);
+    const environment = [...hole.environment, { name, type: negate(hole.expected) }];
     choices.push({ id: "tactic-by-contra", label: `by_contra ${name}`, category: "tactic", apply: () =>
       makeTemplate(state, hole, `by_contra ${name}`, `Classical.byContradiction (fun ${name} => {0})`, [
-        { expected: "False", context },
+        { expected: "False", environment },
       ]) });
   }
 
@@ -3277,7 +3277,7 @@ function tacticChoices(
       fill(state, hole.id, { kind: "term", text: `Eq.refl ${equality.left}`, type: hole.expected }, "rfl") });
   }
 
-  const existential = parseExists(hole.expected, hole.context);
+  const existential = parseExists(hole.expected, hole.environment);
   if (hasMove(unlocks, "tactic.use") && existential) {
     choices.push({ id: "tactic-use", label: "use □", category: "tactic", apply: () =>
       advance(state, "use □", state.root, state.nextId, {
@@ -3287,19 +3287,19 @@ function tacticChoices(
   }
 
   if (hasMove(unlocks, "tactic.rcases")) {
-    for (const entry of hole.context) {
-      const exists = parseExists(entry.type, hole.context);
+    for (const entry of hole.environment) {
+      const exists = parseExists(entry.type, hole.environment);
       if (!exists) continue;
-      const witness = freshName(exists.binder, hole.context);
-      const evidence = freshName(`h${witness}`, hole.context);
-      const context = [
-        ...hole.context.filter((item) => item.name !== entry.name),
+      const witness = freshName(exists.binder, hole.environment);
+      const evidence = freshName(`h${witness}`, hole.environment);
+      const environment = [
+        ...hole.environment.filter((item) => item.name !== entry.name),
         { name: witness, type: exists.witnessType },
         { name: evidence, type: replaceToken(exists.body, exists.binder, witness) },
       ];
       choices.push({ id: `tactic-rcases-${entry.name}`, label: `rcases ${entry.name} with ⟨${witness}, ${evidence}⟩`, category: "tactic", apply: () =>
         makeTemplate(state, hole, `rcases ${entry.name} with ⟨${witness}, ${evidence}⟩`, `Exists.elim ${entry.name} (fun ${witness} ${evidence} => {0})`, [
-          { expected: hole.expected, context },
+          { expected: hole.expected, environment },
         ]), tacticArgument: {
           key: "rcases", placeholderLabel: "rcases □", term: entry.name, type: entry.type,
           scriptArgument: `${entry.name} with ⟨${witness}, ${evidence}⟩`,
@@ -3312,9 +3312,9 @@ function tacticChoices(
       makeTemplate(state, hole, "symm", "Eq.symm {0}", [{ expected: `${equality.right} = ${equality.left}` }]) });
   }
   if (equality && hasMove(unlocks, "tactic.trans")) {
-    const middleType = inferredTermType(equality.left, hole.context);
-    for (const middle of candidateTerms(state, hole.context, unlocks).filter((candidate) =>
-      middleType && canUnify(state, candidate.type, middleType, hole.context)
+    const middleType = inferredTermType(equality.left, hole.environment);
+    for (const middle of candidateTerms(state, hole.environment, unlocks).filter((candidate) =>
+      middleType && canUnify(state, candidate.type, middleType, hole.environment)
     )) {
       if ([equality.left, equality.right].some((side) => compact(side) === compact(middle.text))) continue;
       choices.push({ id: `tactic-trans-${middle.text}`, label: `trans ${middle.text}`, category: "tactic", apply: () =>
@@ -3335,10 +3335,10 @@ function tacticChoices(
   }
 
   if (hasMove(unlocks, "tactic.subst")) {
-    for (const option of substitutionOptions(hole.context)) {
+    for (const option of substitutionOptions(hole.environment)) {
       const { variable, equality: evidence, replacement, variableOnLeft } = option;
       const rewritten = rewriteSyntax(hole.expected, variable.name, replacement, true);
-      const context = hole.context
+      const environment = hole.environment
         .filter((item) => item.name !== variable.name && item.name !== evidence.name)
         .map((item) => ({
           ...item,
@@ -3346,7 +3346,7 @@ function tacticChoices(
         }));
       const equalityTerm = variableOnLeft ? `(Eq.symm ${evidence.name})` : evidence.name;
       choices.push({ id: `tactic-subst-${variable.name}`, label: `subst ${variable.name}`, category: "tactic", apply: () =>
-        makeTemplate(state, hole, `subst ${variable.name}`, `Eq.ndrec {0} ${equalityTerm}`, [{ expected: rewritten, context }]),
+        makeTemplate(state, hole, `subst ${variable.name}`, `Eq.ndrec {0} ${equalityTerm}`, [{ expected: rewritten, environment }]),
         tacticArgument: {
           key: "subst", placeholderLabel: "subst □", term: variable.name, type: variable.type,
         } });
@@ -3356,13 +3356,13 @@ function tacticChoices(
   if (hasMove(unlocks, "tactic.rewrite")) addRewriteChoices(choices, state, hole, unlocks);
 
   if (hasMove(unlocks, "tactic.byCases")) {
-    for (const proposition of hole.context.filter((entry) => entry.type === "Prop")) {
-      const positive = freshName(`h${proposition.name}`, hole.context);
-      const negative = freshName(`hn${proposition.name}`, hole.context);
+    for (const proposition of hole.environment.filter((entry) => entry.type === "Prop")) {
+      const positive = freshName(`h${proposition.name}`, hole.environment);
+      const negative = freshName(`hn${proposition.name}`, hole.environment);
       choices.push({ id: `tactic-by-cases-${proposition.name}`, label: `by_cases ${positive} : ${proposition.name}`, category: "tactic", apply: () =>
         makeTemplate(state, hole, `by_cases ${positive} : ${proposition.name}`, `Or.elim (Classical.em ${proposition.name}) (fun ${positive} => {0}) (fun ${negative} => {1})`, [
-          { expected: hole.expected, context: [...hole.context, { name: positive, type: proposition.name }] },
-          { expected: hole.expected, context: [...hole.context, { name: negative, type: negate(proposition.name) }] },
+          { expected: hole.expected, environment: [...hole.environment, { name: positive, type: proposition.name }] },
+          { expected: hole.expected, environment: [...hole.environment, { name: negative, type: negate(proposition.name) }] },
         ]), tacticArgument: {
           key: "by-cases", placeholderLabel: "by_cases □", term: proposition.name,
           type: "Prop", scriptArgument: `${positive} : ${proposition.name}`,
@@ -3398,18 +3398,18 @@ function tacticChoices(
   }
 
   if (hasMove(unlocks, "tactic.calc") && equality) {
-    const resultType = inferredTermType(equality.left, hole.context);
+    const resultType = inferredTermType(equality.left, hole.environment);
     const leftApplication = splitApplication(equality.left);
     const argumentType = leftApplication
-      ? inferredTermType(leftApplication.arg, hole.context)
+      ? inferredTermType(leftApplication.arg, hole.environment)
       : resultType;
-    for (const middle of candidateTerms(state, hole.context, unlocks).filter((candidate) => !["Prop", "Type"].includes(candidate.type))) {
-      if (!argumentType || !canUnify(state, middle.type, argumentType, hole.context)) continue;
+    for (const middle of candidateTerms(state, hole.environment, unlocks).filter((candidate) => !["Prop", "Type"].includes(candidate.type))) {
+      if (!argumentType || !canUnify(state, middle.type, argumentType, hole.environment)) continue;
       const appliedMiddle = leftApplication?.fn
         ? `${leftApplication.fn} ${middle.text}`
         : middle.text;
-      const appliedType = inferredTermType(appliedMiddle, hole.context);
-      if (!resultType || !appliedType || !canUnify(state, appliedType, resultType, hole.context)) continue;
+      const appliedType = inferredTermType(appliedMiddle, hole.environment);
+      if (!resultType || !appliedType || !canUnify(state, appliedType, resultType, hole.environment)) continue;
       if ([equality.left, equality.right].some((side) => typesEqual(side, appliedMiddle))) continue;
       choices.push({ id: `tactic-calc-${middle.text}`, label: `calc … = ${appliedMiddle} := □`, category: "tactic", apply: () =>
         makeTemplate(state, hole, `calc … = ${appliedMiddle} := □`, "Eq.trans {0} {1}", [
@@ -3433,12 +3433,12 @@ function addRewriteChoices(
   hole: Extract<ProofNode, { kind: "hole" }>,
   unlocks: UnlockedMoves,
 ) {
-  const sources = candidateTerms(state, hole.context, unlocks, hole.expected);
+  const sources = candidateTerms(state, hole.environment, unlocks, hole.expected);
   for (const entry of sources) {
     let relationType = entry.type;
     const binders: string[] = [];
     for (;;) {
-      const shape = peelFunction(relationType, hole.context);
+      const shape = peelFunction(relationType, hole.environment);
       if (!shape?.binder) break;
       binders.push(shape.binder);
       relationType = shape.codomain;
@@ -3559,7 +3559,7 @@ function pendingChoices(state: ProofState, unlocks: UnlockedMoves): CatalogueMov
   if (!hole) return [];
 
   if (pending.kind === "dot-source") {
-    return dotOptions(state, hole.context, pending.target, unlocks).map(({ source }) => ({
+    return dotOptions(state, hole.environment, pending.target, unlocks).map(({ source }) => ({
       id: `dot-source-${source.text}`,
       label: source.text,
       category: "argument" as const,
@@ -3570,7 +3570,7 @@ function pendingChoices(state: ProofState, unlocks: UnlockedMoves): CatalogueMov
   }
 
   if (pending.kind === "dot-function") {
-    const option = dotOptions(state, hole.context, pending.target, unlocks).find(({ source }) =>
+    const option = dotOptions(state, hole.environment, pending.target, unlocks).find(({ source }) =>
       source.text === pending.source.text && typesEqual(source.type, pending.source.type)
     );
     return (option?.functions ?? []).map(({ candidate, candidateState, name, shape, substitutions }) => ({
@@ -3628,7 +3628,7 @@ function pendingChoices(state: ProofState, unlocks: UnlockedMoves): CatalogueMov
   if (pending.kind === "witness") {
     const fillWitness = (candidate: TermCandidate) => {
       const expected = replaceToken(pending.body, pending.binder, candidate.text);
-      const child = { kind: "hole" as const, id: state.nextId, expected, context: hole.context };
+      const child = { kind: "hole" as const, id: state.nextId, expected, environment: hole.environment };
       const node: ProofNode = {
         kind: "template", type: hole.expected,
         format: `Exists.intro ${candidate.text} {0}`, children: [child],
@@ -3644,7 +3644,7 @@ function pendingChoices(state: ProofState, unlocks: UnlockedMoves): CatalogueMov
       apply: () => fillWitness(candidate),
     }));
     if (hasMove(unlocks, "term.naturalNumber") &&
-        canUnify(state, "Nat", pending.witnessType, hole.context)) {
+        canUnify(state, "Nat", pending.witnessType, hole.environment)) {
       choices.push(naturalNumberChoice(state, "argument", (number) =>
         fillWitness({ text: number, type: "Nat" })
       ));
@@ -3656,7 +3656,7 @@ function pendingChoices(state: ProofState, unlocks: UnlockedMoves): CatalogueMov
   }
 
   const allPremises = pending.kind === "apply";
-  return applicableFunctions(state, hole.context, pending.target, unlocks, allPremises).map((candidate) => ({
+  return applicableFunctions(state, hole.environment, pending.target, unlocks, allPremises).map((candidate) => ({
     id: `function-${candidate.text}`,
     label: candidate.text,
     category: "argument" as const,
@@ -3672,7 +3672,7 @@ function pendingChoices(state: ProofState, unlocks: UnlockedMoves): CatalogueMov
         return domain.inferredText
           ? { kind: "term", text: domain.inferredText, type: domain.type }
           : {
-              kind: "hole", id, expected: domain.type, context: hole.context,
+              kind: "hole", id, expected: domain.type, environment: hole.environment,
               termPlaceholder: domain.termPlaceholder,
             };
       });
@@ -3762,8 +3762,8 @@ export function pendingArgumentType(state: ProofState) {
   return [...new Set(types.map((type) => displayType(type, state.substitutions)))].join(" or ");
 }
 
-export function contextLines(state: ProofState) {
-  return activeHole(state)?.context.map((entry) =>
+export function environmentLines(state: ProofState) {
+  return activeHole(state)?.environment.map((entry) =>
     `${entry.name} : ${displayType(entry.type, state.substitutions)}`
   ) ?? [];
 }
@@ -3783,7 +3783,7 @@ export function normalizeFocusedHole(state: ProofState): ProofState {
   const hole = activeHole(state);
   if (!hole) return state;
   const resolved = resolveType(hole.expected, state.substitutions);
-  const normalized = normalizeTermsInType(resolved, hole.context);
+  const normalized = normalizeTermsInType(resolved, hole.environment);
   if (typesEqual(resolved, normalized)) return state;
   return {
     ...state,

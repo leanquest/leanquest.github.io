@@ -1,10 +1,10 @@
 import { basicPropositionTerms, type MoveId } from "./curriculum.ts";
 
 export type CandidateTerm = { text: string; type: string };
-export type CandidateContextEntry = { name: string; type: string };
+export type CandidateEnvironmentEntry = { name: string; type: string };
 
 export type CandidateRequest = {
-  context: CandidateContextEntry[];
+  environment: CandidateEnvironmentEntry[];
   unlocks: ReadonlySet<MoveId>;
   includeCatalogue: boolean;
   libraryTermTypes: Record<string, string>;
@@ -52,8 +52,8 @@ const catalogueTermNames: Partial<Record<MoveId, string[]>> = {
   "catalogue.repeatEach": ["repeatEach", "Nat.mul_add"],
 };
 
-export const contextCandidateProvider: CandidateProvider = ({ context }) =>
-  context.map((entry) => ({ text: entry.name, type: entry.type }));
+export const environmentCandidateProvider: CandidateProvider = ({ environment }) =>
+  environment.map((entry) => ({ text: entry.name, type: entry.type }));
 
 export const catalogueCandidateProvider: CandidateProvider = ({
   unlocks,
@@ -77,7 +77,7 @@ export const catalogueCandidateProvider: CandidateProvider = ({
 
 export function collectCandidateTerms(
   request: CandidateRequest,
-  providers: CandidateProvider[] = [contextCandidateProvider, catalogueCandidateProvider],
+  providers: CandidateProvider[] = [environmentCandidateProvider, catalogueCandidateProvider],
 ) {
   const candidates = providers.flatMap((provider) => provider(request));
   return [...new Map(candidates.map((candidate) => [
@@ -99,16 +99,16 @@ export type ProjectionCandidate<State> = {
 
 export type ProjectionCandidateRequest<State, Substitutions> = {
   state: State;
-  context: CandidateContextEntry[];
+  environment: CandidateEnvironmentEntry[];
   sources: CandidateTerm[];
   functions: CandidateTerm[];
   prepareFunction: (state: State, candidate: CandidateTerm) => { state: State; candidate: CandidateTerm };
-  firstExplicitShape: (type: string, context: CandidateContextEntry[]) => ProjectionFunctionShape | null;
+  firstExplicitShape: (type: string, environment: CandidateEnvironmentEntry[]) => ProjectionFunctionShape | null;
   unifyDomain: (
     state: State,
     domain: string,
     sourceType: string,
-    context: CandidateContextEntry[],
+    environment: CandidateEnvironmentEntry[],
   ) => Substitutions | null;
   applySubstitutions: (state: State, substitutions: Substitutions) => State;
   resolveType: (type: string, substitutions: Substitutions) => string;
@@ -116,7 +116,7 @@ export type ProjectionCandidateRequest<State, Substitutions> = {
 
 export function projectionCandidateProvider<State, Substitutions>({
   state,
-  context,
+  environment,
   sources,
   functions,
   prepareFunction,
@@ -128,9 +128,9 @@ export function projectionCandidateProvider<State, Substitutions>({
   const projections = functions.filter((candidate) => candidate.text.includes("."));
   return sources.flatMap((source) => projections.flatMap((projection) => {
     const prepared = prepareFunction(state, projection);
-    const shape = firstExplicitShape(prepared.candidate.type, context);
+    const shape = firstExplicitShape(prepared.candidate.type, environment);
     if (!shape) return [];
-    const substitutions = unifyDomain(prepared.state, shape.domain, source.type, context);
+    const substitutions = unifyDomain(prepared.state, shape.domain, source.type, environment);
     if (!substitutions) return [];
     const name = projection.text.split(".").at(-1)!;
     return [{

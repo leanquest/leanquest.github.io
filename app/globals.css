@@ -354,7 +354,7 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
 .theorem-card > code { display: block; color: #e4c86e; font-size: clamp(11px, 1.25vw, 15px); line-height: 1.6; overflow-wrap: anywhere; }
 
 .goals-card { min-height: 310px; }
-.context-list { display: flex; flex-direction: column; gap: 7px; color: #c0b68f; font-size: 10px; }
+.environment-list { display: flex; flex-direction: column; gap: 7px; color: #c0b68f; font-size: 10px; }
 .goal-divider { height: 3px; margin: 14px 0; background: repeating-linear-gradient(90deg, var(--gold-dark) 0 8px, transparent 8px 13px); }
 .goal-stack { display: grid; gap: 6px; }
 .goal { display: flex; gap: 9px; align-items: center; padding: 8px; color: #aca587; }
@@ -1232,13 +1232,13 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   .theorem-card > code { font-size: clamp(10px, 1.05vw, 13px); line-height: 1.35; }
 
   .goals-card { min-height: 138px; }
-  .context-list {
+  .environment-list {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 4px;
     font-size: 8px;
   }
-  .context-list code {
+  .environment-list code {
     padding: 4px 5px;
     border: 1px solid #3d4132;
     background: #0d0f0b;
@@ -1426,13 +1426,13 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   .theorem-card > code { font-size: 8px; line-height: 1.3; }
   .theorem-card > p { display: none; }
 
-  .context-list {
+  .environment-list {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 3px;
     font-size: 7px;
   }
-  .context-list code {
+  .environment-list code {
     padding: 2px 4px;
     border: 1px solid #3d4132;
     background: #0d0f0b;
