@@ -4,6 +4,7 @@ import test from "node:test";
 import { createProofState, getMoveChoices, isSolved } from "../app/proof-engine.ts";
 import {
   levelTutorials,
+  shouldAutoOpenLesson,
   tutorialAllowsChoice,
   tutorialChoiceAdvances,
   tutorialForLevel,
@@ -163,6 +164,15 @@ test("Mage level six explains navigation through an interactive Library visit", 
   ]);
   assert.equal(tutorial.steps[6].placement, "top-center");
   assert.equal(tutorialForLevel("warrior", 6), undefined);
+});
+
+test("lessons auto-open only once on paths and levels without tutorials", () => {
+  assert.equal(shouldAutoOpenLesson("mage", 1, []), false);
+  assert.equal(shouldAutoOpenLesson("mage", 6, []), false);
+  assert.equal(shouldAutoOpenLesson("mage", 7, []), true);
+  assert.equal(shouldAutoOpenLesson("mage", 7, [7]), false);
+  assert.equal(shouldAutoOpenLesson("warrior", 1, []), true);
+  assert.equal(shouldAutoOpenLesson("warrior", 1, [1]), false);
 });
 
 test("interactive tutorial steps permit and advance only their required moves", () => {

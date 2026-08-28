@@ -36,6 +36,7 @@ import { canSelectHero, destinationFromTitle } from "./campaign-progress";
 import { MusicControls, useGameMusic } from "./game-music";
 import { storyMusic, type MusicCueId } from "./music-manifest";
 import {
+  shouldAutoOpenLesson,
   tutorialAllowsChoice,
   tutorialChoiceAdvances,
   tutorialForLevel,
@@ -319,9 +320,7 @@ export default function Home() {
     setTutorialStepIndex(0);
     setShowCharacterSelect(false);
     setSave((current) => ({ ...current, selectedClass: nextClass }));
-    if (!save.seenLessons[nextClass].includes(exercises[nextIndex].id)) {
-      setShowLesson(true);
-    }
+    setShowLesson(shouldAutoOpenLesson(nextClass, exercises[nextIndex].id, save.seenLessons[nextClass]));
   }
 
   function choose(choice: MoveChoice, value?: string) {
@@ -494,9 +493,7 @@ export default function Home() {
       ...current,
       level: { ...current.level, [heroClass]: index },
     }));
-    if (!save.seenLessons[heroClass].includes(exercises[index].id)) {
-      setShowLesson(true);
-    }
+    setShowLesson(shouldAutoOpenLesson(heroClass, exercises[index].id, save.seenLessons[heroClass]));
   }
 
   function startStories(stories: StorySequence[], destination: StoryDestination) {
@@ -518,6 +515,9 @@ export default function Home() {
     }
     setShowTitle(false);
     setShowCharacterSelect(destination === "character-select" || !heroClass);
+    if (destination === "saved-game" && heroClass) {
+      setShowLesson(shouldAutoOpenLesson(heroClass, level.id, save.seenLessons[heroClass]));
+    }
   }
 
   function returnToTitle() {

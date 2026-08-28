@@ -223,7 +223,7 @@ export const levelTutorials: LevelTutorial[] = [
       },
       {
         title: "Construct a Proof of True",
-        text: "True.intro is the constructor for True. It produces a term of type True, so it is also a valid proof of True. Choose True.intro to defeat the guardian.",
+        text: "True.intro is the constructor for True. In the same way that [] constructs an empty list, True.intro constructs a term of type True. Choose True.intro to defeat the guardian.",
         hint: "Choose True.intro in the highlighted catalogue to finish the tutorial.",
         targets: ["move-catalogue"],
         placement: "top-left",
@@ -289,7 +289,7 @@ export const levelTutorials: LevelTutorial[] = [
       },
       {
         title: "Tutorial Complete",
-        text: "You now know your way around the interface. Continue the level and defeat the guardian.",
+        text: "In this level, you need to supply a term of type P, and P is a Prop. That is, you need to supply a proof of P. Fortunately, you have one in your environment, and you know how to use it. The tutorial ends here. Now you face the guardians alone.",
         targets: [],
         placement: "bottom-center",
         action: { type: "continue", label: "CONTINUE LEVEL" },
@@ -300,6 +300,10 @@ export const levelTutorials: LevelTutorial[] = [
 
 export function tutorialForLevel(hero: HeroClass, levelId: number) {
   return levelTutorials.find((tutorial) => tutorial.hero === hero && tutorial.levelId === levelId);
+}
+
+export function shouldAutoOpenLesson(hero: HeroClass, levelId: number, seenLessonIds: readonly number[]) {
+  return !tutorialForLevel(hero, levelId) && !seenLessonIds.includes(levelId);
 }
 
 export function tutorialAllowsChoice(step: TutorialStep | null, choiceId: string) {
