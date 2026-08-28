@@ -1,4 +1,4 @@
-import type { MoveId } from "./curriculum.ts";
+import { basicPropositionTerms, type MoveId } from "./curriculum.ts";
 
 export type CandidateTerm = { text: string; type: string };
 export type CandidateContextEntry = { name: string; type: string };
@@ -64,7 +64,7 @@ export const catalogueCandidateProvider: CandidateProvider = ({
   const candidates: CandidateTerm[] = [];
   if (unlocks.has("term.emptyList")) candidates.push({ text: "[]", type: "List Nat" });
   if (unlocks.has("term.basicPropositions")) {
-    candidates.push({ text: "True", type: "Prop" }, { text: "False", type: "Prop" });
+    candidates.push(...basicPropositionTerms.map(({ name, type }) => ({ text: name, type })));
   }
   for (const move of unlocks) {
     for (const name of catalogueTermNames[move] ?? []) {

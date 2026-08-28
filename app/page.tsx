@@ -208,6 +208,7 @@ export default function Home() {
   const tutorialStep = tutorialIsActive ? tutorial?.steps[tutorialStepIndex] ?? null : null;
   const tutorialTargets = new Set(tutorialStep?.targets ?? []);
   const showProofSpotlight = tutorialTargets.has("proof-scroll");
+  const showEnvironmentSpotlight = tutorialTargets.has("environment");
   const tutorialClass = (target: TutorialTarget) => tutorialTargets.has(target) ? " tutorial-highlight" : "";
   const currentMusicCue: MusicCueId | null = !ready
     ? null
@@ -337,6 +338,14 @@ export default function Home() {
     setUndoStack((items) => [...items, proofState]);
     setProofState(nextState);
     if (tutorialChoiceAdvances(tutorialStep, choice.id, value)) {
+      if (tutorial && tutorialStepIndex === tutorial.steps.length - 1) {
+        setSave((current) => ({
+          ...current,
+          seenTutorials: current.seenTutorials.includes(tutorial.id)
+            ? current.seenTutorials
+            : [...current.seenTutorials, tutorial.id],
+        }));
+      }
       setTutorialStepIndex((current) => current + 1);
     }
     if (RESOURCE_CONSUMPTION_ENABLED) {
@@ -808,15 +817,15 @@ export default function Home() {
               <code>{level.theorem}</code>
             </article>
 
-            <article className="goals-card pixel-frame">
-              <div className="card-label"><span>{solved ? "COMBAT LOG" : heroClass === "warrior" ? "CURRENT HOLE" : "CURRENT GOAL"}</span><span>{solved ? "CLEAR" : "1 ACTIVE"}</span></div>
+            <article className="goals-card pixel-frame" style={showEnvironmentSpotlight ? { position: "relative", zIndex: 72, isolation: "isolate" } : undefined}>
+              <div className="card-label" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><span>{solved ? "COMBAT LOG" : heroClass === "warrior" ? "CURRENT HOLE" : "CURRENT GOAL"}</span><span>{solved ? "CLEAR" : "1 ACTIVE"}</span></div>
               {solved ? (
                 <div className="victory-state"><div className="victory-sigil">✦</div><div><strong>MONSTER DEFEATED</strong><p>No goals remain. The proof is complete.</p></div></div>
               ) : (
                 <>
-                  <div className="context-list">{displayedContext.length ? displayedContext.map((item) => <code key={item}>{item}</code>) : <code>empty context</code>}</div>
-                  <div className="goal-divider" />
-                  <div className="goal-stack"><div className="goal focused"><span>{heroClass === "warrior" ? "□" : "⊢"}</span><code>{target}</code></div></div>
+                  <div className={`context-list${tutorialClass("environment")}`}>{displayedContext.length ? displayedContext.map((item) => <code key={item}>{item}</code>) : <code>empty context</code>}</div>
+                  <div className="goal-divider" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined} />
+                  <div className="goal-stack" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><div className="goal focused"><span>{heroClass === "warrior" ? "□" : "⊢"}</span><code>{target}</code></div></div>
                 </>
               )}
             </article>
@@ -953,7 +962,8 @@ export default function Home() {
             </article>
           )}
           <aside
-            className={`tutorial-card tutorial-${tutorialStep.placement} pixel-frame`}
+            className={`tutorial-card tutorial-${tutorialStep.placement}${tutorialStep.compact ? " tutorial-compact" : ""} pixel-frame`}
+            style={tutorialStep.compact ? { width: "min(300px, calc(100vw - 28px))", padding: 14 } : undefined}
             role="dialog"
             aria-modal="true"
             aria-labelledby="tutorial-title"
@@ -965,13 +975,7 @@ export default function Home() {
             {tutorialStep.action.type === "continue" ? (
               <button className="primary-button" onClick={continueTutorial}>{tutorialStep.action.label} ▶</button>
             ) : (
-              <p className="tutorial-action-hint">
-                {tutorialStep.action.type === "choice"
-                  ? "Choose exact □ in the highlighted catalogue to continue."
-                  : tutorialStep.action.type === "natural-number"
-                    ? "Insert any natural number to continue."
-                    : "Click Enter Next Chamber to finish the tutorial."}
-              </p>
+              <p className="tutorial-action-hint">{tutorialStep.hint}</p>
             )}
           </aside>
         </>

@@ -2,6 +2,14 @@ import { selectionsForLevel } from "./intended-selections.ts";
 
 export type HeroClass = "warrior" | "mage";
 
+export const basicPropositionTerms = [
+  { name: "True", type: "Prop" },
+  { name: "False", type: "Prop" },
+  { name: "∃ n : Nat, n > 0", type: "Prop" },
+  { name: "∀ A : Prop, A ∨ ¬A", type: "Prop" },
+  { name: "∀ n : Nat, n > 0", type: "Prop" },
+];
+
 export type MoveId =
   | "term.context" | "term.lambda" | "term.application" | "term.dot" | "term.naturalNumber"
   | "term.emptyList" | "term.basicPropositions"
@@ -38,10 +46,7 @@ export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> =
   "term.dot": { kind: "term", group: "Term building", entries: [{ name: "Projection dot notation", type: "h.left, h.right, h.mp, and h.mpr abbreviate logical projections" }] },
   "term.naturalNumber": { kind: "term", group: "Term building", entries: [{ name: "Natural number", type: "Nat" }] },
   "term.emptyList": { kind: "term", group: "Term building", entries: [{ name: "[]", type: "List Nat" }] },
-  "term.basicPropositions": { kind: "term", group: "Term building", entries: [
-    { name: "True", type: "Prop" },
-    { name: "False", type: "Prop" },
-  ] },
+  "term.basicPropositions": { kind: "term", group: "Term building", entries: basicPropositionTerms },
 
   "catalogue.trueIntro": { kind: "term", group: "Logic", entries: [{ name: "True.intro", type: "True" }] },
   "catalogue.andIntro": { kind: "term", group: "Logic", entries: [{ name: "And.intro", type: "∀ {a b : Prop}, a → b → a ∧ b" }] },
@@ -324,11 +329,11 @@ const tutorialEntries = [
     id: 4, depth: 1, chapter: "First Steps", title: "Name a Proposition", topic: "Propositions",
     theorem: "Prop", context: [],
     intro: "Propositions are themselves values of the type `Prop`.",
-    lesson: lesson("`True` and `False` are both propositions, so either is a term of type `Prop`. This goal asks for a proposition, not yet for a proof of one.", "Choose `exact`, then choose either `True` or `False` to complete the `Prop` goal."),
+    lesson: lesson("A `Prop` is a statement that may be true or false. This goal asks for a proposition itself, not yet for a proof that the statement is true.", "Choose `exact`, then select any proposition in the catalogue to complete the `Prop` goal."),
     unlocks: {
       shared: ["term.basicPropositions"],
-      warrior: { moves: [], text: "New terms: `True` and `False` are propositions and therefore have type `Prop`." },
-      mage: { moves: [], text: "New term choices: `True` and `False` can each supply a proposition to `exact`." },
+      warrior: { moves: [], text: "New terms: several true and false statements are available as values of type `Prop`." },
+      mage: { moves: [], text: "New term choices: any listed proposition can supply a value of type `Prop` to `exact`." },
     },
     warrior: route(["True"], ["Prop"], "True"),
     mage: route(["exact True"], ["Prop"], "by\n  exact True"),

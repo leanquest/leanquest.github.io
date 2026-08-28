@@ -91,16 +91,22 @@ test("five basic tutorials begin both proof paths", () => {
   assert.equal(exercises.at(-1).id, 55);
 });
 
-test("the proposition tutorial accepts True or False before proving True", () => {
+test("the proposition tutorial accepts true and false statements before proving True", () => {
   const propositionGoal = createProofState("Prop", []);
   const warriorChoices = getMoveChoices(propositionGoal, "warrior", 4).map((choice) => choice.label);
   assert.ok(warriorChoices.includes("True"));
   assert.ok(warriorChoices.includes("False"));
+  assert.ok(warriorChoices.includes("∃ n : Nat, n > 0"));
+  assert.ok(warriorChoices.includes("∀ A : Prop, A ∨ ¬A"));
+  assert.ok(warriorChoices.includes("∀ n : Nat, n > 0"));
 
   let mageGoal = move(propositionGoal, "mage", 4, "exact □");
   const mageChoices = getMoveChoices(mageGoal, "mage", 4).map((choice) => choice.label);
   assert.ok(mageChoices.includes("True"));
   assert.ok(mageChoices.includes("False"));
+  assert.ok(mageChoices.includes("∃ n : Nat, n > 0"));
+  assert.ok(mageChoices.includes("∀ A : Prop, A ∨ ¬A"));
+  assert.ok(mageChoices.includes("∀ n : Nat, n > 0"));
 
   const truthGoal = createProofState("True", []);
   assert.deepEqual(getMoveChoices(truthGoal, "warrior", 5).map((choice) => choice.label), ["True.intro"]);
