@@ -201,14 +201,19 @@ export default function Home() {
   const maxHp = heroClass ? MAX_HP[heroClass] : MAX_HP.warrior;
   const attackDamage = heroClass ? attackDamageFor(heroClass, level[heroClass].selections.length) : 0;
   const tutorial = heroClass ? tutorialForLevel(heroClass, level.id) : undefined;
+  const pendingTutorialStep = tutorial?.steps[tutorialStepIndex] ?? null;
+  const tutorialLibraryIsOpen = showCatalogue && pendingTutorialStep?.action.type === "close-library";
   const tutorialIsActive = Boolean(
-    ready && !showTitle && !showCharacterSelect && !showMap && !showCatalogue && !showLesson && !activeStory &&
+    ready && !showTitle && !showCharacterSelect && !showMap && (!showCatalogue || tutorialLibraryIsOpen) && !showLesson && !activeStory &&
     tutorial && !save.seenTutorials.includes(tutorial.id),
   );
-  const tutorialStep = tutorialIsActive ? tutorial?.steps[tutorialStepIndex] ?? null : null;
+  const tutorialStep = tutorialIsActive ? pendingTutorialStep : null;
   const tutorialTargets = new Set(tutorialStep?.targets ?? []);
   const showProofSpotlight = tutorialTargets.has("proof-scroll");
   const showEnvironmentSpotlight = tutorialTargets.has("environment");
+  const showTopbarSpotlight = ["character-select", "map", "library-button"].some((target) =>
+    tutorialTargets.has(target as TutorialTarget),
+  );
   const tutorialClass = (target: TutorialTarget) => tutorialTargets.has(target) ? " tutorial-highlight" : "";
   const currentMusicCue: MusicCueId | null = !ready
     ? null
@@ -596,7 +601,31 @@ export default function Home() {
 
   function continueTutorial() {
     if (tutorialStep?.action.type !== "continue") return;
+    if (tutorial && tutorialStepIndex === tutorial.steps.length - 1) {
+      setSave((current) => ({
+        ...current,
+        seenTutorials: current.seenTutorials.includes(tutorial.id)
+          ? current.seenTutorials
+          : [...current.seenTutorials, tutorial.id],
+      }));
+    }
     setTutorialStepIndex((current) => current + 1);
+  }
+
+  function openCatalogue() {
+    if (tutorialStep) {
+      if (tutorialStep.action.type !== "open-library") return;
+      setTutorialStepIndex((current) => current + 1);
+    }
+    setShowCatalogue(true);
+  }
+
+  function closeCatalogue() {
+    if (tutorialStep) {
+      if (tutorialStep.action.type !== "close-library") return;
+      setTutorialStepIndex((current) => current + 1);
+    }
+    setShowCatalogue(false);
   }
 
   if (!ready) {
@@ -749,7 +778,10 @@ export default function Home() {
 
   return (
     <main className={`app-shell hero-${heroClass} ${monsterPhase === "attack" ? "under-attack" : ""} ${proofFailed ? "proof-failed" : ""} ${tutorialStep ? "tutorial-active" : ""}`}>
-      <header className="topbar pixel-frame">
+      <header
+        className={`topbar pixel-frame${showTopbarSpotlight ? " tutorial-topbar-parent" : ""}`}
+        style={showTopbarSpotlight ? { zIndex: 71, isolation: "isolate" } : undefined}
+      >
         <button className="brand" onClick={() => setShowMap(true)} aria-label="Open dungeon map">
           <span className="brand-mark">λ</span>
           <span><strong>LEANQUEST</strong><small>{heroClass === "warrior" ? "PATH OF TERMS" : "PATH OF TACTICS"}</small></span>
@@ -763,12 +795,16 @@ export default function Home() {
         </div>
         <div className="top-actions">
           <MusicControls {...music} />
-          <button className="class-button" onClick={() => setShowCharacterSelect(true)}>
+          <button className={`class-button${tutorialClass("character-select")}`} onClick={() => {
+            if (!tutorialStep) setShowCharacterSelect(true);
+          }}>
             <span className="hero-icon" style={{ backgroundPosition: heroPosition(heroClass) }} />
             {heroClass.toUpperCase()}
           </button>
-          <button className="map-button" onClick={() => setShowMap(true)}><span>▦</span> MAP</button>
-          <button className="map-button catalogue-button" onClick={() => setShowCatalogue(true)}><span>▤</span> LIBRARY</button>
+          <button className={`map-button${tutorialClass("map")}`} onClick={() => {
+            if (!tutorialStep) setShowMap(true);
+          }}><span>▦</span> MAP</button>
+          <button className={`map-button catalogue-button${tutorialClass("library-button")}`} onClick={openCatalogue}><span>▤</span> LIBRARY</button>
         </div>
       </header>
 
@@ -806,9 +842,15 @@ export default function Home() {
               <div className="level-rune">{String(level.id).padStart(2, "0")}</div>
               <div><p className="eyebrow">{level.chapter} · {level.topic}</p><h1>{level.title}</h1><p>{level.intro}</p></div>
               <div className="heading-actions">
-                <button onClick={undo} disabled={proofFailed || !undoStack.length}>↶ <span>UNDO</span></button>
-                <button className={proofFailed ? "restart-button encouraged" : "restart-button"} onClick={reset}>↻ <span>RESTART</span></button>
-                <button onClick={() => openLesson()}>i <span>LESSON</span></button>
+                <button className={tutorialClass("undo").trimStart()} onClick={() => {
+                  if (!tutorialStep) undo();
+                }} disabled={proofFailed || !undoStack.length}>↶ <span>UNDO</span></button>
+                <button className={`${proofFailed ? "restart-button encouraged" : "restart-button"}${tutorialClass("restart-level")}`} onClick={() => {
+                  if (!tutorialStep) reset();
+                }}>↻ <span>RESTART</span></button>
+                <button className={tutorialClass("lesson").trimStart()} onClick={() => {
+                  if (!tutorialStep) openLesson();
+                }}>i <span>LESSON</span></button>
               </div>
             </div>
 
@@ -831,8 +873,8 @@ export default function Home() {
             </article>
 
             <article ref={proofScrollCard} className={`source-card pixel-frame${tutorialClass("proof-scroll")}`} aria-hidden={showProofSpotlight || undefined}>
-              <div className="card-label"><span>SCROLL OF PROOF</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
-              <pre className="proof-scroll" tabIndex={0} aria-label="Current proof script">
+              <div className="card-label"><span>SCROLL OF CONSTRUCTION</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
+              <pre className="proof-scroll" tabIndex={0} aria-label="Current construction">
                 {renderProofScrollContent()}
               </pre>
             </article>
@@ -955,8 +997,8 @@ export default function Home() {
           <div className="tutorial-backdrop" aria-hidden="true" />
           {showProofSpotlight && (
             <article ref={tutorialProofOverlay} className="source-card pixel-frame tutorial-proof-overlay">
-              <div className="card-label"><span>SCROLL OF PROOF</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
-              <pre className="proof-scroll" tabIndex={0} aria-label="Current proof script">
+              <div className="card-label"><span>SCROLL OF CONSTRUCTION</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
+              <pre className="proof-scroll" tabIndex={0} aria-label="Current construction">
                 {renderProofScrollContent()}
               </pre>
             </article>
@@ -997,15 +1039,19 @@ export default function Home() {
       )}
 
       {showCatalogue && (
-        <div className="modal-backdrop catalogue-backdrop" onMouseDown={() => setShowCatalogue(false)}>
-          <section className="catalogue-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="catalogue-title" onMouseDown={(event) => event.stopPropagation()}>
+        <div
+          className={`modal-backdrop catalogue-backdrop${tutorialLibraryIsOpen ? " tutorial-library-open" : ""}`}
+          style={tutorialLibraryIsOpen ? { zIndex: 71 } : undefined}
+          onMouseDown={closeCatalogue}
+        >
+          <section className={`catalogue-modal pixel-frame${tutorialClass("library-view")}`} role="dialog" aria-modal="true" aria-labelledby="catalogue-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="catalogue-header">
               <div>
                 <p className="eyebrow">{heroClass.toUpperCase()} · UNLOCKED KNOWLEDGE</p>
                 <h2 id="catalogue-title">MOVE LIBRARY</h2>
                 <p>Every move you have earned, arranged by the kind of proof it helps you build.</p>
               </div>
-              <button className="close-button" onClick={() => setShowCatalogue(false)} aria-label="Close move library">×</button>
+              <button className="close-button" onClick={closeCatalogue} aria-label="Close move library">×</button>
             </div>
             <div className="catalogue-summary">
               <span><strong>{[...catalogueGroups.values()].reduce((count, group) => count + group.terms.size, 0)}</strong> TERM ENTRIES</span>
@@ -1037,7 +1083,7 @@ export default function Home() {
                 );
               })}
             </div>
-            <button className="primary-button catalogue-close-button" onClick={() => setShowCatalogue(false)}>RETURN TO ENCOUNTER ▶</button>
+            <button className="primary-button catalogue-close-button" onClick={closeCatalogue}>RETURN TO ENCOUNTER ▶</button>
           </section>
         </div>
       )}

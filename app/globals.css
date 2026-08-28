@@ -406,6 +406,22 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   outline-offset: 5px;
   box-shadow: 0 0 0 2px #171006, 0 0 24px rgba(242, 199, 92, .72) !important;
 }
+.tutorial-highlight:disabled,
+.heading-actions button.tutorial-highlight:disabled { opacity: 1; }
+.tutorial-topbar-parent {
+  z-index: 71;
+  isolation: isolate;
+}
+.tutorial-topbar-parent::after {
+  content: "";
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  background: rgba(2, 3, 2, .8);
+  pointer-events: auto;
+}
+.tutorial-topbar-parent .tutorial-highlight { z-index: 12 !important; }
+.catalogue-backdrop.tutorial-library-open { z-index: 71; }
 .monster-stage.tutorial-highlight { position: absolute; }
 .player-hud.tutorial-highlight { position: absolute; }
 .moves-column.tutorial-highlight { position: sticky; }

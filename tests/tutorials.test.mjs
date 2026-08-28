@@ -9,18 +9,22 @@ import {
   tutorialForLevel,
 } from "../app/tutorials.ts";
 
-test("Mage level one defines the complete five-step onboarding tutorial", () => {
+test("Mage level one defines the complete seven-step onboarding tutorial", () => {
   const tutorial = tutorialForLevel("mage", 1);
   assert.ok(tutorial);
-  assert.equal(levelTutorials.length, 4);
+  assert.equal(levelTutorials.length, 6);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
     ["guardian", "level-objective"],
+    ["guardian", "level-objective"],
+    ["vitals"],
     ["vitals"],
     ["move-catalogue"],
     ["move-catalogue"],
     ["proof-scroll", "next-level"],
   ]);
   assert.deepEqual(tutorial.steps.map((step) => step.action.type), [
+    "continue",
+    "continue",
     "continue",
     "continue",
     "choice",
@@ -108,11 +112,64 @@ test("Mage level four explains Prop and accepts any proposition", () => {
   assert.equal(tutorialAllowsChoice(tutorial.steps[2], "term-natural-number"), false);
 });
 
+test("Mage level five teaches exact with the True constructor", () => {
+  const tutorial = tutorialForLevel("mage", 5);
+  assert.ok(tutorial);
+  assert.match(tutorial.steps[0].text, /term of that type is a proof/i);
+  assert.deepEqual(tutorial.steps.map((step) => step.targets), [
+    ["level-objective"],
+    ["move-catalogue"],
+    ["move-catalogue"],
+  ]);
+  assert.deepEqual(tutorial.steps.map((step) => step.action), [
+    { type: "continue", label: "CONSTRUCT A PROOF" },
+    { type: "choice", choiceId: "tactic-exact" },
+    { type: "choice", choiceId: "term-True.intro" },
+  ]);
+  assert.equal(tutorialForLevel("warrior", 5), undefined);
+
+  let proof = createProofState("True", []);
+  const exact = getMoveChoices(proof, "mage", 5).find((choice) => choice.id === "tactic-exact");
+  assert.ok(exact);
+  proof = exact.apply();
+  const trueIntro = getMoveChoices(proof, "mage", 5).find((choice) => choice.id === "term-True.intro");
+  assert.ok(trueIntro);
+  assert.equal(tutorialAllowsChoice(tutorial.steps[2], trueIntro.id), true);
+  assert.equal(isSolved(trueIntro.apply()), true);
+});
+
+test("Mage level six explains navigation through an interactive Library visit", () => {
+  const tutorial = tutorialForLevel("mage", 6);
+  assert.ok(tutorial);
+  assert.deepEqual(tutorial.steps.map((step) => step.targets), [
+    ["undo"],
+    ["restart-level"],
+    ["lesson"],
+    ["character-select"],
+    ["map"],
+    ["library-button"],
+    ["library-view"],
+    [],
+  ]);
+  assert.deepEqual(tutorial.steps.map((step) => step.action), [
+    { type: "continue", label: "SHOW ME RESTART" },
+    { type: "continue", label: "SHOW ME LEVEL INFO" },
+    { type: "continue", label: "SHOW ME CHARACTER SELECT" },
+    { type: "continue", label: "SHOW ME THE MAP" },
+    { type: "continue", label: "SHOW ME THE LIBRARY" },
+    { type: "open-library" },
+    { type: "close-library" },
+    { type: "continue", label: "CONTINUE LEVEL" },
+  ]);
+  assert.equal(tutorial.steps[6].placement, "top-center");
+  assert.equal(tutorialForLevel("warrior", 6), undefined);
+});
+
 test("interactive tutorial steps permit and advance only their required moves", () => {
   const tutorial = tutorialForLevel("mage", 1);
   assert.ok(tutorial);
-  const exactStep = tutorial.steps[2];
-  const numberStep = tutorial.steps[3];
+  const exactStep = tutorial.steps[4];
+  const numberStep = tutorial.steps[5];
 
   assert.equal(tutorialAllowsChoice(exactStep, "tactic-exact"), true);
   assert.equal(tutorialAllowsChoice(exactStep, "term-natural-number"), false);
