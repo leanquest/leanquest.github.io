@@ -223,7 +223,7 @@ export const levelTutorials: LevelTutorial[] = [
       },
       {
         title: "Construct a Proof of True",
-        text: "True.intro is the constructor for True. In the same way that [] constructs an empty list, True.intro constructs a term of type True. Choose True.intro to defeat the guardian.",
+        text: "True.intro is the constructor for True. In the same way that [] constructs an empty list, True.intro constructs a proof of True. Choose True.intro to defeat the guardian.",
         hint: "Choose True.intro in the highlighted catalogue to finish the tutorial.",
         targets: ["move-catalogue"],
         placement: "top-left",
@@ -281,7 +281,7 @@ export const levelTutorials: LevelTutorial[] = [
       },
       {
         title: "The Move Library",
-        text: "The Library groups your available terms and tactics by purpose. Term entries show the type of value they construct, while tactic entries explain how they transform or complete a goal. As you progress through the game, you will unlock new terms and tactics. Close the Library to return to the encounter.",
+        text: "The Library groups your available terms and tactics by purpose. Term entries show the type of term they construct, while tactic entries explain how they transform or complete a goal. As you progress through the game, you will unlock new terms and tactics. Close the Library to return to the encounter.",
         hint: "Close the Library to continue the tutorial.",
         targets: ["library-view"],
         placement: "top-center",

@@ -147,6 +147,11 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
   });
   assert.deepEqual(lessonTextFor(exercises[0].lesson, "warrior"), lessonTextFor(exercises[0].lesson, "mage"));
 
+  const implicationLesson = exercises.find((exercise) => exercise.id === 7)?.lesson;
+  assert.ok(implicationLesson);
+  assert.match(lessonTextFor(implicationLesson, "warrior")[1], /constructs the function directly/i);
+  assert.match(lessonTextFor(implicationLesson, "mage")[1], /intro.*construct a function/i);
+
   const reflexivityLesson = exercises.find((exercise) => exercise.title === "Close by Reduction")?.lesson;
   assert.ok(reflexivityLesson);
   assert.equal(lessonTextFor(reflexivityLesson, "warrior").length, 2);
