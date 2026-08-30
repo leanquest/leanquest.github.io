@@ -13,7 +13,7 @@ import {
 test("Mage level one defines the complete seven-step onboarding tutorial", () => {
   const tutorial = tutorialForLevel("mage", 1);
   assert.ok(tutorial);
-  assert.equal(levelTutorials.length, 6);
+  assert.equal(levelTutorials.length, 7);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
     ["guardian", "level-objective"],
     ["guardian", "level-objective"],
@@ -32,7 +32,25 @@ test("Mage level one defines the complete seven-step onboarding tutorial", () =>
     "natural-number",
     "next-level",
   ]);
-  assert.equal(tutorialForLevel("warrior", 1), undefined);
+});
+
+test("Warrior level one teaches direct construction, holes, and vision", () => {
+  const tutorial = tutorialForLevel("warrior", 1);
+  assert.ok(tutorial);
+  assert.deepEqual(tutorial.steps.map((step) => step.targets), [
+    ["guardian", "level-objective"],
+    ["current-hole"],
+    ["vitals", "reduce-current-hole"],
+  ]);
+  assert.deepEqual(tutorial.steps.map((step) => step.action), [
+    { type: "continue", label: "SHOW ME THE CURRENT HOLE" },
+    { type: "continue", label: "SHOW ME WARRIOR RESOURCES" },
+    { type: "continue", label: "BEGIN LEVEL" },
+  ]);
+  assert.match(tutorial.steps[0].text, /cannot use tactics/i);
+  assert.match(tutorial.steps[1].text, /terms that contain holes/i);
+  assert.match(tutorial.steps[2].text, /Vision Points \(VP\) instead of Magic Points \(MP\)/i);
+  assert.match(tutorial.steps[2].text, /Reduce Current Hole/i);
 });
 
 test("Mage level two teaches exact with the natural number from the environment", () => {
@@ -171,7 +189,7 @@ test("lessons auto-open only once on paths and levels without tutorials", () => 
   assert.equal(shouldAutoOpenLesson("mage", 6, []), false);
   assert.equal(shouldAutoOpenLesson("mage", 7, []), true);
   assert.equal(shouldAutoOpenLesson("mage", 7, [7]), false);
-  assert.equal(shouldAutoOpenLesson("warrior", 1, []), true);
+  assert.equal(shouldAutoOpenLesson("warrior", 1, []), false);
   assert.equal(shouldAutoOpenLesson("warrior", 1, [1]), false);
 });
 

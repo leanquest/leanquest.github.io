@@ -860,7 +860,7 @@ export default function Home() {
               <code>{level.theorem}</code>
             </article>
 
-            <article className="goals-card pixel-frame" style={showEnvironmentSpotlight ? { position: "relative", zIndex: 72, isolation: "isolate" } : undefined}>
+            <article className={`goals-card pixel-frame${tutorialClass("current-hole")}`} style={showEnvironmentSpotlight ? { position: "relative", zIndex: 72, isolation: "isolate" } : undefined}>
               <div className="card-label" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><span>{solved ? "COMBAT LOG" : heroClass === "warrior" ? "CURRENT HOLE" : "CURRENT GOAL"}</span><span>{solved ? "CLEAR" : "1 ACTIVE"}</span></div>
               {solved ? (
                 <div className="victory-state"><div className="victory-sigil">✦</div><div><strong>MONSTER DEFEATED</strong><p>No goals remain. The proof is complete.</p></div></div>
@@ -924,8 +924,10 @@ export default function Home() {
                     </div>
                   )}
                   {heroClass === "warrior" && (
-                    <button className="normalize-hole-button" disabled={visionPoints < 1 || monsterPhase !== "idle"} onClick={useVision}>
-                      <span>◉</span><span><strong>NORMALIZE CURRENT HOLE</strong></span><span>1 VP</span>
+                    <button className={`normalize-hole-button${tutorialClass("reduce-current-hole")}`} disabled={visionPoints < 1 || monsterPhase !== "idle"} onClick={() => {
+                      if (!tutorialStep) useVision();
+                    }}>
+                      <span>◉</span><span><strong>REDUCE CURRENT HOLE</strong></span><span>1 VP</span>
                     </button>
                   )}
                   {enteringNaturalNumber ? (
@@ -1012,7 +1014,7 @@ export default function Home() {
             aria-labelledby="tutorial-title"
             aria-describedby="tutorial-description"
           >
-            <p className="eyebrow">MAGE TUTORIAL · {tutorialStepIndex + 1}/{tutorial.steps.length}</p>
+            <p className="eyebrow">{tutorial.hero.toUpperCase()} TUTORIAL · {tutorialStepIndex + 1}/{tutorial.steps.length}</p>
             <h2 id="tutorial-title">{tutorialStep.title}</h2>
             <p id="tutorial-description">{tutorialStep.text}</p>
             {tutorialStep.action.type === "continue" ? (

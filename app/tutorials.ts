@@ -4,7 +4,9 @@ export type TutorialTarget =
   | "guardian"
   | "level-objective"
   | "environment"
+  | "current-hole"
   | "vitals"
+  | "reduce-current-hole"
   | "move-catalogue"
   | "proof-scroll"
   | "next-level"
@@ -45,6 +47,34 @@ export type LevelTutorial = {
 };
 
 export const levelTutorials: LevelTutorial[] = [
+  {
+    id: "warrior-level-1",
+    hero: "warrior",
+    levelId: 1,
+    steps: [
+      {
+        title: "Construct Terms Directly",
+        text: "The goal is the same for both paths: construct a term of the type shown in the Level Objective. Unlike the Mage, the Warrior cannot use tactics. Instead, the Warrior constructs terms directly.",
+        targets: ["guardian", "level-objective"],
+        placement: "bottom-center",
+        action: { type: "continue", label: "SHOW ME THE CURRENT HOLE" },
+      },
+      {
+        title: "Build Through Holes",
+        text: "The Current Hole panel shows the type of term needed for the active hole. The Warrior builds terms by specifying terms that contain holes, then filling each hole with a term of the correct type.",
+        targets: ["current-hole"],
+        placement: "bottom-center",
+        action: { type: "continue", label: "SHOW ME WARRIOR RESOURCES" },
+      },
+      {
+        title: "Vision Points",
+        text: "The Warrior has Vision Points (VP) instead of Magic Points (MP). You can spend one VP with Reduce Current Hole to reduce every term in the current hole as far as it will go, which can reveal a simpler form of the hole.",
+        targets: ["vitals", "reduce-current-hole"],
+        placement: "bottom-center",
+        action: { type: "continue", label: "BEGIN LEVEL" },
+      },
+    ],
+  },
   {
     id: "mage-level-1",
     hero: "mage",
