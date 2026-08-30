@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import {
   curriculum,
@@ -59,6 +59,14 @@ type StoryDestination = { kind: "character" } | { kind: "level"; index: number }
 type CSSPropertiesWithVariables = CSSProperties & {
   [name: `--${string}`]: string | number | undefined;
 };
+
+function formatInlineCode(text: string): ReactNode[] {
+  return text.split(/(`[^`]+`)/g).filter(Boolean).map((part, index) =>
+    part.startsWith("`") && part.endsWith("`")
+      ? <code key={`${index}-${part}`}>{part.slice(1, -1)}</code>
+      : part
+  );
+}
 
 const STORAGE_KEY = "leanquest-campaign-v5";
 const emptySave: SaveData = {
@@ -203,6 +211,7 @@ export default function Home() {
   const maxHp = heroClass ? MAX_HP[heroClass] : MAX_HP.warrior;
   const attackDamage = heroClass ? attackDamageFor(heroClass, level[heroClass].selections.length) : 0;
   const tutorial = heroClass ? tutorialForLevel(heroClass, level.id) : undefined;
+  const moveUnlockText = heroClass ? newMoveText(level, heroClass) : "";
   const pendingTutorialStep = tutorial?.steps[tutorialStepIndex] ?? null;
   const tutorialLibraryIsOpen = showCatalogue && pendingTutorialStep?.action.type === "close-library";
   const tutorialIsActive = Boolean(
@@ -841,7 +850,7 @@ export default function Home() {
           <div className={`left-console${tutorialTargets.has("proof-scroll") ? " tutorial-proof-parent" : ""}`}>
             <div className="level-strip pixel-frame">
               <div className="level-rune">{String(level.id).padStart(2, "0")}</div>
-              <div><p className="eyebrow">{level.chapter} · {level.topic}</p><h1>{level.title}</h1><p>{level.intro}</p></div>
+              <div><p className="eyebrow">{level.chapter} · {level.topic}</p><h1>{level.title}</h1><p>{formatInlineCode(level.intro)}</p></div>
               <div className="heading-actions">
                 <button className={tutorialClass("undo").trimStart()} onClick={() => {
                   if (!tutorialStep) undo();
@@ -1016,11 +1025,11 @@ export default function Home() {
           >
             <p className="eyebrow">{tutorial.hero.toUpperCase()} TUTORIAL · {tutorialStepIndex + 1}/{tutorial.steps.length}</p>
             <h2 id="tutorial-title">{tutorialStep.title}</h2>
-            <p id="tutorial-description">{tutorialStep.text}</p>
+            <p id="tutorial-description">{formatInlineCode(tutorialStep.text)}</p>
             {tutorialStep.action.type === "continue" ? (
               <button className="primary-button" onClick={continueTutorial}>{tutorialStep.action.label} ▶</button>
             ) : (
-              <p className="tutorial-action-hint">{tutorialStep.hint}</p>
+              <p className="tutorial-action-hint">{formatInlineCode(tutorialStep.hint ?? "")}</p>
             )}
           </aside>
         </>
@@ -1033,8 +1042,8 @@ export default function Home() {
             <div className="lesson-copy">
               <p className="eyebrow">LESSON {String(level.id).padStart(2, "0")} · {level.chapter}</p>
               <h2 id="lesson-title">{level.title}</h2>
-              {lessonTextFor(level.lesson, heroClass).map((sentence) => <p key={sentence}>{sentence}</p>)}
-              {newMoveText(level, heroClass) && <p>{newMoveText(level, heroClass)}</p>}
+              {lessonTextFor(level.lesson, heroClass).map((sentence) => <p key={sentence}>{formatInlineCode(sentence)}</p>)}
+              {moveUnlockText && <p>{formatInlineCode(moveUnlockText)}</p>}
               <button className="primary-button" onClick={closeLesson}>FACE {level.monster.name.toUpperCase()} ▶</button>
             </div>
           </section>
@@ -1078,7 +1087,7 @@ export default function Home() {
                       {group.tactics.map((tactic) => (
                         <article className="catalogue-entry tactic-entry" key={tactic.id}>
                           <div className="catalogue-entry-heading"><span className="catalogue-kind">TACTIC</span><code>{tactic.label}</code></div>
-                          <p>{tactic.description}</p>
+                          <p>{formatInlineCode(tactic.description)}</p>
                         </article>
                       ))}
                     </div>

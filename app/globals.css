@@ -489,6 +489,9 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   line-height: 1.7;
 }
 .tutorial-card code { color: #f1d57c; }
+.level-strip code,
+.lesson-copy code,
+.catalogue-entry p code { color: #e4c86e; }
 .tutorial-card .primary-button { width: 100%; margin-top: 17px; }
 .tutorial-card .tutorial-action-hint {
   margin-top: 16px !important;
