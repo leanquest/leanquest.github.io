@@ -19,10 +19,10 @@ export type MoveId =
   | "catalogue.eqRefl" | "catalogue.existsIntro" | "catalogue.existsElim"
   | "catalogue.eqSymm" | "catalogue.eqTrans" | "catalogue.congrArg" | "catalogue.eqMp"
   | "catalogue.classicalEm" | "catalogue.recursor" | "catalogue.dataConstructors"
-  | "catalogue.natAddZero" | "catalogue.natZeroAdd" | "catalogue.natAddSucc" | "catalogue.natSuccAdd"
+  | "catalogue.natZeroAdd" | "catalogue.natAddSucc" | "catalogue.natSuccAdd"
   | "catalogue.natAddAssoc" | "catalogue.natAddComm"
   | "catalogue.listAppendNil" | "catalogue.listAppendAssoc" | "catalogue.listLengthAppend"
-  | "catalogue.sum" | "catalogue.sumAppend" | "catalogue.natAddLemmas"
+  | "catalogue.sum" | "catalogue.sumAppend" | "catalogue.natAdd"
   | "catalogue.listPermRec" | "catalogue.natAddLeftComm"
   | "catalogue.listReplicate" | "catalogue.sumReplicate" | "catalogue.repeatEach"
   | "tactic.exact" | "tactic.intro" | "tactic.apply" | "tactic.constructor"
@@ -81,7 +81,6 @@ export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> =
     { name: "List.cons", group: "List", type: "∀ {α : Type u}, α → List α → List α" },
   ] },
 
-  "catalogue.natAddZero": { kind: "term", group: "Nat", entries: [{ name: "Nat.add_zero", type: "∀ n : Nat, n + 0 = n" }] },
   "catalogue.natZeroAdd": { kind: "term", group: "Nat", entries: [{ name: "Nat.zero_add", type: "∀ n : Nat, 0 + n = n" }] },
   "catalogue.natAddSucc": { kind: "term", group: "Nat", entries: [{ name: "Nat.add_succ", type: "∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)" }] },
   "catalogue.natSuccAdd": { kind: "term", group: "Nat", entries: [{ name: "Nat.succ_add", type: "∀ n m : Nat, Nat.succ n + m = Nat.succ (n + m)" }] },
@@ -92,10 +91,8 @@ export const catalogueMoveDefinitions: Record<MoveId, CatalogueMoveDefinition> =
   "catalogue.listLengthAppend": { kind: "term", group: "List", entries: [{ name: "List.length_append", type: "∀ {α : Type u}, ∀ {as bs : List α}, (as ++ bs).length = as.length + bs.length" }] },
   "catalogue.sum": { kind: "term", group: "List", entries: [{ name: "sum", type: "List Nat → Nat" }] },
   "catalogue.sumAppend": { kind: "term", group: "List", entries: [{ name: "sum_append", type: "∀ xs ys : List Nat, sum (xs ++ ys) = sum xs + sum ys" }] },
-  "catalogue.natAddLemmas": { kind: "term", group: "Nat", entries: [
+  "catalogue.natAdd": { kind: "term", group: "Nat", entries: [
     { name: "Nat.add", type: "Nat → Nat → Nat" },
-    { name: "Nat.zero_add", type: "∀ n : Nat, 0 + n = n" },
-    { name: "Nat.add_assoc", type: "∀ a b c : Nat, (a + b) + c = a + (b + c)" },
   ] },
   "catalogue.listPermRec": { kind: "term", group: "List", entries: [
     { name: "List.Perm.rec", group: "List", type: "∀ {α : Type u}, ∀ {motive : ∀ xs ys : List α, List.Perm xs ys → Prop}, motive [] [] (List.Perm.refl []) → (∀ x : α, ∀ {l1 l2 : List α}, ∀ h : List.Perm l1 l2, motive l1 l2 h → motive (x :: l1) (x :: l2) (List.Perm.cons x h)) → (∀ x y : α, ∀ l : List α, motive (y :: x :: l) (x :: y :: l) (List.Perm.swap x y l)) → (∀ {l1 l2 l3 : List α}, ∀ h1 : List.Perm l1 l2, ∀ h2 : List.Perm l2 l3, motive l1 l2 h1 → motive l2 l3 h2 → motive l1 l3 (List.Perm.trans h1 h2)) → ∀ {xs ys : List α}, ∀ h : List.Perm xs ys, motive xs ys h" },
@@ -284,7 +281,7 @@ const sumReplicateProofBody = "Nat.rec " +
     "(Eq.trans (Nat.add_comm x (n * x)) (Eq.symm (Nat.succ_mul n x)))) n";
 
 const sumRepeatEachProof = "fun xs => List.rec " +
-  "(fun n => Nat.rec (Eq.refl 0) (fun _ ih => ih) n) " +
+  "(fun n => Eq.refl 0) " +
   "(fun head tail ih => fun n => " +
     "Eq.trans (sum_append (List.replicate n head) (repeatEach n tail)) " +
       "(Eq.trans (congrArg (Nat.add (sum (List.replicate n head))) (ih n)) " +
@@ -871,7 +868,7 @@ const existingLevelEntries = [
     intro: "Classical excluded middle states that every proposition is true or false.",
     // Intended Warrior term (shortest lesson route): `Classical.em P`.
     // Intended Mage moves: `by_cases □ → P → left → exact hP → right → exact hP`.
-    lesson: lesson("Classical excluded middle states that every proposition either holds or does not hold."),
+    lesson: lesson("The principle of the excluded middle states that every proposition either holds or does not hold. This is another classical law that can only be used in Lean with additional assumptions."),
     unlocks: {
       warrior: { moves: ["catalogue.classicalEm"], text: "New catalogue term: `Classical.em` accepts a proposition and supplies its two alternatives." },
       mage: { moves: ["tactic.byCases"], text: "New move: `by_cases h : P` creates one branch with a proof of `P` and another with a proof of `¬P`." },
@@ -903,15 +900,10 @@ const existingLevelEntries = [
     intro: "Some equalities hold because both sides reduce to the same expression by definition.",
     // Intended Warrior term (shortest lesson route): `Eq.refl`.
     // Intended Mage moves (shortest lesson route): `intro n → rfl`.
-    lesson: lesson("Reflexivity proves equalities whose sides reduce to the same expression by computation, even when they are written differently.", {
+    lesson: lesson("Reflexivity proves equalities whose sides reduce to the same expression by computation, even when they are written differently. This is known as definitional equality. The definition of `+` examines its right operand, so `a + b` reduces when `b` computes to `0` or a successor.", {
       warrior: "The term `Eq.refl` constructs a reflexivity proof.",
       mage: "The `rfl` tactic asks Lean to close the goal by reflexivity.",
     }),
-    unlocks: {
-      completion: ["catalogue.natAddZero"],
-      warrior: { moves: [], text: "Completion reward: `Nat.add_zero` records this fact as a reusable catalogue theorem." },
-      mage: { moves: [], text: "Completion reward: `Nat.add_zero` records this fact as a reusable catalogue theorem." },
-    },
     warrior: route(["Eq.refl"], ["∀ n : Nat, n + 0 = n"], "Eq.refl"),
     mage: route(["intro n", "rfl"], ["∀ n : Nat, n + 0 = n", "n + 0 = n"], "by\n  intro n\n  rfl"),
     monster: monster("Amber Emberhorn", "Its final step vanishes by simple reduction.", "monsters.png", 6, 92, 126),
@@ -919,10 +911,10 @@ const existingLevelEntries = [
   {
     id: 44, depth: 5, chapter: "Induction and Calculation", title: "Zero on the Left", topic: "Natural-number induction",
     theorem: "∀ n : Nat, 0 + n = n", environment: [],
-    intro: "When computation follows a recursive argument, induction mirrors the definition's two cases.",
+    intro: "Use induction to prove a fact for all natural numbers.",
     // Intended Warrior term (shortest lesson route): `fun n => Nat.rec (motive := fun n => 0 + n = n) (Eq.refl 0) (fun k ih => congrArg Nat.succ ih) n`.
     // Intended Mage moves: introduce and induct on `n`; use `rfl` at zero, then reduce the successor case and prove the reduced argument equality with `ih`.
-    lesson: lesson("Natural-number induction proves a property from a base case at zero and a step that extends the property from one number to its successor."),
+    lesson: lesson("`0 + n` does not reduce because the operand on the right doesn't have the right form. We could destruct `n` to get `0 + n` to reduce, but then we would still end up with a term containing `0 + n`. Induction is a method for proving a fact about all terms of a type defined using constructors. For each constructor, we prove the fact while assuming it holds for that constructor's recursive arguments."),
     unlocks: {
       shared: ["catalogue.dataConstructors"],
       completion: ["catalogue.natZeroAdd"],
@@ -939,10 +931,10 @@ const existingLevelEntries = [
   {
     id: 45, depth: 5, chapter: "Induction and Calculation", title: "Successor Addition", topic: "Recursive reduction",
     theorem: "∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)", environment: [],
-    intro: "Natural-number addition is defined by recursion on its second argument.",
+    intro: "Natural-number addition reduces when its second operand is a successor.",
     // Intended Warrior term (shortest lesson route): `fun n m => Eq.refl (n + Nat.succ m)`.
     // Intended Mage moves (shortest lesson route): `intro n → intro m → rfl`.
-    lesson: lesson("A recursive definition may compute immediately when its recursive argument is already in constructor form, making reflexivity sufficient."),
+    lesson: lesson("`Nat.succ` is the constructor for `Nat` that takes a `Nat` and returns its successor. Because the second operand is explicitly a successor, the addition reduces."),
     unlocks: {
       completion: ["catalogue.natAddSucc"],
       warrior: { moves: [], text: "Completion reward: `Nat.add_succ` records this reduction rule as a reusable catalogue theorem." },
@@ -955,10 +947,10 @@ const existingLevelEntries = [
   {
     id: 46, depth: 5, chapter: "Induction and Calculation", title: "Associate the Sums", topic: "Inductive equality",
     theorem: "∀ c b a : Nat, (a + b) + c = a + (b + c)", environment: [],
-    intro: "Associativity follows by induction on the recursive final argument.",
+    intro: "Associativity follows by induction on the final argument.",
     // Intended Warrior term (shortest lesson route): `fun c b a => Nat.rec (motive := fun c => (a + b) + c = a + (b + c)) (Eq.refl ((a + b) + 0)) (fun k ih => congrArg Nat.succ ih) c`.
     // Intended Mage moves: introduce the values, induct on `c`, use `rfl` at zero, then reduce, use congruence, and supply `ih`.
-    lesson: lesson("In an inductive step, the induction hypothesis is an ordinary proof of equality that can be transported through surrounding functions by congruence."),
+    lesson: lesson("When a property has multiple variables, an induction proof must choose a particular induction variable. This choice can significantly affect the complexity of the proof."),
     unlocks: {
       completion: ["catalogue.natAddAssoc"],
       warrior: { moves: [], text: "Completion reward: `Nat.add_assoc` adds the proved associativity fact to the catalogue." },
@@ -974,10 +966,10 @@ const existingLevelEntries = [
   {
     id: 47, depth: 5, chapter: "Induction and Calculation", title: "Commute the Sums", topic: "Using proved theorems",
     theorem: "∀ a b : Nat, a + b = b + a", environment: [],
-    intro: "Larger developments reuse earlier theorems rather than reconstructing every proof.",
+    intro: "Any proved theorem can be reused in other proofs.",
     // Intended Warrior term: induction on `b`, using `Nat.zero_add`, `Nat.succ_add`, and congruence in the two cases.
     // Intended Mage route: introduce both numbers, induct on `b`, reduce each case, and explicitly rewrite with the proved zero fact, `ih`, and `Nat.succ_add`.
-    lesson: lesson("Previously proved theorems can handle the zero case, while `Nat.succ_add` and congruence align the successor case."),
+    lesson: lesson("Use previously proved theorems and additional supporting theorems to complete the proof."),
     unlocks: {
       shared: ["catalogue.natSuccAdd"],
       completion: ["catalogue.natAddComm"],
@@ -991,10 +983,10 @@ const existingLevelEntries = [
   {
     id: 48, depth: 5, chapter: "Induction and Calculation", title: "Append Nothing", topic: "List induction",
     theorem: "∀ xs : List α, xs ++ [] = xs", environment: ["α : Type"],
-    intro: "Lists have empty and cons constructors, so list induction follows those two shapes.",
+    intro: "Lists also have constructors, so induction is possible.",
     // Intended Warrior term (shortest lesson route): `fun xs => List.rec (motive := fun xs => xs ++ [] = xs) (Eq.refl []) (fun x xs ih => congrArg (List.cons x) ih) xs`.
     // Intended Mage moves: introduce and induct on `xs`; reduce the cons case, then rewrite explicitly with `ih`.
-    lesson: lesson("List induction proves a property from an empty-list case and a step for extending a list by one element."),
+    lesson: lesson("Lists also have two constructors: the empty list and a constructor that extends a list by one element. We can prove facts by induction on this structure."),
     unlocks: {
       completion: ["catalogue.listAppendNil"],
       warrior: { moves: [], text: "Completion reward: `List.append_nil` adds the proved empty-append fact to the catalogue." },
@@ -1010,10 +1002,10 @@ const existingLevelEntries = [
   {
     id: 49, depth: 5, chapter: "Induction and Calculation", title: "Associate the Lists", topic: "Structural theorem reuse",
     theorem: "∀ xs ys zs : List α, (xs ++ ys) ++ zs = xs ++ (ys ++ zs)", environment: ["α : Type"],
-    intro: "List append is associative, and its reusable theorem accepts three lists.",
+    intro: "Show that list append is associative.",
     // Intended Warrior term: list induction on `xs`, using reflexivity and congruence for the two constructors.
     // Intended Mage moves: introduce the lists and induct on `xs`; reduce the cons case, then rewrite explicitly with `ih`.
-    lesson: lesson("Append associativity follows the recursive structure of its first list; congruence carries the tail result beneath a shared head."),
+    lesson: lesson("List append (++) reduces based on the structure of the first operand, so choose your induction variable appropriately."),
     unlocks: {
       completion: ["catalogue.listAppendAssoc"],
       warrior: { moves: [], text: "Completion reward: `List.append_assoc` adds the proved associativity fact to the catalogue." },
@@ -1026,10 +1018,10 @@ const existingLevelEntries = [
   {
     id: 50, depth: 5, chapter: "Induction and Calculation", title: "Measure the Append", topic: "Simplification",
     theorem: "∀ xs ys : List α, (xs ++ ys).length = xs.length + ys.length", environment: ["α : Type"],
-    intro: "Recursive functions on inductive values often produce equations that simplification can solve.",
+    intro: "Use induction to prove a fact involving multiple functions.",
     // Intended Warrior term: list induction on `xs`, combining the tail equality with `Nat.succ_add` in the cons case.
     // Intended Mage moves: induct on `xs`, use `simp` only for reductions, and rewrite explicitly with the zero, successor, and induction facts.
-    lesson: lesson("List induction relates the length of an appended tail to the whole list; `Nat.succ_add` aligns the arithmetic in the cons case."),
+    lesson: lesson("Show that the length of an appended list is correct."),
     unlocks: {
       completion: ["catalogue.listLengthAppend"],
       warrior: { moves: [], text: "Completion reward: `List.length_append` adds the proved length formula to the catalogue." },
@@ -1041,15 +1033,15 @@ const existingLevelEntries = [
   },
   {
     id: 51, depth: 6, chapter: "The Capstone Abyss", title: "Sum the Joined Hoards", topic: "Defining sum and append induction",
-    theorem: sumAppendTheorem, environment: [],
-    intro: "The new function `sum` returns zero for `[]` and adds each head to the sum of its tail.",
+    theorem: "∀ xs ys : List Nat, sum (xs ++ ys) = sum xs + sum ys", environment: [],
+    intro: "The new function `sum` returns the sum of all numbers in a list.",
     // Intended Warrior term (32 catalogue selections; shortest lesson route): introduce `xs` and `ys`, use one `List.rec` on `xs`, then use `Nat.zero_add`, `congrArg`, and `Nat.add_assoc` in its cases; this contains one recursor.
     // Intended Mage moves: induct on `xs`, use `simp` for constructor reduction only, and select the zero, induction, and associativity rewrites explicitly.
-    lesson: lesson("The equations `sum [] = 0` and `sum (x :: xs) = x + sum xs` expose one addition at a time. After Lean checks a theorem, later theorems can reuse its name instead of repeating its proof."),
+    lesson: lesson("Use what you have learned to prove this fact about the `sum` function."),
     unlocks: {
-      shared: ["catalogue.sum", "catalogue.natAddLemmas"],
+      shared: ["catalogue.sum", "catalogue.natAdd"],
       completion: ["catalogue.sumAppend"],
-      warrior: { moves: [], text: "New catalogue terms: `sum`, `Nat.zero_add`, and `Nat.add_assoc`; `sum` reduces on list constructors, and completion adds `sum_append`." },
+      warrior: { moves: [], text: "New catalogue terms: `sum` and `Nat.add`; `Nat.add` is the two-argument function that implements `+`; completing this level adds `sum_append`." },
       mage: { moves: [], text: "New reduction: `simp` unfolds `sum` at list constructors without using addition laws or hypotheses; completing this level adds `sum_append`." },
     },
     warrior: route(["fun xs => □", "fun ys => □", sumAppendProof.slice("fun xs ys => ".length)], Array.from({ length: 3 }, () => sumAppendTheorem), sumAppendProof),
@@ -1059,13 +1051,13 @@ const existingLevelEntries = [
   {
     id: 52, depth: 6, chapter: "The Capstone Abyss", title: "Weight of a Permutation", topic: "Induction on permutation proofs",
     theorem: "∀ xs ys : List Nat, List.Perm xs ys → sum xs = sum ys", environment: [],
-    intro: "A proof of `List.Perm xs ys` shows that `ys` can be obtained from `xs` without adding or removing elements.",
+    intro: "Induction is allowed for any type with constructors.",
     // Intended Warrior term (45 catalogue selections; shortest lesson route): introduce the lists and permutation proof, then use one `List.Perm.rec`; its cases use reflexivity, congruence, `Nat.add_left_comm`, and transitivity.
     // Intended Mage moves: induct on `h`, use `simp` only to expose constructor definitions, and handle each equality with explicit hypotheses or named arithmetic rewrites.
-    lesson: lesson("Induction on a permutation proof follows its four possible forms: an unchanged list, a shared head, a neighboring swap, or a transitive chain. Each case preserves `sum` for a different equality reason."),
+    lesson: lesson("A proof of `List.Perm x y` shows that `x` is a permutation of `y`. This proof is a term that is built using constructors, just like a natural number or a list. So we can prove facts by induction on the structure of this proof."),
     unlocks: {
       shared: ["catalogue.natAddLeftComm"],
-      warrior: { moves: ["catalogue.listPermRec"], text: "New catalogue terms: the genuine `List.Perm.rec` eliminator and `Nat.add_left_comm`." },
+      warrior: { moves: ["catalogue.listPermRec"], text: "New catalogue terms: the `List.Perm.rec` eliminator and `Nat.add_left_comm`." },
       mage: { moves: [], text: "New induction target: `induction h` follows the four constructors of a permutation proof." },
     },
     warrior: route(["fun xs => □", "fun ys => □", "fun h => □", "List.Perm.rec (Eq.refl 0) (fun x l1 l2 h ih => congrArg (Nat.add x) ih) (fun x y l => Nat.add_left_comm y x (sum l)) (fun h1 h2 ih1 ih2 => Eq.trans ih1 ih2) h"], Array.from({ length: 4 }, () => "∀ xs ys : List Nat, List.Perm xs ys → sum xs = sum ys"), "fun xs ys h => List.Perm.rec (motive := fun xs ys _ => sum xs = sum ys) (Eq.refl 0) (fun x _ _ _ ih => congrArg (Nat.add x) ih) (fun x y l => Nat.add_left_comm y x (sum l)) (fun _ _ ih1 ih2 => Eq.trans ih1 ih2) h"),
@@ -1075,10 +1067,10 @@ const existingLevelEntries = [
   {
     id: 53, depth: 6, chapter: "The Capstone Abyss", title: "Swap the Caravans", topic: "Composing sum equalities",
     theorem: "∀ xs ys : List Nat, sum (xs ++ ys) = sum (ys ++ xs)", environment: [],
-    intro: "Two entire caravans may exchange places without changing the combined weight of their cargo.",
+    intro: "Two lists exchange places without changing the sum.",
     // Intended Warrior term (25 catalogue selections; shortest lesson route): introduce `xs` and `ys`, chain `sum_append xs ys`, commutativity, and the symmetry of `sum_append ys xs`; this contains no recursor.
     // Intended Mage moves: introduce the lists, rewrite both append sums explicitly, rewrite by commutativity, and close the reflexive result.
-    lesson: lesson("The equality `sum_append` can be specialized in both orders and joined to commutativity. Symmetry turns the second append equation toward the desired destination."),
+    lesson: lesson("Use what you have learned to prove this theorem."),
     warrior: route(["fun xs => □", "fun ys => □", "Eq.trans (sum_append xs ys) (Eq.trans (Nat.add_comm (sum xs) (sum ys)) (Eq.symm (sum_append ys xs)))"], Array.from({ length: 3 }, () => "∀ xs ys : List Nat, sum (xs ++ ys) = sum (ys ++ xs)"), "fun xs ys => Eq.trans (sum_append xs ys) (Eq.trans (Nat.add_comm (sum xs) (sum ys)) (Eq.symm (sum_append ys xs)))"),
     mage: route(["intro xs", "intro ys", "rw [□]", "sum_append", "rw [□]", "sum_append", "rw [□]", "Nat.add_comm", "rfl"], Array.from({ length: 9 }, () => "sum (xs ++ ys) = sum (ys ++ xs)"), "by\n  intro xs ys\n  rw [sum_append, sum_append, Nat.add_comm]"),
     monster: monster("Caravan-Swapping Djinn", "It exchanges two processions at once, but their combined burden never changes.", "monsters-3.png", 7, 184, 218),
@@ -1086,10 +1078,10 @@ const existingLevelEntries = [
   {
     id: 54, depth: 6, chapter: "The Capstone Abyss", title: "Count the Copies", topic: "Replication and multiplication",
     theorem: "∀ n x : Nat, sum (List.replicate n x) = n * x", environment: [],
-    intro: "`List.replicate n x` constructs a list containing exactly `n` copies of `x`.",
+    intro: "Prove that a sum of a replicated list is a product.",
     // Intended Warrior term (37 catalogue selections; shortest lesson route): introduce `n` and `x`, use one `Nat.rec` on `n`, and combine congruence, commutativity, and `Nat.succ_mul` in the successor case.
     // Intended Mage moves: induct on `n`, reduce each constructor case, and explicitly rewrite with the multiplication laws, `ih`, and commutativity.
-    lesson: lesson("`List.replicate` reduces to `[]` at zero and adds one copy at a successor. The theorem `Nat.succ_mul` describes the matching successor behavior of multiplication."),
+    lesson: lesson("`List.replicate n x` produces a list containing `n` copies of `x`. Use what you have learned to prove that the sum of this list is the same as `n * x`."),
     unlocks: {
       shared: ["catalogue.listReplicate"],
       completion: ["catalogue.sumReplicate"],
@@ -1101,11 +1093,11 @@ const existingLevelEntries = [
     monster: monster("Replication Hound Triumvirate", "Every head counts another identical row of coins.", "monsters-3.png", 8, 184, 218),
   },
   {
-    id: 55, depth: 6, chapter: "The Capstone Abyss", title: "Echo Every Wagon", topic: "Nested list and natural-number induction",
+    id: 55, depth: 6, chapter: "The Capstone Abyss", title: "Echo Every Wagon", topic: "List induction and theorem reuse",
     theorem: "∀ xs : List Nat, ∀ n : Nat, sum (repeatEach n xs) = n * sum xs", environment: [],
     intro: "`repeatEach n xs` replaces every value in `xs` with `n` consecutive copies of that value.",
-    // Intended Warrior proof uses nested recursion; the Mage route inducts on the source list and explicitly reuses the previously proved block theorems.
-    lesson: lesson("`repeatEach n [] = []`, while `repeatEach n (x :: xs) = List.replicate n x ++ repeatEach n xs`. Follow the source list's structure, using `sum_replicate` for each head block and the induction hypothesis for the tail."),
+    // Intended Warrior proof uses one list recursor; the Mage route inducts on the source list. Both paths reuse the previously proved block theorems.
+    lesson: lesson("Use all the tools at your disposal to complete this proof."),
     unlocks: {
       shared: ["catalogue.repeatEach"],
       warrior: { moves: [], text: "New catalogue terms: `repeatEach` and `Nat.mul_add`, which distributes a repeated count across a sum." },

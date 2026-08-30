@@ -123,7 +123,6 @@ export const libraryTermTypes = {
     "∀ value : List α, motive value",
   "Nat.succ": "Nat → Nat",
   "List.cons": "∀ {α : Type u}, α → List α → List α",
-  "Nat.add_zero": "∀ n : Nat, n + 0 = n",
   "Nat.add_succ": "∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)",
   "Nat.succ_add": "∀ n m : Nat, Nat.succ n + m = Nat.succ (n + m)",
   "Nat.add_comm": "∀ n m : Nat, n + m = m + n",

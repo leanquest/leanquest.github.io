@@ -132,8 +132,6 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
   assert.equal(exercises[39].title, "Chain the Equalities");
   assert.equal(unlockedMoves(39, "mage").has("tactic.calc"), false);
   assert.equal(unlockedMoves(40, "mage").has("tactic.calc"), true);
-  assert.equal(unlockedMoves(43, "warrior").has("catalogue.natAddZero"), false);
-  assert.equal(unlockedMoves(44, "warrior").has("catalogue.natAddZero"), true);
   assert.equal(unlockedMoves(44, "warrior").has("catalogue.natZeroAdd"), false);
   assert.equal(unlockedMoves(45, "warrior").has("catalogue.natZeroAdd"), true);
   assert.equal(unlockedMoves(50, "mage").has("catalogue.listLengthAppend"), false);
@@ -185,7 +183,6 @@ test("curriculum data controls cumulative move unlocks and lesson callouts", () 
   }
 
   const theoremRewards = [
-    [43, "catalogue.natAddZero", "Nat.add_zero"],
     [44, "catalogue.natZeroAdd", "Nat.zero_add"],
     [45, "catalogue.natAddSucc", "Nat.add_succ"],
     [46, "catalogue.natAddAssoc", "Nat.add_assoc"],
@@ -306,10 +303,18 @@ test("every intended proof route replays and the active economy is balanced from
         const remaining = hpAfterIntendedRoute(hero, route.selections);
         assert.ok(remaining > 0, `${hero} level ${level.id} must remain survivable`);
         const reserve = remaining / damage;
-        const tolerance = hero === "warrior" ? 1 : 0.5;
+        const reserveError = (candidateDamage) => {
+          const candidateRemaining = MAX_HP[hero] - Math.max(0, route.selections - 1) * candidateDamage;
+          return candidateRemaining > 0
+            ? Math.abs(candidateRemaining / candidateDamage - TARGET_RESERVE_MOVES[hero])
+            : Number.POSITIVE_INFINITY;
+        };
+        const bestReserveError = Math.min(
+          ...Array.from({ length: MAX_HP[hero] }, (_, index) => reserveError(index + 1)),
+        );
         assert.ok(
-          Math.abs(reserve - TARGET_RESERVE_MOVES[hero]) <= tolerance,
-          `${hero} level ${level.id} leaves ${reserve.toFixed(2)} reserve moves`,
+          reserveError(damage) <= bestReserveError + Number.EPSILON,
+          `${hero} level ${level.id} does not use the closest achievable reserve (${reserve.toFixed(2)} moves)`,
         );
       }
     }
@@ -427,7 +432,7 @@ test("the list-sum capstones use no more than two nested recursors", () => {
   const recursorCounts = exercises.slice(50).map((level) =>
     level.warrior.proof.match(/(?:Nat|List|List\.Perm)\.rec/g)?.length ?? 0
   );
-  assert.deepEqual(recursorCounts, [1, 1, 0, 1, 2]);
+  assert.deepEqual(recursorCounts, [1, 1, 0, 1, 1]);
 
   let appendState = createProofState(exercises[50].theorem, exercises[50].environment);
   appendState = move(appendState, "mage", 51, "intro xs");
@@ -540,10 +545,10 @@ test("all five Warrior capstones replay with their intended selection counts", (
     for (const label of ["fun n => □", "fun x => □", "(□ □)", "(□ □)", "(□ □)", "Nat.rec", "n", "(□ □)", "Eq.symm", "(□ □)", "Nat.zero_mul", "x", "fun n2 => □", "fun h => □", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add x", "h", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "x", "n2 * x", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "Nat.succ_mul", "n2", "x"]) exact(label);
   }));
   counts.push(replay(54, ({ exact }) => {
-    for (const label of ["fun xs => □", "(□ □)", "(□ □)", "(□ □)", "List.rec", "xs", "fun n => □", "(□ □)", "(□ □)", "(□ □)", "Nat.rec", "n", "(□ □)", "Eq.refl", "0", "fun n2 => □", "fun h => □", "h", "fun head => □", "fun tail => □", "fun hatil => □", "fun n => □", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "sum_append", "List.replicate n head", "repeatEach n tail", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add (sum (List.replicate n head))", "(□ □)", "hatil", "n", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "sum (List.replicate n head)", "n * sum tail", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add (n * sum tail)", "(□ □)", "(□ □)", "sum_replicate", "n", "head", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "n * sum tail", "n * head", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "(□ □)", "Nat.mul_add", "n", "head", "sum tail"]) exact(label);
+    for (const label of ["fun xs => □", "(□ □)", "(□ □)", "(□ □)", "List.rec", "xs", "fun n => □", "(□ □)", "Eq.refl", "0", "fun head => □", "fun tail => □", "fun hatil => □", "fun n => □", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "sum_append", "List.replicate n head", "repeatEach n tail", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add (sum (List.replicate n head))", "(□ □)", "hatil", "n", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "sum (List.replicate n head)", "n * sum tail", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "congrArg", "Nat.add (n * sum tail)", "(□ □)", "(□ □)", "sum_replicate", "n", "head", "(□ □)", "(□ □)", "Eq.trans", "(□ □)", "(□ □)", "Nat.add_comm", "n * sum tail", "n * head", "(□ □)", "Eq.symm", "(□ □)", "(□ □)", "(□ □)", "Nat.mul_add", "n", "head", "sum tail"]) exact(label);
   }));
 
-  assert.deepEqual(counts, [32, 45, 25, 37, 77]);
+  assert.deepEqual(counts, [32, 45, 25, 37, 69]);
 });
 
 test("every monster name matches its sprite archetype", () => {
@@ -1603,7 +1608,7 @@ test("every named catalogue constant has one fixed polymorphic type", () => {
     "Eq.refl", "Exists.intro", "Exists.elim", "Eq.symm", "Eq.trans",
     "congrArg", "Eq.mp", "Classical.em",
     "Nat.rec", "List.rec", "Nat.succ", "List.cons",
-    "Nat.add_zero", "Nat.add_succ", "Nat.succ_add", "Nat.add_comm",
+    "Nat.add_succ", "Nat.succ_add", "Nat.add_comm",
     "List.append_nil", "List.append_assoc", "List.length_append",
     "sum", "sum_append", "Nat.add", "Nat.zero_add", "Nat.add_assoc", "Nat.add_left_comm",
     "List.Perm.rec", "List.replicate", "Nat.mul", "Nat.zero_mul", "Nat.succ_mul", "sum_replicate", "repeatEach", "Nat.mul_add",
