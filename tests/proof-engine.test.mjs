@@ -1136,6 +1136,62 @@ test("the first tutorial unlocks natural number entry for terms and tactic argum
   assert.equal(isSolved(mage), true);
 });
 
+test("natural-number entry rejects malformed values without changing proof state", () => {
+  const state = createProofState("Nat", []);
+  const choice = getMoveChoices(state, "warrior", 1)
+    .find((candidate) => candidate.input === "natural-number");
+  assert.ok(choice);
+
+  for (const value of ["", "-1", "+1", "1.5", "12x", " 1 "]) {
+    assert.equal(choice.acceptsInput(value), false, `${JSON.stringify(value)} must not be accepted as a Nat`);
+    assert.equal(choice.apply(value), state, `${JSON.stringify(value)} must leave the current proof untouched`);
+  }
+  assert.equal(choice.acceptsInput("00012"), true);
+  assert.equal(renderProof(choice.apply("00012")), "12");
+});
+
+test("proposition eliminators are not offered when the current goal is data", () => {
+  const environment = [
+    "P Q : Prop",
+    "h : P ∨ Q",
+    "hex : ∃ n : Nat, n = n",
+  ];
+  const dataLabels = getMoveChoices(createProofState("Nat", environment), "mage", 55)
+    .map((choice) => choice.label);
+
+  for (const label of ["by_contra hnNat", "cases □", "rcases □", "by_cases □"]) {
+    assert.equal(dataLabels.includes(label), false, `${label} cannot eliminate a proposition into Nat`);
+  }
+  assert.equal(dataLabels.includes("exfalso"), true, "False.elim may eliminate into a data type");
+
+  const propositionLabels = getMoveChoices(createProofState("P", environment), "mage", 55)
+    .map((choice) => choice.label);
+  for (const label of ["by_contra hnP", "cases □", "rcases □", "by_cases □"]) {
+    assert.equal(propositionLabels.includes(label), true, `${label} should remain available for proposition goals`);
+  }
+});
+
+test("proposition-only catalogue constants cannot be applied to produce data", () => {
+  let state = createProofState("Nat", [
+    "P Q : Prop",
+    "h : P ∨ Q",
+    "hex : ∃ n : Nat, n = n",
+  ]);
+
+  state = move(state, "warrior", 55, "(□ □)");
+  let labels = getMoveChoices(state, "warrior", 55).map((choice) => choice.label);
+  assert.equal(labels.includes("Classical.byContradiction"), false);
+  assert.equal(labels.includes("False.elim"), true, "False.elim may produce a term in any sort");
+
+  state = move(state, "warrior", 55, "(□ □)");
+  labels = getMoveChoices(state, "warrior", 55).map((choice) => choice.label);
+  assert.equal(labels.includes("Exists.elim"), false);
+
+  state = move(state, "warrior", 55, "(□ □)");
+  labels = getMoveChoices(state, "warrior", 55).map((choice) => choice.label);
+  assert.equal(labels.includes("Or.elim"), false);
+});
+
 test("level seven teaches And.left through ordinary application", () => {
   let state = createProofState("P ∧ Q → P", ["P Q : Prop"]);
   const openingLabels = getMoveChoices(state, "warrior", 12).map((choice) => choice.label);

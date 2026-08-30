@@ -414,6 +414,22 @@ function parseBinary(type: string, operator: "∧" | "∨" | "↔") {
     : null;
 }
 
+function isProposition(type: string, environment: EnvironmentEntry[]): boolean {
+  const parsed = parseType(type, environment);
+  if (["negation", "exists", "and", "or", "iff", "equality"].includes(parsed.kind)) {
+    return true;
+  }
+  if (parsed.kind === "arrow") return isProposition(parsed.codomain.source, environment);
+  if (parsed.kind === "forall") {
+    return isProposition(parsed.body.source, [
+      ...environment,
+      { name: parsed.binder, type: parsed.domain.source },
+    ]);
+  }
+  if (parsed.kind === "atom" && ["True", "False"].includes(parsed.source)) return true;
+  return inferredTermType(parsed.source, environment) === "Prop";
+}
+
 function compact(value: string) {
   return stripTypeParens(value).replace(/\s+/g, "");
 }
@@ -609,6 +625,8 @@ function unifyTypeConstraints(
     if (occurs(id, rendered)) return false;
     const declaredType = resolveType(metaTypes[id] ?? "", substitutions);
     const actualType = inferredTermType(rendered, environment);
+    if (typesEqual(declaredType, "Prop") && !containsInternalMetavariable(rendered) &&
+        !isProposition(rendered, environment)) return false;
     if (declaredType && actualType && !unify(declaredType, actualType)) return false;
     substitutions[id] = rendered;
     return true;
@@ -779,11 +797,17 @@ function unifyTypeConstraints(
 
     if (leftParsed.kind === "meta") {
       if (occurs(leftParsed.id, resolvedRight)) return false;
+      const declaredType = resolveType(metaTypes[leftParsed.id] ?? "", substitutions);
+      if (typesEqual(declaredType, "Prop") && !containsInternalMetavariable(resolvedRight) &&
+          !isProposition(resolvedRight, environment)) return false;
       substitutions[leftParsed.id] = resolvedRight;
       return true;
     }
     if (rightParsed.kind === "meta") {
       if (occurs(rightParsed.id, resolvedLeft)) return false;
+      const declaredType = resolveType(metaTypes[rightParsed.id] ?? "", substitutions);
+      if (typesEqual(declaredType, "Prop") && !containsInternalMetavariable(resolvedLeft) &&
+          !isProposition(resolvedLeft, environment)) return false;
       substitutions[rightParsed.id] = resolvedLeft;
       return true;
     }
@@ -3188,6 +3212,7 @@ function tacticChoices(
   const hole = activeHole(state);
   if (!hole) return [];
   const choices: CatalogueMoveChoice[] = [];
+  const propositionGoal = isProposition(hole.expected, hole.environment);
   const canChooseNaturalNumber = hasMove(unlocks, "term.naturalNumber") &&
     acceptsNaturalNumber(state, hole);
   if (hasMove(unlocks, "tactic.exact") &&
@@ -3234,7 +3259,7 @@ function tacticChoices(
       makeTemplate(state, hole, "right", "Or.inr {0}", [{ expected: disjunction.right }]) });
   }
 
-  if (hasMove(unlocks, "tactic.cases")) {
+  if (propositionGoal && hasMove(unlocks, "tactic.cases")) {
     for (const entry of hole.environment) {
       const alternatives = parseBinary(entry.type, "∨");
       if (!alternatives) continue;
@@ -3261,7 +3286,7 @@ function tacticChoices(
       fill(state, hole.id, { kind: "term", text: `False.elim (${contradiction})`, type: hole.expected }, "contradiction") });
   }
 
-  if (hasMove(unlocks, "tactic.byContra") && hole.expected !== "False") {
+  if (propositionGoal && hasMove(unlocks, "tactic.byContra") && hole.expected !== "False") {
     const name = freshName(propositionName(negate(hole.expected)), hole.environment);
     const environment = [...hole.environment, { name, type: negate(hole.expected) }];
     choices.push({ id: "tactic-by-contra", label: `by_contra ${name}`, category: "tactic", apply: () =>
@@ -3285,7 +3310,7 @@ function tacticChoices(
       }) });
   }
 
-  if (hasMove(unlocks, "tactic.rcases")) {
+  if (propositionGoal && hasMove(unlocks, "tactic.rcases")) {
     for (const entry of hole.environment) {
       const exists = parseExists(entry.type, hole.environment);
       if (!exists) continue;
@@ -3354,7 +3379,7 @@ function tacticChoices(
 
   if (hasMove(unlocks, "tactic.rewrite")) addRewriteChoices(choices, state, hole, unlocks);
 
-  if (hasMove(unlocks, "tactic.byCases")) {
+  if (propositionGoal && hasMove(unlocks, "tactic.byCases")) {
     for (const proposition of hole.environment.filter((entry) => entry.type === "Prop")) {
       const positive = freshName(`h${proposition.name}`, hole.environment);
       const negative = freshName(`hn${proposition.name}`, hole.environment);
