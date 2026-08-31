@@ -52,6 +52,18 @@ test("music roles and story coverage stay complete", () => {
   }
 });
 
+test("battle and victory assign chiptune marimba above chiptune timpani", async () => {
+  for (const cueId of ["combat", "victory"]) {
+    const cue = musicCues[cueId];
+    const midi = new Midi(await readFile(`public${cue.url}`));
+    const audibleTrackCount = midi.tracks.filter((track) => track.notes.length).length;
+
+    assert.equal(cue.trackVoices.length, audibleTrackCount);
+    assert.deepEqual(cue.trackVoices.slice(0, -1), Array(audibleTrackCount - 1).fill("marimba"));
+    assert.equal(cue.trackVoices.at(-1), "timpani");
+  }
+});
+
 test("Ave Verum performs its repeat and loops at the Amen cutoff", async () => {
   const midi = new Midi(await readFile(`public${musicCues.title.url}`));
   const measureTicks = midi.header.ppq * 4;
@@ -84,7 +96,7 @@ test("Ave Verum performs its repeat and loops at the Amen cutoff", async () => {
   assert.equal(midi.durationTicks, 58 * measureTicks);
 });
 
-test("the victory fanfare is brief and self-contained", async () => {
+test("the victory cue is brief and self-contained", async () => {
   const midi = new Midi(await readFile(`public${musicCues.victory.url}`));
   assert.ok(midi.duration >= 4 && midi.duration <= 8);
 });

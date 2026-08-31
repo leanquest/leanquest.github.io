@@ -77,6 +77,44 @@ function fmVoice(output: Tone.ToneAudioNode, level: number): Voice {
   };
 }
 
+function marimbaVoice(output: Tone.ToneAudioNode): Voice {
+  const channel = new Tone.Gain(0.34).connect(output);
+  const synth = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 3,
+    modulationIndex: 1.35,
+    oscillator: { type: "triangle" },
+    modulation: { type: "square" },
+    envelope: { attack: 0.012, decay: 0.3, sustain: 0.38, release: 0.28 },
+    modulationEnvelope: { attack: 0.01, decay: 0.24, sustain: 0.16, release: 0.2 },
+  }).connect(channel);
+  synth.maxPolyphony = 12;
+  return {
+    trigger: (entry, time) => synth.triggerAttackRelease(entry.name, entry.duration, time, entry.velocity),
+    dispose: () => {
+      synth.dispose();
+      channel.dispose();
+    },
+  };
+}
+
+function timpaniVoice(output: Tone.ToneAudioNode): Voice {
+  const channel = new Tone.Gain(0.44).connect(output);
+  const synth = new Tone.PolySynth(Tone.MembraneSynth, {
+    pitchDecay: 0.12,
+    octaves: 0.7,
+    oscillator: { type: "triangle" },
+    envelope: { attack: 0.015, decay: 0.48, sustain: 0.28, release: 0.42 },
+  }).connect(channel);
+  synth.maxPolyphony = 8;
+  return {
+    trigger: (entry, time) => synth.triggerAttackRelease(entry.name, entry.duration, time, entry.velocity),
+    dispose: () => {
+      synth.dispose();
+      channel.dispose();
+    },
+  };
+}
+
 function drumVoice(output: Tone.ToneAudioNode): Voice {
   const channel = new Tone.Gain(0.34).connect(output);
   const kick = new Tone.MembraneSynth({
@@ -120,7 +158,13 @@ function drumVoice(output: Tone.ToneAudioNode): Voice {
   };
 }
 
-function createVoice(name: string, output: Tone.ToneAudioNode): Voice {
+function createVoice(
+  name: string,
+  output: Tone.ToneAudioNode,
+  assignedVoice?: "marimba" | "timpani",
+): Voice {
+  if (assignedVoice === "marimba") return marimbaVoice(output);
+  if (assignedVoice === "timpani") return timpaniVoice(output);
   if (name === "pixel_drums") return drumVoice(output);
   if (name === "crystal_bell" || name === "fm_brass") return fmVoice(output, name === "crystal_bell" ? 0.22 : 0.3);
   if (name === "triangle_bass") {
@@ -230,9 +274,13 @@ class MidiMusicEngine {
     this.playingCue = cue;
     const transport = Tone.getTransport();
     transport.seconds = 0;
-    for (const midiTrack of midi.tracks) {
-      if (!midiTrack.notes.length) continue;
-      const voice = createVoice(midiTrack.name, this.output);
+    const audibleTracks = midi.tracks.filter((track) => track.notes.length);
+    for (const [trackIndex, midiTrack] of audibleTracks.entries()) {
+      const voice = createVoice(
+        midiTrack.name,
+        this.output,
+        config.trackVoices?.[trackIndex],
+      );
       const events: [number, ScheduledNote][] = midiTrack.notes.map((entry) => [entry.time, {
         name: entry.name,
         midi: entry.midi,

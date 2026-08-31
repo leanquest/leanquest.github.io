@@ -199,24 +199,6 @@ function combatTheme() {
   return { filename: "combat.mid", tempo: 104, title: "Theorem Under Siege", tracks: [lead, harmony, bass, arp, bell, kit] };
 }
 
-function victoryTheme() {
-  const lead = track("fanfare_lead", 0, 81);
-  const brass = track("fm_brass", 1, 62);
-  const bass = track("triangle_bass", 2, 38);
-  const bell = track("crystal_bell", 3, 10);
-  const kit = track("pixel_drums", 9, 0);
-  phrase(lead, 0, [["G4", 0.5], ["C5", 0.5], ["E5", 0.5], ["G5", 1.5], ["E5", 0.5], ["A5", 1.5], ["G5", 0.5], ["C6", 2], ["B5", 0.5], ["A5", 0.5], ["G5", 1], ["E5", 1], ["F5", 1], ["G5", 1], ["C6", 4]], 0.88);
-  [[0, ["C4", "E4", "G4"]], [4, ["F4", "A4", "C5"]], [8, ["G4", "B4", "D5"]], [12, ["C4", "E4", "G4", "C5"]]].forEach(([start, tones]) => chord(brass, tones, start, start === 12 ? 4 : 3.6, 0.58));
-  [[0, "C2"], [4, "F2"], [8, "G2"], [12, "C2"]].forEach(([start, value]) => {
-    note(bass, value, start, 1.8, 0.7);
-    note(bass, value, start + 2, 1.8, 0.56);
-  });
-  [2, 6, 10, 12, 13, 14].forEach((start) => note(kit, start >= 12 ? 49 : 38, start, 0.16, 0.7));
-  [0, 4, 8, 12].forEach((start) => note(kit, 36, start, 0.18, 0.78));
-  chord(bell, ["C6", "E6", "G6"], 12, 3.8, 0.42);
-  return { filename: "victory.mid", tempo: 150, title: "Q.E.D. Fanfare", tracks: [lead, brass, bass, bell, kit] };
-}
-
 function brokenAxiomTheme() {
   const lead = track("breath_lead", 0, 75);
   const harmony = track("dark_harmony", 1, 89);
@@ -338,7 +320,7 @@ function encodeMidi(song) {
   return Buffer.concat([header, chunk("MTrk", tempoTrack), ...song.tracks.map(encodeTrack)]);
 }
 
-const songs = [titleTheme(), combatTheme(), victoryTheme(), brokenAxiomTheme(), hallOfNamesTheme()];
+const songs = [titleTheme(), combatTheme(), brokenAxiomTheme(), hallOfNamesTheme()];
 await mkdir(OUTPUT_DIR, { recursive: true });
 await Promise.all(songs.map((song) => writeFile(resolve(OUTPUT_DIR, song.filename), encodeMidi(song))));
 console.log(`Generated ${songs.length} MIDI tracks in ${OUTPUT_DIR}`);

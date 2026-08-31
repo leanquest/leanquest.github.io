@@ -4,29 +4,34 @@ export const musicCues = {
     url: "/music/title.mid",
     loop: true,
     loopSeconds: 58 * 4 * 60 / 76,
+    trackVoices: null,
   },
   combat: {
     title: "Theorem Under Siege",
     url: "/music/battle.mid",
     loop: true,
     loopSeconds: 59.975,
+    trackVoices: ["marimba", "marimba", "timpani"],
   },
   victory: {
-    title: "Q.E.D. Fanfare",
+    title: "Battle Moosak Triumph",
     url: "/music/victory.mid",
     loop: false,
+    trackVoices: ["marimba", "marimba", "timpani"],
   },
   "story-broken-axiom": {
     title: "Fracture in the First Theorem",
     url: "/music/story-broken-axiom.mid",
     loop: true,
     loopSeconds: 64 * 60 / 70,
+    trackVoices: null,
   },
   "story-hall-of-names": {
     title: "Names Without End",
     url: "/music/story-hall-of-names.mid",
     loop: true,
     loopSeconds: 48 * 60 / 82,
+    trackVoices: null,
   },
 } as const;
 
