@@ -48,27 +48,27 @@ export type LevelTutorial = {
 
 export const levelTutorials: LevelTutorial[] = [
   {
-    id: "warrior-level-1",
-    hero: "warrior",
+    id: "champion-level-1",
+    hero: "champion",
     levelId: 1,
     steps: [
       {
         title: "Construct Terms Directly",
-        text: "The goal is the same for both paths: construct a term of the type shown in the Level Objective. Unlike the Mage, the Warrior cannot use tactics. Instead, the Warrior constructs terms directly.",
+        text: "The goal is the same for both paths: construct a term of the type shown in the Level Objective. Unlike the Apprentice, the Champion cannot use tactics. Instead, the Champion constructs terms directly.",
         targets: ["guardian", "level-objective"],
         placement: "bottom-center",
         action: { type: "continue", label: "SHOW ME THE CURRENT HOLE" },
       },
       {
         title: "Build Through Holes",
-        text: "The Current Hole panel shows the type of term needed for the active hole. The Warrior builds terms by choosing terms that contain holes, then filling each hole with a term of the correct type.",
+        text: "The Current Hole panel shows the type of term needed for the active hole. The Champion builds terms by choosing terms that contain holes, then filling each hole with a term of the correct type.",
         targets: ["current-hole"],
         placement: "bottom-center",
-        action: { type: "continue", label: "SHOW ME WARRIOR RESOURCES" },
+        action: { type: "continue", label: "SHOW ME CHAMPION RESOURCES" },
       },
       {
         title: "Vision Points",
-        text: "The Warrior has Vision Points (VP) instead of Magic Points (MP). You can spend one VP with Reduce Current Hole to reduce every term in the current hole as far as it will go, which can reveal a simpler form of the hole.",
+        text: "The Champion has Vision Points (VP) instead of Magic Points (MP). You can spend one VP with Reduce Current Hole to reduce every term in the current hole as far as it will go, which can reveal a simpler form of the hole.",
         targets: ["vitals", "reduce-current-hole"],
         placement: "bottom-center",
         action: { type: "continue", label: "BEGIN LEVEL" },
@@ -76,8 +76,8 @@ export const levelTutorials: LevelTutorial[] = [
     ],
   },
   {
-    id: "mage-level-1",
-    hero: "mage",
+    id: "apprentice-level-1",
+    hero: "apprentice",
     levelId: 1,
     steps: [
       {
@@ -103,7 +103,7 @@ export const levelTutorials: LevelTutorial[] = [
       },
       {
         title: "Magic Points",
-        text: "The Mage spends Magic Points (MP) to invoke tactics, which are like spells that construct terms. Each tactic has its own MP cost.",
+        text: "The Apprentice spends Magic Points (MP) to invoke tactics, which are like spells that construct terms. Each tactic has its own MP cost.",
         targets: ["vitals"],
         placement: "top-left",
         action: { type: "continue", label: "SHOW ME THE CATALOGUE" },
@@ -135,8 +135,8 @@ export const levelTutorials: LevelTutorial[] = [
     ],
   },
   {
-    id: "mage-level-2",
-    hero: "mage",
+    id: "apprentice-level-2",
+    hero: "apprentice",
     levelId: 2,
     steps: [
       {
@@ -166,8 +166,8 @@ export const levelTutorials: LevelTutorial[] = [
     ],
   },
   {
-    id: "mage-level-3",
-    hero: "mage",
+    id: "apprentice-level-3",
+    hero: "apprentice",
     levelId: 3,
     steps: [
       {
@@ -196,8 +196,8 @@ export const levelTutorials: LevelTutorial[] = [
     ],
   },
   {
-    id: "mage-level-4",
-    hero: "mage",
+    id: "apprentice-level-4",
+    hero: "apprentice",
     levelId: 4,
     steps: [
       {
@@ -232,8 +232,8 @@ export const levelTutorials: LevelTutorial[] = [
     ],
   },
   {
-    id: "mage-level-5",
-    hero: "mage",
+    id: "apprentice-level-5",
+    hero: "apprentice",
     levelId: 5,
     steps: [
       {
@@ -262,8 +262,8 @@ export const levelTutorials: LevelTutorial[] = [
     ],
   },
   {
-    id: "mage-level-6",
-    hero: "mage",
+    id: "apprentice-level-6",
+    hero: "apprentice",
     levelId: 6,
     steps: [
       {

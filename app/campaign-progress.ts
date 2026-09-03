@@ -8,7 +8,7 @@ export function canSelectHero(
   completed: ClassCompletion,
   finalLevelId: number,
 ) {
-  return hero === "mage" || completed.mage.includes(finalLevelId);
+  return hero === "apprentice" || completed.apprentice.includes(finalLevelId);
 }
 
 export function destinationFromTitle(

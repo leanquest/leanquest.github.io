@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(origin),
     title: "LeanQuest — The Proof Dungeon",
     description:
-      "Choose Warrior or Mage and battle through 55 paired Lean proof lessons using terms or tactics.",
+      "Choose Champion or Apprentice and battle through 55 paired Lean proof lessons using terms or tactics.",
     icons: {
       icon: "/favicon.svg",
       shortcut: "/favicon.svg",

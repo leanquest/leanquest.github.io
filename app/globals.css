@@ -142,10 +142,10 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   width: 30px;
   height: 31px;
   display: block;
-  background-image: url("/assets/classes.png");
+  background-image: url("/assets/classes-v2.png");
   background-size: 200% 100%;
   background-repeat: no-repeat;
-  background-color: #11130e;
+  background-color: #000;
   border: 1px solid #686951;
 }
 
@@ -288,10 +288,10 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   width: 49px;
   height: 49px;
   flex: 0 0 auto;
-  background-image: url("/assets/classes.png");
+  background-image: url("/assets/classes-v2.png");
   background-size: 200% 100%;
   background-repeat: no-repeat;
-  background-color: #11130e;
+  background-color: #000;
   border: 2px solid #090a07;
   outline: 1px solid var(--gold-dark);
 }
@@ -523,11 +523,11 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
 .path-banner strong, .path-banner small { display: block; text-align: left; }
 .path-banner strong { font-size: 10px; letter-spacing: .08em; }
 .path-banner small { margin-top: 4px; color: #8f8970; font-size: 7px; letter-spacing: .06em; }
-.hero-mage .path-banner { background: linear-gradient(90deg, #24293b, #20242e); }
-.hero-mage .path-symbol, .hero-mage .choice-arrow, .hero-mage .choice-key { color: #6cb5d9; }
+.hero-apprentice .path-banner { background: linear-gradient(90deg, #24293b, #20242e); }
+.hero-apprentice .path-symbol, .hero-apprentice .choice-arrow, .hero-apprentice .choice-key { color: #6cb5d9; }
 .proof-failed .path-banner { background: linear-gradient(90deg, #551713, #2b0d0b); color: #ffd0b9; }
 .proof-failed .path-symbol { color: #ee654d; }
-.hero-mage .focus-chip { border-color: #365f75; color: #80c9e7; background: #172832; }
+.hero-apprentice .focus-chip { border-color: #365f75; color: #80c9e7; background: #172832; }
 .mode-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 3px solid #080906; }
 .mode-tabs button { min-height: 65px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-right: 2px solid #080906; background: #24281e; color: #88846b; cursor: pointer; }
 .mode-tabs button[aria-selected="true"] { color: #f0d884; background: #34382a; box-shadow: inset 0 -4px var(--gold); }
@@ -915,7 +915,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   cursor: pointer;
 }
 .class-card:not(:disabled):hover { outline-color: var(--gold); transform: translate(-2px, -2px); box-shadow: inset 0 0 0 3px #34392a, 10px 10px #050604; }
-.class-card.mage:not(:disabled):hover { outline-color: #4f9bc1; }
+.class-card.apprentice:not(:disabled):hover { outline-color: #4f9bc1; }
 .class-card.locked { opacity: .62; cursor: not-allowed; outline-color: #393c31; }
 .class-card.locked .class-art { filter: grayscale(.8) brightness(.55); }
 .class-card.locked .class-copy > b { color: #8d8774; }
@@ -924,13 +924,12 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   height: auto;
   min-height: 100%;
   aspect-ratio: 1;
-  background-image: url("/assets/classes.png");
+  background-image: url("/assets/classes-v2.png");
   background-size: auto 90%;
   background-repeat: no-repeat;
-  background-color: #0b0d09;
+  background-color: #000;
 }
-.class-card.warrior .class-art { background-color: #241713; }
-.class-card.mage .class-art { background-color: #111927; }
+.class-card.champion .class-art, .class-card.apprentice .class-art { background-color: #000; }
 .class-copy {
   display: flex;
   flex-direction: column;
@@ -941,15 +940,15 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
     repeating-linear-gradient(45deg, #262a20 0 3px, #171a13 3px 6px);
 }
 .class-copy > span { color: var(--gold); font-size: 8px; letter-spacing: .13em; }
-.mage .class-copy > span { color: #69afd0; }
+.apprentice .class-copy > span { color: #69afd0; }
 .class-copy h2 { margin: 7px 0 14px; color: #f0dda5; font-size: clamp(20px, 3vw, 32px); letter-spacing: .08em; }
 .class-copy p { min-height: 78px; margin: 0; color: #a19a7f; font-size: 9px; line-height: 1.65; }
 .class-progress { height: 10px; margin: 14px 0 6px; padding: 2px; background: #070806; border: 1px solid #525640; }
 .class-progress i { display: block; height: 100%; background: repeating-linear-gradient(90deg, #8f2723 0 7px, #c63b2e 7px 12px); }
-.mage .class-progress i { background: repeating-linear-gradient(90deg, #225b88 0 7px, #3195be 7px 12px); }
+.apprentice .class-progress i { background: repeating-linear-gradient(90deg, #225b88 0 7px, #3195be 7px 12px); }
 .class-copy > strong { color: #7e7a65; font-size: 7px; }
 .class-copy > b { margin-top: 16px; color: #e7ca70; font-size: 9px; }
-.mage .class-copy > b { color: #73bbda; }
+.apprentice .class-copy > b { color: #73bbda; }
 .return-button {
   padding: 10px 14px;
   border: 2px solid #090a07;
@@ -973,10 +972,10 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 }
 .lesson-class-art {
   min-height: 400px;
-  background-image: url("/assets/classes.png");
+  background-image: url("/assets/classes-v2.png");
   background-size: 200% auto;
   background-repeat: no-repeat;
-  background-color: #171a13;
+  background-color: #000;
   filter: drop-shadow(10px 10px #060705);
 }
 .lesson-copy {

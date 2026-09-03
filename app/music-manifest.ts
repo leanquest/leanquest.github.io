@@ -19,15 +19,15 @@ export const musicCues = {
     loop: false,
     trackVoices: ["marimba", "marimba", "timpani"],
   },
-  "story-broken-axiom": {
-    title: "Fracture in the First Theorem",
+  "story-rescue": {
+    title: "Undeniable Truth",
     url: "/music/story-broken-axiom.mid",
     loop: true,
     loopSeconds: 64 * 60 / 70,
     trackVoices: null,
   },
-  "story-hall-of-names": {
-    title: "Names Without End",
+  "story-induction": {
+    title: "Pattern Without End",
     url: "/music/story-hall-of-names.mid",
     loop: true,
     loopSeconds: 48 * 60 / 82,
@@ -38,6 +38,9 @@ export const musicCues = {
 export type MusicCueId = keyof typeof musicCues;
 
 export const storyMusic: Record<string, MusicCueId> = {
-  "the-broken-axiom": "title",
-  "the-hall-of-names": "story-hall-of-names",
+  "the-hollow": "title",
+  "induction-apprentice": "story-induction",
+  "induction-champion": "story-induction",
+  "the-rescue-apprentice": "story-rescue",
+  "the-rescue-champion": "story-rescue",
 };

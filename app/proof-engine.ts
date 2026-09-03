@@ -3728,7 +3728,7 @@ export function getMoveChoices(state: ProofState, hero: HeroClass, level: number
   const unlocks = unlockedMoves(level, hero);
   const choices = state.pending
     ? pendingChoices(state, unlocks)
-    : hero === "warrior" ? getNormalTermChoices(state, unlocks) : tacticChoices(state, unlocks);
+    : hero === "champion" ? getNormalTermChoices(state, unlocks) : tacticChoices(state, unlocks);
   return choices.map((choice) => ({
     ...choice,
     manaCost: choice.category === "tactic" ? tacticManaCost(choice.id) : 0,
@@ -3736,7 +3736,7 @@ export function getMoveChoices(state: ProofState, hero: HeroClass, level: number
       const focusedHole = activeHole(state);
       const branchPath = focusedHole ? tacticBranchPath(state.root, focusedHole.id) ?? [] : [];
       const next = choice.apply(value);
-      if (hero !== "mage") return next;
+      if (hero !== "apprentice") return next;
       if (choice.category === "tactic") {
         return {
           ...next,
@@ -3768,7 +3768,7 @@ export function currentModeLabel(state: ProofState, hero: HeroClass) {
   if (state.pending?.kind === "witness") return "CHOOSE A WITNESS";
   if (state.pending?.kind === "exact") return "CHOOSE A TERM";
   if (state.pending?.kind === "tactic-argument") return "CHOOSE A TERM";
-  return hero === "warrior" ? "CHOOSE A MOVE" : "CHOOSE A TACTIC";
+  return hero === "champion" ? "CHOOSE A MOVE" : "CHOOSE A TACTIC";
 }
 
 export function pendingArgumentType(state: ProofState) {

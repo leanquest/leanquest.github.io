@@ -1,33 +1,33 @@
-export type IntendedSelections = { warrior: readonly string[]; mage: readonly string[] };
+export type IntendedSelections = { champion: readonly string[]; apprentice: readonly string[] };
 
 export const intendedSelections = {
   "1": {
-    "warrior": [
+    "champion": [
       "hp"
     ],
-    "mage": [
+    "apprentice": [
       "exact □",
       "hp"
     ]
   },
   "2": {
-    "warrior": [
+    "champion": [
       "fun hP => □",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hP",
       "exact □",
       "hP"
     ]
   },
   "3": {
-    "warrior": [
+    "champion": [
       "fun hP => □",
       "fun hQ => □",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hP",
       "intro hQ",
       "exact □",
@@ -35,14 +35,14 @@ export const intendedSelections = {
     ]
   },
   "4": {
-    "warrior": [
+    "champion": [
       "fun hP => □",
       "fun hPQ => □",
       "(□ □)",
       "hPQ",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hP",
       "intro hPQ",
       "apply □",
@@ -52,7 +52,7 @@ export const intendedSelections = {
     ]
   },
   "5": {
-    "warrior": [
+    "champion": [
       "fun hPQ => □",
       "fun hQR => □",
       "fun hP => □",
@@ -62,7 +62,7 @@ export const intendedSelections = {
       "hPQ",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPQ",
       "intro hQR",
       "intro hP",
@@ -75,10 +75,10 @@ export const intendedSelections = {
     ]
   },
   "6": {
-    "warrior": [
+    "champion": [
       "And.intro"
     ],
-    "mage": [
+    "apprentice": [
       "intro hP",
       "intro hQ",
       "constructor",
@@ -89,10 +89,10 @@ export const intendedSelections = {
     ]
   },
   "7": {
-    "warrior": [
+    "champion": [
       "And.left"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "apply □",
       "And.left",
@@ -101,7 +101,7 @@ export const intendedSelections = {
     ]
   },
   "8": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "(□ □)",
@@ -113,7 +113,7 @@ export const intendedSelections = {
       "h",
       "left"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "constructor",
       "exact □",
@@ -123,10 +123,10 @@ export const intendedSelections = {
     ]
   },
   "9": {
-    "warrior": [
+    "champion": [
       "Or.inl"
     ],
-    "mage": [
+    "apprentice": [
       "intro hP",
       "left",
       "exact □",
@@ -134,7 +134,7 @@ export const intendedSelections = {
     ]
   },
   "10": {
-    "warrior": [
+    "champion": [
       "fun hPR => □",
       "fun hQR => □",
       "fun h => □",
@@ -146,7 +146,7 @@ export const intendedSelections = {
       "hPR",
       "hQR"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPR",
       "intro hQR",
       "intro h",
@@ -163,10 +163,10 @@ export const intendedSelections = {
     ]
   },
   "11": {
-    "warrior": [
+    "champion": [
       "False.elim"
     ],
-    "mage": [
+    "apprentice": [
       "intro hFalse",
       "exfalso",
       "exact □",
@@ -174,10 +174,10 @@ export const intendedSelections = {
     ]
   },
   "12": {
-    "warrior": [
+    "champion": [
       "Iff.intro"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPQ",
       "intro hQP",
       "constructor",
@@ -188,10 +188,10 @@ export const intendedSelections = {
     ]
   },
   "13": {
-    "warrior": [
+    "champion": [
       "Iff.mp"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "intro hP",
       "apply □",
@@ -201,7 +201,7 @@ export const intendedSelections = {
     ]
   },
   "14": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "□.□",
@@ -211,7 +211,7 @@ export const intendedSelections = {
       "h",
       "left"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "apply □",
       "h.right",
@@ -220,7 +220,7 @@ export const intendedSelections = {
     ]
   },
   "15": {
-    "warrior": [
+    "champion": [
       "fun hPQ => □",
       "fun hnQ => □",
       "fun hP => □",
@@ -230,7 +230,7 @@ export const intendedSelections = {
       "hPQ",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPQ",
       "intro hnQ",
       "intro hP",
@@ -243,7 +243,7 @@ export const intendedSelections = {
     ]
   },
   "16": {
-    "warrior": [
+    "champion": [
       "fun hnPQ => □",
       "(□ □)",
       "(□ □)",
@@ -261,7 +261,7 @@ export const intendedSelections = {
       "Or.inr",
       "hQ"
     ],
-    "mage": [
+    "apprentice": [
       "intro hnPQ",
       "constructor",
       "intro hP",
@@ -279,7 +279,7 @@ export const intendedSelections = {
     ]
   },
   "17": {
-    "warrior": [
+    "champion": [
       "fun hPQR => □",
       "fun hP => □",
       "fun hQ => □",
@@ -291,7 +291,7 @@ export const intendedSelections = {
       "hP",
       "hQ"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPQR",
       "intro hP",
       "intro hQ",
@@ -305,7 +305,7 @@ export const intendedSelections = {
     ]
   },
   "18": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "(□ □)",
@@ -316,7 +316,7 @@ export const intendedSelections = {
       "hP",
       "False.elim"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "cases □",
       "h",
@@ -328,10 +328,10 @@ export const intendedSelections = {
     ]
   },
   "19": {
-    "warrior": [
+    "champion": [
       "Classical.byContradiction"
     ],
-    "mage": [
+    "apprentice": [
       "intro hnP",
       "by_contra hnP2",
       "apply □",
@@ -341,29 +341,29 @@ export const intendedSelections = {
     ]
   },
   "20": {
-    "warrior": [
+    "champion": [
       "Eq.refl"
     ],
-    "mage": [
+    "apprentice": [
       "intro x",
       "rfl"
     ]
   },
   "21": {
-    "warrior": [
+    "champion": [
       "fun hPx => □",
       "(□ □)",
       "hPx",
       "a"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPx",
       "apply □",
       "hPx"
     ]
   },
   "22": {
-    "warrior": [
+    "champion": [
       "fun hQx => □",
       "fun hPx => □",
       "fun x => □",
@@ -375,7 +375,7 @@ export const intendedSelections = {
       "hPx",
       "x"
     ],
-    "mage": [
+    "apprentice": [
       "intro hQx",
       "intro hPx",
       "intro x",
@@ -386,7 +386,7 @@ export const intendedSelections = {
     ]
   },
   "23": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "(□ □)",
@@ -394,7 +394,7 @@ export const intendedSelections = {
       "a",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "use □",
       "a",
@@ -403,7 +403,7 @@ export const intendedSelections = {
     ]
   },
   "24": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "fun hxQ => □",
       "(□ □)",
@@ -418,7 +418,7 @@ export const intendedSelections = {
       "a",
       "h2"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "intro hxQ",
       "rcases □",
@@ -432,7 +432,7 @@ export const intendedSelections = {
     ]
   },
   "25": {
-    "warrior": [
+    "champion": [
       "(□ □)",
       "(□ □)",
       "Exists.intro",
@@ -441,17 +441,17 @@ export const intendedSelections = {
       "Eq.refl",
       "0"
     ],
-    "mage": [
+    "apprentice": [
       "use □",
       "0",
       "rfl"
     ]
   },
   "26": {
-    "warrior": [
+    "champion": [
       "Eq.symm"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "symm",
       "exact □",
@@ -459,10 +459,10 @@ export const intendedSelections = {
     ]
   },
   "27": {
-    "warrior": [
+    "champion": [
       "Eq.trans"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "intro h2",
       "trans □",
@@ -474,7 +474,7 @@ export const intendedSelections = {
     ]
   },
   "28": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "(□ □)",
@@ -482,7 +482,7 @@ export const intendedSelections = {
       "f",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "congr",
       "exact □",
@@ -490,7 +490,7 @@ export const intendedSelections = {
     ]
   },
   "29": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "fun h2 => □",
       "(□ □)",
@@ -503,7 +503,7 @@ export const intendedSelections = {
       "h",
       "h2"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "intro h2",
       "rw [← □]",
@@ -513,7 +513,7 @@ export const intendedSelections = {
     ]
   },
   "30": {
-    "warrior": [
+    "champion": [
       "fun hPQ => □",
       "fun hQR => □",
       "fun hRS => □",
@@ -526,7 +526,7 @@ export const intendedSelections = {
       "hPQ",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hPQ",
       "intro hQR",
       "intro hRS",
@@ -542,7 +542,7 @@ export const intendedSelections = {
     ]
   },
   "31": {
-    "warrior": [
+    "champion": [
       "fun hP => □",
       "fun hQ => □",
       "fun hR => □",
@@ -556,7 +556,7 @@ export const intendedSelections = {
       "hQ",
       "hR"
     ],
-    "mage": [
+    "apprentice": [
       "intro hP",
       "intro hQ",
       "intro hR",
@@ -571,7 +571,7 @@ export const intendedSelections = {
     ]
   },
   "32": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "(□ □)",
@@ -598,7 +598,7 @@ export const intendedSelections = {
       "hQ",
       "Or.inl"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "cases □",
       "h",
@@ -618,7 +618,7 @@ export const intendedSelections = {
     ]
   },
   "33": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "fun h2 => □",
       "(□ □)",
@@ -636,7 +636,7 @@ export const intendedSelections = {
       "hP",
       "Or.inr"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "intro h2",
       "rw [← □]",
@@ -646,7 +646,7 @@ export const intendedSelections = {
     ]
   },
   "34": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "(□ □)",
       "(□ □)",
@@ -658,7 +658,7 @@ export const intendedSelections = {
       "f",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "subst □",
       "b",
@@ -666,7 +666,7 @@ export const intendedSelections = {
     ]
   },
   "35": {
-    "warrior": [
+    "champion": [
       "fun h => □",
       "fun h2 => □",
       "(□ □)",
@@ -679,7 +679,7 @@ export const intendedSelections = {
       "h",
       "h2"
     ],
-    "mage": [
+    "apprentice": [
       "intro h",
       "intro h2",
       "calc … = □ := □",
@@ -693,12 +693,12 @@ export const intendedSelections = {
     ]
   },
   "36": {
-    "warrior": [
+    "champion": [
       "(□ □)",
       "Classical.em",
       "P"
     ],
-    "mage": [
+    "apprentice": [
       "by_cases □",
       "P",
       "left",
@@ -710,7 +710,7 @@ export const intendedSelections = {
     ]
   },
   "37": {
-    "warrior": [
+    "champion": [
       "fun hnP => □",
       "fun hP => □",
       "(□ □)",
@@ -719,23 +719,23 @@ export const intendedSelections = {
       "hnP",
       "hP"
     ],
-    "mage": [
+    "apprentice": [
       "intro hnP",
       "intro hP",
       "contradiction"
     ]
   },
   "38": {
-    "warrior": [
+    "champion": [
       "Eq.refl"
     ],
-    "mage": [
+    "apprentice": [
       "intro n",
       "rfl"
     ]
   },
   "39": {
-    "warrior": [
+    "champion": [
       "fun n => □",
       "(□ □)",
       "(□ □)",
@@ -753,7 +753,7 @@ export const intendedSelections = {
       "Nat.succ",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro n",
       "induction □",
       "n",
@@ -765,21 +765,21 @@ export const intendedSelections = {
     ]
   },
   "40": {
-    "warrior": [
+    "champion": [
       "fun n => □",
       "fun m => □",
       "(□ □)",
       "Eq.refl",
       "Nat.succ (n + m)"
     ],
-    "mage": [
+    "apprentice": [
       "intro n",
       "intro m",
       "rfl"
     ]
   },
   "41": {
-    "warrior": [
+    "champion": [
       "fun c => □",
       "fun b => □",
       "fun a => □",
@@ -799,7 +799,7 @@ export const intendedSelections = {
       "Nat.succ",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro c",
       "intro b",
       "intro a",
@@ -813,7 +813,7 @@ export const intendedSelections = {
     ]
   },
   "42": {
-    "warrior": [
+    "champion": [
       "fun a => □",
       "fun b => □",
       "(□ □)",
@@ -844,7 +844,7 @@ export const intendedSelections = {
       "n",
       "a"
     ],
-    "mage": [
+    "apprentice": [
       "intro a",
       "intro b",
       "induction □",
@@ -862,7 +862,7 @@ export const intendedSelections = {
     ]
   },
   "43": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "(□ □)",
       "(□ □)",
@@ -881,7 +881,7 @@ export const intendedSelections = {
       "List.cons head",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "induction □",
       "xs",
@@ -893,7 +893,7 @@ export const intendedSelections = {
     ]
   },
   "44": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "fun ys => □",
       "fun zs => □",
@@ -914,7 +914,7 @@ export const intendedSelections = {
       "List.cons head",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "intro ys",
       "intro zs",
@@ -928,7 +928,7 @@ export const intendedSelections = {
     ]
   },
   "45": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "fun ys => □",
       "(□ □)",
@@ -960,7 +960,7 @@ export const intendedSelections = {
       "List.length tail",
       "List.length ys"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "intro ys",
       "induction □",
@@ -978,7 +978,7 @@ export const intendedSelections = {
     ]
   },
   "46": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "fun ys => □",
       "(□ □)",
@@ -1012,7 +1012,7 @@ export const intendedSelections = {
       "sum tail",
       "sum ys"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "intro ys",
       "induction □",
@@ -1030,7 +1030,7 @@ export const intendedSelections = {
     ]
   },
   "47": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "fun ys => □",
       "fun h => □",
@@ -1077,7 +1077,7 @@ export const intendedSelections = {
       "h4",
       "h"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "intro ys",
       "intro h",
@@ -1101,7 +1101,7 @@ export const intendedSelections = {
     ]
   },
   "48": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "fun ys => □",
       "(□ □)",
@@ -1128,7 +1128,7 @@ export const intendedSelections = {
       "ys",
       "xs"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "intro ys",
       "rw [□]",
@@ -1141,7 +1141,7 @@ export const intendedSelections = {
     ]
   },
   "49": {
-    "warrior": [
+    "champion": [
       "fun n => □",
       "fun x => □",
       "(□ □)",
@@ -1180,7 +1180,7 @@ export const intendedSelections = {
       "n2",
       "x"
     ],
-    "mage": [
+    "apprentice": [
       "intro n",
       "intro x",
       "induction □",
@@ -1200,7 +1200,7 @@ export const intendedSelections = {
     ]
   },
   "50": {
-    "warrior": [
+    "champion": [
       "fun xs => □",
       "(□ □)",
       "(□ □)",
@@ -1271,7 +1271,7 @@ export const intendedSelections = {
       "head",
       "sum tail"
     ],
-    "mage": [
+    "apprentice": [
       "intro xs",
       "induction □",
       "xs",
@@ -1294,11 +1294,11 @@ export const intendedSelections = {
 
 export function selectionsForLevel(levelId: number): IntendedSelections {
   const tutorialSelections: Readonly<Record<number, IntendedSelections>> = {
-    1: { warrior: ["0"], mage: ["exact □", "0"] },
-    2: { warrior: ["n"], mage: ["exact □", "n"] },
-    3: { warrior: ["[]"], mage: ["exact □", "[]"] },
-    4: { warrior: ["True"], mage: ["exact □", "True"] },
-    5: { warrior: ["True.intro"], mage: ["exact □", "True.intro"] },
+    1: { champion: ["0"], apprentice: ["exact □", "0"] },
+    2: { champion: ["n"], apprentice: ["exact □", "n"] },
+    3: { champion: ["[]"], apprentice: ["exact □", "[]"] },
+    4: { champion: ["True"], apprentice: ["exact □", "True"] },
+    5: { champion: ["True.intro"], apprentice: ["exact □", "True.intro"] },
   };
   const selections = tutorialSelections[levelId] ??
     (intendedSelections as Readonly<Record<number, IntendedSelections>>)[levelId - 5];

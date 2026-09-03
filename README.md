@@ -1,7 +1,7 @@
 # LeanQuest
 
 LeanQuest is a browser-based proof game that teaches Lean through two parallel
-campaigns. Warriors construct proof terms while Mages use tactics to defeat the
+campaigns. Champions construct proof terms while Apprentices use tactics to defeat the
 same 50 theorem guardians.
 
 ## Requirements
@@ -50,7 +50,7 @@ not overwritten by that command.
 ## Saved progress
 
 Campaign progress is stored in the browser's `localStorage` under
-`leanquest-campaign-v3`. Warrior and Mage progress are tracked separately.
+`leanquest-campaign-v6`. Champion and Apprentice progress are tracked separately.
 Music preferences are stored under `leanquest-music-v1`.
 
 There is no account system or server-side database. Progress is local to a

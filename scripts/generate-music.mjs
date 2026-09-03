@@ -228,7 +228,7 @@ function brokenAxiomTheme() {
   phrase(lead, 32, [["G4", 2], ["Bb4", 1], ["D5", 1], ["A4", 2], ["F4", 2], ["Bb4", 2], ["C5", 1], ["D5", 1], ["F5", 2], ["E5", 2]], 0.48);
   phrase(lead, 48, [["D5", 1], ["Eb5", 1], ["F5", 2], ["C#5", 2], ["A4", 2], ["C#5", 1], ["E5", 1], ["D5", 4], [null, 4]], 0.52);
   [0, 15, 31, 47, 60].forEach((start, index) => chord(bell, index === 4 ? ["D5", "A5"] : ["A5", "D6"], start, 1.4, 0.2));
-  return { filename: "story-broken-axiom.mid", tempo: 70, title: "Fracture in the First Theorem", tracks: [lead, harmony, bass, bell, arp] };
+  return { filename: "story-broken-axiom.mid", tempo: 70, title: "Undeniable Truth", tracks: [lead, harmony, bass, bell, arp] };
 }
 
 function hallOfNamesTheme() {
@@ -257,7 +257,7 @@ function hallOfNamesTheme() {
   phrase(lead, 16, [["C5", 1], ["E5", 1], ["A5", 2], ["G5", 1], ["E5", 1], ["D5", 2], ["F#5", 1], ["A5", 1], ["B5", 2], ["G5", 2], ["E5", 2]], 0.54);
   phrase(lead, 32, [["F#5", 1], ["A5", 1], ["C6", 2], ["B5", 1], ["G5", 1], ["E5", 2], ["D5", 1], ["F#5", 1], ["E5", 2], ["C5", 2], ["A4", 2]], 0.52);
   [0, 12, 24, 36, 44].forEach((start) => note(bell, "A5", start, 1.1, 0.2));
-  return { filename: "story-hall-of-names.mid", tempo: 82, title: "Names Without End", tracks: [lead, harmony, bass, arp, bell] };
+  return { filename: "story-hall-of-names.mid", tempo: 82, title: "Pattern Without End", tracks: [lead, harmony, bass, arp, bell] };
 }
 
 function variableLength(value) {

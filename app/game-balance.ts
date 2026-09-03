@@ -3,18 +3,18 @@ import type { HeroClass } from "./curriculum";
 export const RESOURCE_CONSUMPTION_ENABLED = true;
 
 export const MAX_HP: Record<HeroClass, number> = {
-  warrior: 480,
-  mage: 210,
+  champion: 480,
+  apprentice: 210,
 };
 
 export const MAX_MANA: Record<HeroClass, number> = {
-  warrior: 0,
-  mage: 30,
+  champion: 0,
+  apprentice: 30,
 };
 
 export const TARGET_RESERVE_MOVES: Record<HeroClass, number> = {
-  warrior: 4,
-  mage: 2,
+  champion: 4,
+  apprentice: 2,
 };
 
 export function attackDamageFor(hero: HeroClass, intendedSelections: number) {

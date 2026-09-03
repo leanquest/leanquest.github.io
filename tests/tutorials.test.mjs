@@ -10,8 +10,8 @@ import {
   tutorialForLevel,
 } from "../app/tutorials.ts";
 
-test("Mage level one defines the complete seven-step onboarding tutorial", () => {
-  const tutorial = tutorialForLevel("mage", 1);
+test("Apprentice level one defines the complete seven-step onboarding tutorial", () => {
+  const tutorial = tutorialForLevel("apprentice", 1);
   assert.ok(tutorial);
   assert.equal(levelTutorials.length, 7);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
@@ -34,8 +34,8 @@ test("Mage level one defines the complete seven-step onboarding tutorial", () =>
   ]);
 });
 
-test("Warrior level one teaches direct construction, holes, and vision", () => {
-  const tutorial = tutorialForLevel("warrior", 1);
+test("Champion level one teaches direct construction, holes, and vision", () => {
+  const tutorial = tutorialForLevel("champion", 1);
   assert.ok(tutorial);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
     ["guardian", "level-objective"],
@@ -44,7 +44,7 @@ test("Warrior level one teaches direct construction, holes, and vision", () => {
   ]);
   assert.deepEqual(tutorial.steps.map((step) => step.action), [
     { type: "continue", label: "SHOW ME THE CURRENT HOLE" },
-    { type: "continue", label: "SHOW ME WARRIOR RESOURCES" },
+    { type: "continue", label: "SHOW ME CHAMPION RESOURCES" },
     { type: "continue", label: "BEGIN LEVEL" },
   ]);
   assert.match(tutorial.steps[0].text, /cannot use tactics/i);
@@ -53,8 +53,8 @@ test("Warrior level one teaches direct construction, holes, and vision", () => {
   assert.match(tutorial.steps[2].text, /Reduce Current Hole/i);
 });
 
-test("Mage level two teaches exact with the natural number from the environment", () => {
-  const tutorial = tutorialForLevel("mage", 2);
+test("Apprentice level two teaches exact with the natural number from the environment", () => {
+  const tutorial = tutorialForLevel("apprentice", 2);
   assert.ok(tutorial);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
     ["environment"],
@@ -68,19 +68,19 @@ test("Mage level two teaches exact with the natural number from the environment"
     { type: "choice", choiceId: "tactic-exact" },
     { type: "choice", choiceId: "term-n" },
   ]);
-  assert.equal(tutorialForLevel("warrior", 2), undefined);
+  assert.equal(tutorialForLevel("champion", 2), undefined);
 
   let proof = createProofState("Nat", ["n : Nat"]);
-  const exact = getMoveChoices(proof, "mage", 2).find((choice) => choice.id === "tactic-exact");
+  const exact = getMoveChoices(proof, "apprentice", 2).find((choice) => choice.id === "tactic-exact");
   assert.ok(exact);
   proof = exact.apply();
-  const environmentNat = getMoveChoices(proof, "mage", 2).find((choice) => choice.id === "term-n");
+  const environmentNat = getMoveChoices(proof, "apprentice", 2).find((choice) => choice.id === "term-n");
   assert.ok(environmentNat);
   assert.equal(isSolved(environmentNat.apply()), true);
 });
 
-test("Mage level three teaches exact with the empty list constructor", () => {
-  const tutorial = tutorialForLevel("mage", 3);
+test("Apprentice level three teaches exact with the empty list constructor", () => {
+  const tutorial = tutorialForLevel("apprentice", 3);
   assert.ok(tutorial);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
     ["level-objective"],
@@ -92,19 +92,19 @@ test("Mage level three teaches exact with the empty list constructor", () => {
     { type: "choice", choiceId: "tactic-exact" },
     { type: "choice", choiceId: "term-[]" },
   ]);
-  assert.equal(tutorialForLevel("warrior", 3), undefined);
+  assert.equal(tutorialForLevel("champion", 3), undefined);
 
   let proof = createProofState("List Nat", []);
-  const exact = getMoveChoices(proof, "mage", 3).find((choice) => choice.id === "tactic-exact");
+  const exact = getMoveChoices(proof, "apprentice", 3).find((choice) => choice.id === "tactic-exact");
   assert.ok(exact);
   proof = exact.apply();
-  const emptyList = getMoveChoices(proof, "mage", 3).find((choice) => choice.id === "term-[]");
+  const emptyList = getMoveChoices(proof, "apprentice", 3).find((choice) => choice.id === "term-[]");
   assert.ok(emptyList);
   assert.equal(isSolved(emptyList.apply()), true);
 });
 
-test("Mage level four explains Prop and accepts any proposition", () => {
-  const tutorial = tutorialForLevel("mage", 4);
+test("Apprentice level four explains Prop and accepts any proposition", () => {
+  const tutorial = tutorialForLevel("apprentice", 4);
   assert.ok(tutorial);
   assert.match(tutorial.steps[0].text, /true or false/i);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
@@ -115,13 +115,13 @@ test("Mage level four explains Prop and accepts any proposition", () => {
   assert.equal(tutorial.steps[1].action.type, "choice");
   assert.equal(tutorial.steps[1].action.choiceId, "tactic-exact");
   assert.equal(tutorial.steps[2].action.type, "one-of");
-  assert.equal(tutorialForLevel("warrior", 4), undefined);
+  assert.equal(tutorialForLevel("champion", 4), undefined);
 
   let proof = createProofState("Prop", []);
-  const exact = getMoveChoices(proof, "mage", 4).find((choice) => choice.id === "tactic-exact");
+  const exact = getMoveChoices(proof, "apprentice", 4).find((choice) => choice.id === "tactic-exact");
   assert.ok(exact);
   proof = exact.apply();
-  const choices = getMoveChoices(proof, "mage", 4);
+  const choices = getMoveChoices(proof, "apprentice", 4);
   const allowedIds = tutorial.steps[2].action.choiceIds;
   assert.deepEqual(choices.map((choice) => choice.id), allowedIds);
   for (const choice of choices) {
@@ -131,8 +131,8 @@ test("Mage level four explains Prop and accepts any proposition", () => {
   assert.equal(tutorialAllowsChoice(tutorial.steps[2], "term-natural-number"), false);
 });
 
-test("Mage level five teaches exact with the True constructor", () => {
-  const tutorial = tutorialForLevel("mage", 5);
+test("Apprentice level five teaches exact with the True constructor", () => {
+  const tutorial = tutorialForLevel("apprentice", 5);
   assert.ok(tutorial);
   assert.match(tutorial.steps[0].text, /term of that type is a proof/i);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
@@ -145,20 +145,20 @@ test("Mage level five teaches exact with the True constructor", () => {
     { type: "choice", choiceId: "tactic-exact" },
     { type: "choice", choiceId: "term-True.intro" },
   ]);
-  assert.equal(tutorialForLevel("warrior", 5), undefined);
+  assert.equal(tutorialForLevel("champion", 5), undefined);
 
   let proof = createProofState("True", []);
-  const exact = getMoveChoices(proof, "mage", 5).find((choice) => choice.id === "tactic-exact");
+  const exact = getMoveChoices(proof, "apprentice", 5).find((choice) => choice.id === "tactic-exact");
   assert.ok(exact);
   proof = exact.apply();
-  const trueIntro = getMoveChoices(proof, "mage", 5).find((choice) => choice.id === "term-True.intro");
+  const trueIntro = getMoveChoices(proof, "apprentice", 5).find((choice) => choice.id === "term-True.intro");
   assert.ok(trueIntro);
   assert.equal(tutorialAllowsChoice(tutorial.steps[2], trueIntro.id), true);
   assert.equal(isSolved(trueIntro.apply()), true);
 });
 
-test("Mage level six explains navigation through an interactive Library visit", () => {
-  const tutorial = tutorialForLevel("mage", 6);
+test("Apprentice level six explains navigation through an interactive Library visit", () => {
+  const tutorial = tutorialForLevel("apprentice", 6);
   assert.ok(tutorial);
   assert.deepEqual(tutorial.steps.map((step) => step.targets), [
     ["undo"],
@@ -181,20 +181,20 @@ test("Mage level six explains navigation through an interactive Library visit", 
     { type: "continue", label: "CONTINUE LEVEL" },
   ]);
   assert.equal(tutorial.steps[6].placement, "top-center");
-  assert.equal(tutorialForLevel("warrior", 6), undefined);
+  assert.equal(tutorialForLevel("champion", 6), undefined);
 });
 
 test("lessons auto-open only once on paths and levels without tutorials", () => {
-  assert.equal(shouldAutoOpenLesson("mage", 1, []), false);
-  assert.equal(shouldAutoOpenLesson("mage", 6, []), false);
-  assert.equal(shouldAutoOpenLesson("mage", 7, []), true);
-  assert.equal(shouldAutoOpenLesson("mage", 7, [7]), false);
-  assert.equal(shouldAutoOpenLesson("warrior", 1, []), false);
-  assert.equal(shouldAutoOpenLesson("warrior", 1, [1]), false);
+  assert.equal(shouldAutoOpenLesson("apprentice", 1, []), false);
+  assert.equal(shouldAutoOpenLesson("apprentice", 6, []), false);
+  assert.equal(shouldAutoOpenLesson("apprentice", 7, []), true);
+  assert.equal(shouldAutoOpenLesson("apprentice", 7, [7]), false);
+  assert.equal(shouldAutoOpenLesson("champion", 1, []), false);
+  assert.equal(shouldAutoOpenLesson("champion", 1, [1]), false);
 });
 
 test("interactive tutorial steps permit and advance only their required moves", () => {
-  const tutorial = tutorialForLevel("mage", 1);
+  const tutorial = tutorialForLevel("apprentice", 1);
   assert.ok(tutorial);
   const exactStep = tutorial.steps[4];
   const numberStep = tutorial.steps[5];

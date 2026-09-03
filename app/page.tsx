@@ -68,11 +68,11 @@ function formatInlineCode(text: string): ReactNode[] {
   );
 }
 
-const STORAGE_KEY = "leanquest-campaign-v5";
+const STORAGE_KEY = "leanquest-campaign-v6";
 const emptySave: SaveData = {
-  completed: { warrior: [], mage: [] },
-  level: { warrior: 0, mage: 0 },
-  seenLessons: { warrior: [], mage: [] },
+  completed: { champion: [], apprentice: [] },
+  level: { champion: 0, apprentice: 0 },
+  seenLessons: { champion: [], apprentice: [] },
   seenStories: [],
   seenTutorials: [],
 };
@@ -83,13 +83,13 @@ function storiesBeforeFirstLevel() {
   return curriculum.slice(0, firstLevel).filter((entry): entry is StorySequence => entry.kind === "story");
 }
 
-function storiesAfterLevel(levelId: number) {
+function storiesAfterLevel(levelId: number, hero: HeroClass) {
   const levelPosition = curriculum.findIndex((entry) => entry.kind === "level" && entry.id === levelId);
   if (levelPosition < 0) return [];
   const stories: StorySequence[] = [];
   for (const entry of curriculum.slice(levelPosition + 1)) {
     if (entry.kind === "level") break;
-    stories.push(entry);
+    if (!entry.hero || entry.hero === hero) stories.push(entry);
   }
   return stories;
 }
@@ -126,12 +126,16 @@ function monsterVisual(monster: MonsterSpec, hero: HeroClass) {
   return {
     backgroundImage: `url("/assets/${sheet}")`,
     backgroundPosition: `${x}% ${y}%`,
-    filter: `hue-rotate(${monster.hueShift[hero]}deg) saturate(${hero === "mage" ? 1.08 : 1}) drop-shadow(10px 12px 0 rgba(0,0,0,.7))`,
+    filter: `hue-rotate(${monster.hueShift[hero]}deg) saturate(${hero === "apprentice" ? 1.08 : 1}) drop-shadow(10px 12px 0 rgba(0,0,0,.7))`,
   };
 }
 
 function heroPosition(hero: HeroClass) {
-  return hero === "warrior" ? "0% 50%" : "100% 50%";
+  return hero === "champion" ? "0% 50%" : "100% 50%";
+}
+
+function heroSelectionPosition(hero: HeroClass) {
+  return hero === "champion" ? "10% 50%" : "90% 50%";
 }
 
 function maxManaFor(hero: HeroClass) {
@@ -139,7 +143,7 @@ function maxManaFor(hero: HeroClass) {
 }
 
 function visionFor(hero: HeroClass) {
-  return hero === "warrior" ? MAX_VISION_POINTS : 0;
+  return hero === "champion" ? MAX_VISION_POINTS : 0;
 }
 
 export default function Home() {
@@ -158,7 +162,7 @@ export default function Home() {
   const [showLesson, setShowLesson] = useState(false);
   const [ready, setReady] = useState(false);
   const [monsterPhase, setMonsterPhase] = useState<MonsterPhase>("idle");
-  const [hp, setHp] = useState(MAX_HP.warrior);
+  const [hp, setHp] = useState(MAX_HP.champion);
   const [mana, setMana] = useState(0);
   const [visionPoints, setVisionPoints] = useState(MAX_VISION_POINTS);
   const [enteringNaturalNumber, setEnteringNaturalNumber] = useState(false);
@@ -208,7 +212,7 @@ export default function Home() {
   const activeStory = storyQueue[0];
   const activeStoryPanel = activeStory?.panels[storyPanelIndex];
   const maxMana = heroClass ? maxManaFor(heroClass) : 0;
-  const maxHp = heroClass ? MAX_HP[heroClass] : MAX_HP.warrior;
+  const maxHp = heroClass ? MAX_HP[heroClass] : MAX_HP.champion;
   const attackDamage = heroClass ? attackDamageFor(heroClass, level[heroClass].selections.length) : 0;
   const tutorial = heroClass ? tutorialForLevel(heroClass, level.id) : undefined;
   const moveUnlockText = heroClass ? newMoveText(level, heroClass) : "";
@@ -416,8 +420,8 @@ export default function Home() {
     setMessage({ kind: "info", text: "The last move has been undone." });
   }
 
-  function useVision() {
-    if (heroClass !== "warrior" || visionPoints < 1 || monsterPhase !== "idle" || solved || proofFailed) return;
+  function revealWithVision() {
+    if (heroClass !== "champion" || visionPoints < 1 || monsterPhase !== "idle" || solved || proofFailed) return;
     const normalized = normalizeFocusedHole(proofState);
     if (normalized === proofState) {
       setMessage({ kind: "info", text: "The focused hole is already in normal form. No VP was spent." });
@@ -431,7 +435,7 @@ export default function Home() {
   function reset() {
     clearAnimations();
     setMonsterPhase("idle");
-    setHp(heroClass ? MAX_HP[heroClass] : MAX_HP.warrior);
+    setHp(heroClass ? MAX_HP[heroClass] : MAX_HP.champion);
     setMana(heroClass ? maxManaFor(heroClass) : 0);
     setVisionPoints(heroClass ? visionFor(heroClass) : MAX_VISION_POINTS);
     setProofState(createProofState(level.theorem, level.environment));
@@ -598,7 +602,8 @@ export default function Home() {
           : [...current.seenTutorials, tutorial.id],
       }));
     }
-    const stories = storiesAfterLevel(level.id).filter((story) => !save.seenStories.includes(story.id));
+    if (!heroClass) return;
+    const stories = storiesAfterLevel(level.id, heroClass).filter((story) => !save.seenStories.includes(story.id));
     const destination: StoryDestination = levelIndex >= exercises.length - 1
       ? { kind: "map" }
       : { kind: "level", index: levelIndex + 1 };
@@ -713,7 +718,7 @@ export default function Home() {
             <small>Your class determines the proof language you will learn.</small>
           </div>
           <section className="class-grid">
-            {(["mage", "warrior"] as HeroClass[]).map((hero) => {
+            {(["apprentice", "champion"] as HeroClass[]).map((hero) => {
               const isLocked = !canSelectHero(hero, save.completed, FINAL_LEVEL_ID);
               return (
                 <button
@@ -721,22 +726,22 @@ export default function Home() {
                   key={hero}
                   onClick={() => selectClass(hero)}
                   disabled={isLocked}
-                  aria-label={isLocked ? `Warrior locked until Mage level ${FINAL_LEVEL_ID} is complete` : undefined}
+                  aria-label={isLocked ? `Champion locked until Apprentice level ${FINAL_LEVEL_ID} is complete` : undefined}
                 >
-                  <div className="class-art" style={{ backgroundPosition: heroPosition(hero) }} />
+                  <div className="class-art" style={{ backgroundPosition: heroSelectionPosition(hero) }} />
                   <div className="class-copy">
-                    <span>{hero === "warrior" ? "PATH OF TERMS" : "PATH OF TACTICS"}</span>
+                    <span>{hero === "champion" ? "PATH OF TERMS" : "PATH OF TACTICS"}</span>
                     <h2>{hero.toUpperCase()}</h2>
                     <p>
-                      {hero === "warrior"
+                      {hero === "champion"
                         ? "Forge proofs directly from functions, constructors, recursors, and applications. No tactics are available."
                         : "Cast tactics to transform goals, selecting only the simple terms and names each spell requires."}
                     </p>
                     <div className="class-progress">
                       <i style={{ width: `${(save.completed[hero].length / exercises.length) * 100}%` }} />
                     </div>
-                    <strong>{isLocked ? `UNLOCK AFTER MAGE LEVEL ${FINAL_LEVEL_ID}` : `${save.completed[hero].length}/${exercises.length} GUARDIANS SLAIN`}</strong>
-                    <b>{isLocked ? "LOCKED · COMPLETE THE MAGE PATH" : `${save.completed[hero].length ? "CONTINUE" : "BEGIN"} AS ${hero.toUpperCase()} ▶`}</b>
+                    <strong>{isLocked ? `UNLOCK AFTER APPRENTICE LEVEL ${FINAL_LEVEL_ID}` : `${save.completed[hero].length}/${exercises.length} GUARDIANS SLAIN`}</strong>
+                    <b>{isLocked ? "LOCKED · COMPLETE THE APPRENTICE PATH" : `${save.completed[hero].length ? "CONTINUE" : "BEGIN"} AS ${hero.toUpperCase()} ▶`}</b>
                   </div>
                 </button>
               );
@@ -756,12 +761,12 @@ export default function Home() {
   }
 
   const proofDisplay =
-    heroClass === "mage"
+    heroClass === "apprentice"
       ? renderTacticProofLines(proofState)
       : [];
-  const termProofDisplay = heroClass === "warrior" ? renderProofParts(proofState) : [];
+  const termProofDisplay = heroClass === "champion" ? renderProofParts(proofState) : [];
   const visual = monsterVisual(level.monster, heroClass);
-  const renderProofScrollContent = () => heroClass === "warrior" ? (
+  const renderProofScrollContent = () => heroClass === "champion" ? (
     <span>
       {termProofDisplay.map((part, index) =>
         part.hole
@@ -794,7 +799,7 @@ export default function Home() {
       >
         <button className="brand" onClick={() => setShowMap(true)} aria-label="Open dungeon map">
           <span className="brand-mark">λ</span>
-          <span><strong>LEANQUEST</strong><small>{heroClass === "warrior" ? "PATH OF TERMS" : "PATH OF TACTICS"}</small></span>
+          <span><strong>LEANQUEST</strong><small>{heroClass === "champion" ? "PATH OF TERMS" : "PATH OF TACTICS"}</small></span>
         </button>
         <div className="quest-progress" aria-label={`${completed.length} of ${exercises.length} levels complete`}>
           <div className="progress-copy">
@@ -836,8 +841,8 @@ export default function Home() {
               <div className="hero-portrait" style={{ backgroundPosition: heroPosition(heroClass) }} />
               <div className="vitals">
                 <div className="vital-row"><b>HP</b><div className="vital-bar hp" role="meter" aria-label="Player health" aria-valuemin={0} aria-valuemax={maxHp} aria-valuenow={hp}><i style={{ width: `${(hp / maxHp) * 100}%` }} /></div><em>{RESOURCE_CONSUMPTION_ENABLED ? `${hp} / ${maxHp}` : "PAUSED"}</em></div>
-                {heroClass === "warrior" ? (
-                  <div className="vital-row"><b>VP</b><div className="vital-bar vp" role="meter" aria-label="Warrior vision points" aria-valuemin={0} aria-valuemax={MAX_VISION_POINTS} aria-valuenow={visionPoints}><i style={{ width: `${(visionPoints / MAX_VISION_POINTS) * 100}%` }} /></div><em>{visionPoints} / {MAX_VISION_POINTS}</em></div>
+                {heroClass === "champion" ? (
+                  <div className="vital-row"><b>VP</b><div className="vital-bar vp" role="meter" aria-label="Champion vision points" aria-valuemin={0} aria-valuemax={MAX_VISION_POINTS} aria-valuenow={visionPoints}><i style={{ width: `${(visionPoints / MAX_VISION_POINTS) * 100}%` }} /></div><em>{visionPoints} / {MAX_VISION_POINTS}</em></div>
                 ) : (
                   <div className="vital-row"><b>MP</b><div className="vital-bar mp" role="meter" aria-label="Player mana" aria-valuemin={0} aria-valuemax={maxMana} aria-valuenow={mana}><i style={{ width: `${maxMana === 0 ? 0 : (mana / maxMana) * 100}%` }} /></div><em>{RESOURCE_CONSUMPTION_ENABLED ? `${mana} / ${maxMana}` : "PAUSED"}</em></div>
                 )}
@@ -870,20 +875,20 @@ export default function Home() {
             </article>
 
             <article className={`goals-card pixel-frame${tutorialClass("current-hole")}`} style={showEnvironmentSpotlight ? { position: "relative", zIndex: 72, isolation: "isolate" } : undefined}>
-              <div className="card-label" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><span>{solved ? "COMBAT LOG" : heroClass === "warrior" ? "CURRENT HOLE" : "CURRENT GOAL"}</span><span>{solved ? "CLEAR" : "1 ACTIVE"}</span></div>
+              <div className="card-label" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><span>{solved ? "COMBAT LOG" : heroClass === "champion" ? "CURRENT HOLE" : "CURRENT GOAL"}</span><span>{solved ? "CLEAR" : "1 ACTIVE"}</span></div>
               {solved ? (
                 <div className="victory-state"><div className="victory-sigil">✦</div><div><strong>MONSTER DEFEATED</strong><p>No goals remain. The proof is complete.</p></div></div>
               ) : (
                 <>
                   <div className={`environment-list${tutorialClass("environment")}`}>{displayedEnvironment.length ? displayedEnvironment.map((item) => <code key={item}>{item}</code>) : <code>empty environment</code>}</div>
                   <div className="goal-divider" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined} />
-                  <div className="goal-stack" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><div className="goal focused"><span>{heroClass === "warrior" ? "□" : "⊢"}</span><code>{target}</code></div></div>
+                  <div className="goal-stack" style={showEnvironmentSpotlight ? { filter: "brightness(.18)" } : undefined}><div className="goal focused"><span>{heroClass === "champion" ? "□" : "⊢"}</span><code>{target}</code></div></div>
                 </>
               )}
             </article>
 
             <article ref={proofScrollCard} className={`source-card pixel-frame${tutorialClass("proof-scroll")}`} aria-hidden={showProofSpotlight || undefined}>
-              <div className="card-label"><span>SCROLL OF CONSTRUCTION</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
+              <div className="card-label"><span>SCROLL OF CONSTRUCTION</span><span>{heroClass === "champion" ? "TERM" : "TACTIC"} FORM</span></div>
               <pre className="proof-scroll" tabIndex={0} aria-label="Current construction">
                 {renderProofScrollContent()}
               </pre>
@@ -892,8 +897,8 @@ export default function Home() {
 
           <aside className={`moves-column pixel-frame${tutorialClass("move-catalogue")}${tutorialTargets.has("next-level") ? " tutorial-muted-parent" : ""}`}>
             <div className="path-banner">
-              <span className="path-symbol">{proofFailed ? "☠" : heroClass === "warrior" ? "⚔" : "✦"}</span>
-              <span><strong>{proofFailed ? "PROOF FAILED" : heroClass === "warrior" ? "TERM CATALOGUE" : "MOVE CATALOGUE"}</strong><small>{proofFailed ? "NO MOVES REMAIN" : "CUMULATIVE · FILTERED BY TYPE"}</small></span>
+              <span className="path-symbol">{proofFailed ? "☠" : heroClass === "champion" ? "⚔" : "✦"}</span>
+              <span><strong>{proofFailed ? "PROOF FAILED" : heroClass === "champion" ? "TERM CATALOGUE" : "MOVE CATALOGUE"}</strong><small>{proofFailed ? "NO MOVES REMAIN" : "CUMULATIVE · FILTERED BY TYPE"}</small></span>
             </div>
             <div className="move-panel">
               <div className="move-heading">
@@ -916,7 +921,7 @@ export default function Home() {
                   <div className="completion-orbit"><span>✦</span></div>
                   <h3>{level.monster.name} falls!</h3>
                   <p>The {heroClass}&apos;s proof used {history.length} moves.</p>
-                  <div className="proof-pair"><div><small>COMPLETE {heroClass.toUpperCase()} PROOF</small><code>{heroClass === "warrior" ? renderProof(proofState) : proofDisplay.join("\n")}</code></div></div>
+                  <div className="proof-pair"><div><small>COMPLETE {heroClass.toUpperCase()} PROOF</small><code>{heroClass === "champion" ? renderProof(proofState) : proofDisplay.join("\n")}</code></div></div>
                   <button className={`primary-button${tutorialClass("next-level")}`} onClick={nextLevel}>{level.id === exercises.length ? "VIEW CONQUERED DUNGEON" : "ENTER NEXT CHAMBER"} <span>▶</span></button>
                 </div>
               ) : (
@@ -932,9 +937,9 @@ export default function Home() {
                       <code>{requiredArgumentType}</code>
                     </div>
                   )}
-                  {heroClass === "warrior" && (
+                  {heroClass === "champion" && (
                     <button className={`normalize-hole-button${tutorialClass("reduce-current-hole")}`} disabled={visionPoints < 1 || monsterPhase !== "idle"} onClick={() => {
-                      if (!tutorialStep) useVision();
+                      if (!tutorialStep) revealWithVision();
                     }}>
                       <span>◉</span><span><strong>REDUCE CURRENT HOLE</strong></span><span>1 VP</span>
                     </button>
@@ -981,7 +986,7 @@ export default function Home() {
                           <button className="choice-card" key={choice.id} disabled={monsterPhase !== "idle" || unaffordable || !tutorialAllowsChoice(tutorialStep, choice.id)} title={unaffordable ? "Not enough mana" : undefined} onClick={() => choose(choice)}>
                             <span className="choice-key">{index + 1}</span>
                             <span className="choice-copy"><code>{choice.label}</code>{choice.argumentType && <small>{choice.argumentType}</small>}</span>
-                            <span className={`choice-cost ${heroClass === "mage" && RESOURCE_CONSUMPTION_ENABLED && choice.manaCost ? "paid" : "free"}`}>{heroClass === "warrior" ? "FREE" : RESOURCE_CONSUMPTION_ENABLED ? `${choice.manaCost} MP` : "MP PAUSED"}</span><span className="choice-arrow">▶</span>
+                            <span className={`choice-cost ${heroClass === "apprentice" && RESOURCE_CONSUMPTION_ENABLED && choice.manaCost ? "paid" : "free"}`}>{heroClass === "champion" ? "FREE" : RESOURCE_CONSUMPTION_ENABLED ? `${choice.manaCost} MP` : "MP PAUSED"}</span><span className="choice-arrow">▶</span>
                           </button>
                         );
                       })}
@@ -992,7 +997,7 @@ export default function Home() {
                     <span>{message?.kind === "error" ? "!" : message ? "◆" : "i"}</span>
                     <p>{message?.text ?? (RESOURCE_CONSUMPTION_ENABLED
                       ? "Every displayed move is type-compatible. Every selection gives the guardian a chance to strike."
-                      : heroClass === "warrior"
+                      : heroClass === "champion"
                         ? "Every displayed move is type-compatible. Guardian attacks continue, but HP consumption is paused; vision still costs VP."
                         : "Every displayed move is type-compatible. Guardian attacks continue, but HP and MP consumption is paused.")}</p>
                   </div>
@@ -1009,7 +1014,7 @@ export default function Home() {
           <div className="tutorial-backdrop" aria-hidden="true" />
           {showProofSpotlight && (
             <article ref={tutorialProofOverlay} className="source-card pixel-frame tutorial-proof-overlay">
-              <div className="card-label"><span>SCROLL OF CONSTRUCTION</span><span>{heroClass === "warrior" ? "TERM" : "TACTIC"} FORM</span></div>
+              <div className="card-label"><span>SCROLL OF CONSTRUCTION</span><span>{heroClass === "champion" ? "TERM" : "TACTIC"} FORM</span></div>
               <pre className="proof-scroll" tabIndex={0} aria-label="Current construction">
                 {renderProofScrollContent()}
               </pre>
@@ -1107,11 +1112,11 @@ export default function Home() {
               <div><p className="eyebrow">{heroClass.toUpperCase()} CAMPAIGN</p><h2 id="map-title">DUNGEON MAP</h2></div>
               <button className="close-button" onClick={() => setShowMap(false)}>×</button>
             </div>
-            <p className="map-intro">Each guardian unlocks the next chamber. Warrior and Mage progress are saved separately.</p>
+            <p className="map-intro">Each guardian unlocks the next chamber. Champion and Apprentice progress are saved separately.</p>
             <div className="story-archive">
               <h3>STORY ARCHIVE</h3>
               <div className="story-archive-grid">
-                {storySequences.map((story) => {
+                {storySequences.filter((story) => !story.hero || story.hero === heroClass).map((story) => {
                   const requiredLevel = requiredLevelForStory(story.id);
                   const isUnlocked = requiredLevel === 0 || completed.includes(requiredLevel);
                   return (
