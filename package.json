@@ -11,7 +11,8 @@
     "start": "next start",
     "test": "npm run build && node --experimental-strip-types --experimental-specifier-resolution=node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern .next",
-    "music:generate": "node scripts/generate-music.mjs"
+    "music:generate": "node scripts/generate-music.mjs && node scripts/embed-story-music-license.mjs",
+    "music:license": "node scripts/embed-combat-music-license.mjs && node scripts/embed-story-music-license.mjs"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",

@@ -44,8 +44,9 @@ regenerate the arrangements and original compositions produced by the project sc
 npm run music:generate
 ```
 
-The active battle cue, `public/music/battle.mid`, is supplied separately and is
-not overwritten by that command.
+The combat compositions “Battle Moosak” (`public/music/battle.mid`) and “Triumph”
+(`public/music/victory.mid`) are supplied separately and are not overwritten by
+that command.
 
 ## Saved progress
 

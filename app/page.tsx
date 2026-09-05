@@ -120,13 +120,23 @@ function storyLayerStyle(layer: StoryImageLayer): CSSPropertiesWithVariables {
 }
 
 function monsterVisual(monster: MonsterSpec, hero: HeroClass) {
+  const filter = `hue-rotate(${monster.hueShift[hero]}deg) saturate(${hero === "apprentice" ? 1.08 : 1}) drop-shadow(10px 12px 0 rgba(0,0,0,.7))`;
+  if ("image" in monster.sprite) {
+    return {
+      backgroundImage: `url("/assets/${monster.sprite.image}")`,
+      backgroundPosition: "center",
+      backgroundSize: "contain",
+      filter,
+    };
+  }
+
   const { cell, sheet } = monster.sprite;
   const x = [0, 25, 50, 75, 100][cell % 5];
   const y = cell < 5 ? 0 : 100;
   return {
     backgroundImage: `url("/assets/${sheet}")`,
     backgroundPosition: `${x}% ${y}%`,
-    filter: `hue-rotate(${monster.hueShift[hero]}deg) saturate(${hero === "apprentice" ? 1.08 : 1}) drop-shadow(10px 12px 0 rgba(0,0,0,.7))`,
+    filter,
   };
 }
 
@@ -150,6 +160,7 @@ export default function Home() {
   const [save, setSave] = useState<SaveData>(emptySave);
   const [heroClass, setHeroClass] = useState<HeroClass | null>(null);
   const [showTitle, setShowTitle] = useState(true);
+  const [showCredits, setShowCredits] = useState(false);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const [levelIndex, setLevelIndex] = useState(0);
   const [proofState, setProofState] = useState<ProofState>(() =>
@@ -447,7 +458,11 @@ export default function Home() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (showCharacterSelect || showMap || showCatalogue || showLesson || enteringNaturalNumber || tutorialStep || proofFailed) return;
+      if (showCredits && event.key === "Escape") {
+        setShowCredits(false);
+        return;
+      }
+      if (showCredits || showCharacterSelect || showMap || showCatalogue || showLesson || enteringNaturalNumber || tutorialStep || proofFailed) return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
         undo();
@@ -661,8 +676,49 @@ export default function Home() {
             <Image className="title-frame title-frame-2" src="/assets/title/infinite-stair-2.png" alt="" fill sizes="(max-width: 650px) 100vw, 820px" />
             <div className="title-vignette" aria-hidden="true" />
           </div>
-          <button className="title-continue primary-button" onClick={continueFromTitle}>CONTINUE</button>
+          <div className="title-actions">
+            <button className="title-continue primary-button" onClick={continueFromTitle}>CONTINUE</button>
+            <button className="title-credits" onClick={() => setShowCredits(true)}>Credits</button>
+          </div>
         </section>
+        {showCredits && (
+          <div className="modal-backdrop credits-backdrop" onMouseDown={() => setShowCredits(false)}>
+            <section className="credits-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="credits-title" onMouseDown={(event) => event.stopPropagation()}>
+              <header className="credits-header">
+                <div>
+                  <p className="eyebrow">LEANQUEST</p>
+                  <h2 id="credits-title">CREDITS</h2>
+                </div>
+                <button className="close-button" aria-label="Close credits" onClick={() => setShowCredits(false)}>×</button>
+              </header>
+
+              <div className="credits-team">
+                <div><span>GAME DESIGN</span><strong>Adam Petcher</strong></div>
+                <div><span>COMBAT MUSIC</span><strong>Susan Petcher</strong><small>© 2026 · CC BY-NC 4.0</small></div>
+                <div><span>PROGRAMMING &amp; ART</span><strong>GPT 5.6</strong></div>
+              </div>
+
+              <section className="credits-score" aria-labelledby="story-music-title">
+                <h3 id="story-music-title">Story Music</h3>
+                <div className="credits-story-list">
+                  <article className="credits-story">
+                    <div><strong>Intro</strong></div>
+                    <p><cite>Ave Verum Corpus</cite><small>William Byrd</small></p>
+                  </article>
+                  <article className="credits-story">
+                    <div><strong>Interlude</strong></div>
+                    <p><cite>Gib dich zufrieden und sei stille</cite><small>J. S. Bach · BWV 511</small></p>
+                  </article>
+                  <article className="credits-story">
+                    <div><strong>Finale</strong></div>
+                    <p><cite>Fugue in G minor, BWV 542/2</cite><small>J. S. Bach</small></p>
+                  </article>
+                </div>
+                <p className="credits-music-license">Underlying compositions are public domain. LeanQuest MIDI adaptations are released under CC0 1.0.</p>
+              </section>
+            </section>
+          </div>
+        )}
       </main>
     );
   }
@@ -680,7 +736,7 @@ export default function Home() {
                     className={`story-frame story-frame-${index + 1}`}
                     src={frame}
                     alt={index === 0 ? layer.alt ?? "" : ""}
-                    style={{ objectFit: layer.layout?.objectFit ?? "cover" }}
+                    style={{ objectFit: layer.layout?.objectFit ?? "contain" }}
                     key={frame}
                   />
                 ))}
@@ -828,7 +884,7 @@ export default function Home() {
           <div className="dungeon-view">
             <div className="torch torch-left"><i /></div><div className="torch torch-right"><i /></div>
             <div className={`monster-stage${tutorialClass("guardian")}`}>
-              <div className="monster-sprite" role="img" aria-label={level.monster.name} style={visual} />
+              <div className={`monster-sprite${level.monster.presence ? ` monster-sprite-${level.monster.presence}` : ""}`} role="img" aria-label={level.monster.name} style={visual} />
               {monsterPhase === "attack" && <div className="claw-flash" aria-hidden="true">{"///"}</div>}
               {monsterPhase === "death" && <div className="death-burst" aria-hidden="true">✦</div>}
             </div>

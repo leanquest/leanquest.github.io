@@ -274,8 +274,12 @@ test("every level specifies its monster sprite and class hue shifts", () => {
       assert.ok(Number.isInteger(attackDamageFor(hero, exercise[hero].selections.length)));
       assert.ok(attackDamageFor(hero, exercise[hero].selections.length) > 0);
     }
-    assert.match(exercise.monster.sprite.sheet, /^monsters(?:-[23])?\.png$/);
-    assert.ok(exercise.monster.sprite.cell >= 0 && exercise.monster.sprite.cell <= 9);
+    if ("image" in exercise.monster.sprite) {
+      assert.equal(exercise.monster.sprite.image, "hollow-marshal.png");
+    } else {
+      assert.match(exercise.monster.sprite.sheet, /^monsters(?:-[23])?\.png$/);
+      assert.ok(exercise.monster.sprite.cell >= 0 && exercise.monster.sprite.cell <= 9);
+    }
     assert.equal(typeof exercise.monster.hueShift.champion, "number");
     assert.equal(typeof exercise.monster.hueShift.apprentice, "number");
   }
@@ -592,6 +596,11 @@ test("every monster name matches its sprite archetype", () => {
 
   for (const exercise of exercises) {
     const sprite = exercise.monster.sprite;
+    if ("image" in sprite) {
+      assert.equal(sprite.image, "hollow-marshal.png");
+      assert.match(exercise.monster.name, /Hollow Marshal/);
+      continue;
+    }
     const archetype = archetypes[`${sprite.sheet}:${sprite.cell}`];
     assert.ok(archetype, `Missing archetype for ${sprite.sheet} cell ${sprite.cell}`);
     assert.match(exercise.monster.name, archetype, `Level ${exercise.id} uses the wrong monster art`);

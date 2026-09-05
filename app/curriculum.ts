@@ -149,7 +149,10 @@ export type LevelUnlocks = {
 export type MonsterSpec = {
   name: string;
   lore: string;
-  sprite: { sheet: "monsters.png" | "monsters-2.png" | "monsters-3.png"; cell: number };
+  presence?: "imposing" | "boss";
+  sprite:
+    | { sheet: "monsters.png" | "monsters-2.png" | "monsters-3.png"; cell: number }
+    | { image: "hollow-marshal.png" };
   hueShift: Record<HeroClass, number>;
 };
 
@@ -254,16 +257,20 @@ export function lessonTextFor(lessonContent: Lesson, hero: HeroClass) {
   return [...lessonContent.common, ...(lessonContent[hero] ?? [])];
 }
 
+type MonsterSheet = Extract<MonsterSpec["sprite"], { sheet: string }>["sheet"];
+
 const monster = (
   name: string,
   lore: string,
-  sheet: MonsterSpec["sprite"]["sheet"],
+  sheet: MonsterSheet,
   cell: number,
   championHue: number,
   apprenticeHue: number,
+  presence?: MonsterSpec["presence"],
 ): MonsterSpec => ({
   name,
   lore,
+  ...(presence ? { presence } : {}),
   sprite: { sheet, cell },
   hueShift: { champion: championHue, apprentice: apprenticeHue },
 });
@@ -332,7 +339,7 @@ const tutorialEntries = [
     },
     champion: route(["[]"], ["List Nat"], "[]"),
     apprentice: route(["exact []"], ["List Nat"], "by\n  exact []"),
-    monster: monster("Empty Satchel Lich", "Its hollow hoard is already a perfectly good list.", "monsters.png", 2, 12, 42),
+    monster: monster("Empty Satchel Lich", "Its hollow hoard is already a perfectly good list.", "monsters.png", 2, 12, 42, "imposing"),
   },
   {
     id: 4, depth: 1, chapter: "First Steps", title: "Name a Proposition", topic: "Propositions",
@@ -360,7 +367,7 @@ const tutorialEntries = [
     },
     champion: route(["True.intro"], ["True"], "True.intro"),
     apprentice: route(["exact True.intro"], ["True"], "by\n  exact True.intro"),
-    monster: monster("Rune Gargoyle", "It guards the constructor of the simplest truth.", "monsters.png", 4, 12, 42),
+    monster: monster("Rune Gargoyle", "It guards the constructor of the simplest truth.", "monsters.png", 4, 12, 42, "imposing"),
   },
 ] satisfies Omit<Exercise, "kind">[];
 
@@ -418,7 +425,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun hP => □", "fun hPQ => □", "hPQ hP"], ["P → (P → Q) → Q", "(P → Q) → Q", "Q"], "fun hP hPQ => hPQ hP"),
     apprentice: route(["intro hP", "intro hPQ", "apply hPQ", "exact hP"], ["P → (P → Q) → Q", "(P → Q) → Q", "Q", "P"], "by\n  intro hP hPQ\n  apply hPQ\n  exact hP"),
-    monster: monster("Relay Lich", "Every spell it receives is passed deeper into the crypt.", "monsters.png", 2, 0, 34),
+    monster: monster("Relay Lich", "Every spell it receives is passed deeper into the crypt.", "monsters.png", 2, 0, 34, "imposing"),
   },
   {
     id: 10, depth: 1, chapter: "Propositions as Types", title: "Chain of Three", topic: "Composition",
@@ -429,7 +436,7 @@ const existingLevelEntries = [
     lesson: lesson("Function applications can be nested, allowing the output type of one implication to become the input type of the next."),
     champion: route(["fun hPQ => □", "fun hQR => □", "fun hP => □", "hQR (hPQ hP)"], ["(P → Q) → (Q → R) → P → R", "(Q → R) → P → R", "P → R", "R"], "fun hPQ hQR hP => hQR (hPQ hP)"),
     apprentice: route(["intro hPQ", "intro hQR", "intro hP", "apply hQR", "apply hPQ", "exact hP"], ["(P → Q) → (Q → R) → P → R", "(Q → R) → P → R", "P → R", "R", "Q", "P"], "by\n  intro hPQ hQR hP\n  apply hQR\n  apply hPQ\n  exact hP"),
-    monster: monster("Three-Link Wraith", "Three spectral chains bind its victim to the wall.", "monsters.png", 9, 0, 34),
+    monster: monster("Three-Link Wraith", "Three spectral chains bind its victim to the wall.", "monsters.png", 9, 0, 34, "imposing"),
   },
   {
     id: 11, depth: 1, chapter: "Propositions as Types", title: "Forge a Pair", topic: "Conjunction introduction",
@@ -474,7 +481,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun h => □", "And.intro □ □", "□.□", "h", "right", "□.□", "h", "left"], ["P ∧ Q → Q ∧ P", "Q ∧ P", "Q", "Q", "Q", "P", "P", "P"], "fun h => And.intro h.right h.left"),
     apprentice: route(["intro h", "constructor", "exact □", "h.right", "exact □", "h.left"], ["P ∧ Q → Q ∧ P", "Q ∧ P", "Q", "Q", "P", "P"], "by\n  intro h\n  constructor\n  · exact h.right\n  · exact h.left"),
-    monster: monster("Mirror Gargoyle", "Everything shown to it returns in reverse.", "monsters.png", 4, 0, 34),
+    monster: monster("Mirror Gargoyle", "Everything shown to it returns in reverse.", "monsters.png", 4, 0, 34, "imposing"),
   },
   {
     id: 14, depth: 1, chapter: "Propositions as Types", title: "Take the Left Path", topic: "Disjunction introduction",
@@ -507,7 +514,7 @@ const existingLevelEntries = [
       4: ["hPR : P → R", "hQR : Q → R", "hP : P"],
       5: ["hPR : P → R", "hQR : Q → R", "hQ : Q"],
     }),
-    monster: monster("Forked Adder", "Whichever head strikes, the answer must be ready.", "monsters.png", 8, 0, 34),
+    monster: monster("Forked Adder", "Whichever head strikes, the answer must be ready.", "monsters.png", 8, 0, 34, "imposing"),
   },
   {
     id: 16, depth: 1, chapter: "Propositions as Types", title: "Empty the Void", topic: "False elimination",
@@ -522,7 +529,7 @@ const existingLevelEntries = [
     },
     champion: route(["False.elim"], ["False → P"], "False.elim"),
     apprentice: route(["intro hFalse", "exfalso", "exact hFalse"], ["False → P", "P", "False"], "by\n  intro hFalse\n  exfalso\n  exact hFalse"),
-    monster: monster("Void Warden", "Its heart contains a proof that cannot exist.", "monsters.png", 9, 46, 70),
+    monster: monster("Void Warden", "Its heart contains a proof that cannot exist.", "monsters.png", 9, 46, 70, "imposing"),
   },
   {
     id: 17, depth: 2, chapter: "Logical Connectives", title: "Bind Both Directions", topic: "Logical Equivalence",
@@ -589,7 +596,7 @@ const existingLevelEntries = [
       8: ["hn : ¬(P ∨ Q)", "hQ : Q"],
       9: ["hn : ¬(P ∨ Q)", "hQ : Q"],
     }),
-    monster: monster("Bronze Minotaur", "It bars both exits of the logical maze.", "monsters-2.png", 4, 0, 34),
+    monster: monster("Bronze Minotaur", "It bars both exits of the logical maze.", "monsters-2.png", 4, 0, 34, "imposing"),
   },
   {
     id: 22, depth: 2, chapter: "Logical Connectives", title: "Curry the Pair", topic: "Currying",
@@ -600,7 +607,7 @@ const existingLevelEntries = [
     lesson: lesson("A function of type `P ∧ Q → R` can be converted into one of type `P → Q → R`. This conversion is called currying."),
     champion: route(["fun h => □", "fun hP => □", "fun hQ => □", "h (And.intro hP hQ)"], ["(P ∧ Q → R) → P → Q → R", "P → Q → R", "Q → R", "R"], "fun h hP hQ => h (And.intro hP hQ)"),
     apprentice: route(["intro h", "intro hP", "intro hQ", "apply h", "constructor", "exact hP", "exact hQ"], ["(P ∧ Q → R) → P → Q → R", "P → Q → R", "Q → R", "R", "P ∧ Q", "P", "Q"], "by\n  intro h hP hQ\n  apply h\n  constructor\n  · exact hP\n  · exact hQ"),
-    monster: monster("Ice Golem", "Two frozen shards combine into its single heart.", "monsters-2.png", 5, 0, 34),
+    monster: monster("Ice Golem", "Two frozen shards combine into its single heart.", "monsters-2.png", 5, 0, 34, "imposing"),
   },
   {
     id: 23, depth: 2, chapter: "Logical Connectives", title: "Discard the Empty Branch", topic: "False in disjunction",
@@ -631,7 +638,7 @@ const existingLevelEntries = [
     },
     champion: route(["Classical.byContradiction"], ["¬¬P → P"], "Classical.byContradiction"),
     apprentice: route(["intro hnnP", "by_contra hnP", "exact hnnP hnP"], ["¬¬P → P", "P", "False"], "by\n  intro hnnP\n  by_contra hnP\n  exact hnnP hnP"),
-    monster: monster("Mummy Scholar", "Two layers of denial wrap the truth in linen.", "monsters-2.png", 7, 0, 34),
+    monster: monster("Mummy Scholar", "Two layers of denial wrap the truth in linen.", "monsters-2.png", 7, 0, 34, "imposing"),
   },
   {
     id: 25, depth: 3, chapter: "Quantifiers and Equality", title: "Name the Arbitrary", topic: "Universal introduction",
@@ -646,7 +653,7 @@ const existingLevelEntries = [
     },
     champion: route(["Eq.refl"], ["∀ x : α, x = x"], "Eq.refl"),
     apprentice: route(["intro x", "rfl"], ["∀ x : α, x = x", "x = x"], "by\n  intro x\n  rfl"),
-    monster: monster("Thorn Troll", "Every thorn is equal only to itself.", "monsters-2.png", 8, 0, 34),
+    monster: monster("Thorn Troll", "Every thorn is equal only to itself.", "monsters-2.png", 8, 0, 34, "imposing"),
   },
   {
     id: 26, depth: 3, chapter: "Quantifiers and Equality", title: "Choose an Instance", topic: "Universal elimination",
@@ -657,7 +664,7 @@ const existingLevelEntries = [
     lesson: lesson("Because a universally quantified proof is a function, it can be applied to any term of the correct type to produce a proof specific to that term."),
     champion: route(["fun hAll => □", "hAll a"], ["(∀ x, P x) → P a", "P a"], "fun hAll => hAll a"),
     apprentice: route(["intro hAll", "exact hAll a"], ["(∀ x, P x) → P a", "P a"], "by\n  intro hAll\n  exact hAll a"),
-    monster: monster("Spectral Knight", "Its universal oath applies to every challenger.", "monsters-2.png", 9, 0, 34),
+    monster: monster("Spectral Knight", "Its universal oath applies to every challenger.", "monsters-2.png", 9, 0, 34, "imposing"),
   },
   {
     id: 27, depth: 3, chapter: "Quantifiers and Equality", title: "Lift the Rule", topic: "Quantified implication",
@@ -683,7 +690,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun hPa => □", "Exists.intro a hPa"], ["P a → ∃ x, P x", "∃ x, P x"], "fun hPa => Exists.intro a hPa"),
     apprentice: route(["intro hPa", "use a", "exact hPa"], ["P a → ∃ x, P x", "∃ x, P x", "P a"], "by\n  intro hPa\n  use a\n  exact hPa"),
-    monster: monster("Horned Boneguard", "No one passes without presenting a witness.", "monsters-3.png", 1, 0, 34),
+    monster: monster("Horned Boneguard", "No one passes without presenting a witness.", "monsters-3.png", 1, 0, 34, "imposing"),
   },
   {
     id: 29, depth: 3, chapter: "Quantifiers and Equality", title: "Extract the Witness", topic: "Existential elimination",
@@ -700,7 +707,7 @@ const existingLevelEntries = [
     apprentice: route(["intro hEx", "intro hRule", "rcases □", "hEx", "exact hRule x hx"], ["(∃ x, P x) → (∀ x, P x → Q) → Q", "(∀ x, P x → Q) → Q", "Q", "Q", "Q"], "by\n  intro hEx hRule\n  rcases hEx with ⟨x, hx⟩\n  exact hRule x hx", {
       3: ["hRule : ∀ x, P x → Q", "x : α", "hx : P x"],
     }),
-    monster: monster("Lantern Bog Witch", "A hidden name flickers inside her lantern.", "monsters-3.png", 2, 0, 34),
+    monster: monster("Lantern Bog Witch", "A hidden name flickers inside her lantern.", "monsters-3.png", 2, 0, 34, "imposing"),
   },
   {
     id: 30, depth: 3, chapter: "Quantifiers and Equality", title: "Find Zero", topic: "Concrete witness",
@@ -716,7 +723,7 @@ const existingLevelEntries = [
     },
     champion: route(["Exists.intro 0 □", "Eq.refl 0"], ["∃ n : Nat, n = 0", "0 = 0"], "Exists.intro 0 (Eq.refl 0)"),
     apprentice: route(["use 0", "rfl"], ["∃ n : Nat, n = 0", "0 = 0"], "by\n  use 0\n  rfl"),
-    monster: monster("Iron Boar", "The zero carved into its plate is the only clue.", "monsters-3.png", 3, 0, 34),
+    monster: monster("Iron Boar", "The zero carved into its plate is the only clue.", "monsters-3.png", 3, 0, 34, "imposing"),
   },
   {
     id: 31, depth: 3, chapter: "Quantifiers and Equality", title: "Reverse Equality", topic: "Symmetry",
@@ -746,7 +753,7 @@ const existingLevelEntries = [
     },
     champion: route(["Eq.trans"], ["a = b → b = c → a = c"], "Eq.trans"),
     apprentice: route(["intro hab", "intro hbc", "trans □", "b", "exact hab", "exact hbc"], ["a = b → b = c → a = c", "b = c → a = c", "a = c", "a = c", "a = b", "b = c"], "by\n  intro hab hbc\n  trans b\n  · exact hab\n  · exact hbc"),
-    monster: monster("Ivy Automaton", "Two wooden bridges meet at its iron core.", "monsters-3.png", 5, 0, 34),
+    monster: monster("Ivy Automaton", "Two wooden bridges meet at its iron core.", "monsters-3.png", 5, 0, 34, "imposing"),
   },
   {
     id: 33, depth: 3, chapter: "Quantifiers and Equality", title: "Carry Equality Through", topic: "Congruence",
@@ -761,7 +768,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun h => □", "congrArg f h"], ["a = b → f a = f b", "f a = f b"], "fun h => congrArg f h"),
     apprentice: route(["intro h", "congr", "exact h"], ["a = b → f a = f b", "f a = f b", "a = b"], "by\n  intro h\n  congr\n  exact h"),
-    monster: monster("Crimson Scorpion", "Its mirrored claws move as one function.", "monsters-3.png", 6, 0, 34),
+    monster: monster("Crimson Scorpion", "Its mirrored claws move as one function.", "monsters-3.png", 6, 0, 34, "imposing"),
   },
   {
     id: 34, depth: 3, chapter: "Quantifiers and Equality", title: "Rewrite the Equal", topic: "Equality rewriting",
@@ -776,7 +783,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun hab => □", "fun hPa => □", "Eq.mp (congrArg P hab) hPa"], ["a = b → P a → P b", "P a → P b", "P b"], "fun hab hPa => Eq.mp (congrArg P hab) hPa"),
     apprentice: route(["intro hab", "intro hPa", "rw [← □]", "hab", "exact hPa"], ["a = b → P a → P b", "P a → P b", "P b", "P b", "P a"], "by\n  intro hab hPa\n  rw [← hab]\n  exact hPa"),
-    monster: monster("Masked Djinn", "It changes one true name into another without loss.", "monsters-3.png", 7, 0, 34),
+    monster: monster("Masked Djinn", "It changes one true name into another without loss.", "monsters-3.png", 7, 0, 34, "imposing"),
   },
   {
     id: 35, depth: 4, chapter: "Tactic Craft", title: "Long Application", topic: "Apply chains",
@@ -787,7 +794,7 @@ const existingLevelEntries = [
     lesson: lesson("Long implication chains use the same application rule repeatedly."),
     champion: route(["fun hPQ => □", "fun hQR => □", "fun hRS => □", "fun hP => □", "hRS (hQR (hPQ hP))"], ["(P → Q) → (Q → R) → (R → S) → P → S", "(Q → R) → (R → S) → P → S", "(R → S) → P → S", "P → S", "S"], "fun hPQ hQR hRS hP => hRS (hQR (hPQ hP))"),
     apprentice: route(["intro hPQ", "intro hQR", "intro hRS", "intro hP", "apply hRS", "apply hQR", "apply hPQ", "exact hP"], ["(P → Q) → (Q → R) → (R → S) → P → S", "(Q → R) → (R → S) → P → S", "(R → S) → P → S", "P → S", "S", "R", "Q", "P"], "by\n  intro hPQ hQR hRS hP\n  apply hRS\n  apply hQR\n  apply hPQ\n  exact hP"),
-    monster: monster("Three-Headed Hound", "Each throat guards the premise of the next.", "monsters-3.png", 8, 0, 34),
+    monster: monster("Three-Headed Hound", "Each throat guards the premise of the next.", "monsters-3.png", 8, 0, 34, "imposing"),
   },
   {
     id: 36, depth: 4, chapter: "Tactic Craft", title: "Nested Pair", topic: "Nested constructors",
@@ -798,7 +805,7 @@ const existingLevelEntries = [
     lesson: lesson("Nested conjunctions are tree-shaped proof data, so each layer requires proofs of both of its components."),
     champion: route(["fun hP => □", "fun hQ => □", "fun hR => □", "And.intro hP (And.intro hQ hR)"], ["P → Q → R → P ∧ (Q ∧ R)", "Q → R → P ∧ (Q ∧ R)", "R → P ∧ (Q ∧ R)", "P ∧ (Q ∧ R)"], "fun hP hQ hR => And.intro hP (And.intro hQ hR)"),
     apprentice: route(["intro hP", "intro hQ", "intro hR", "constructor", "exact hP", "constructor", "exact hQ", "exact hR"], ["P → Q → R → P ∧ (Q ∧ R)", "Q → R → P ∧ (Q ∧ R)", "R → P ∧ (Q ∧ R)", "P ∧ (Q ∧ R)", "P", "Q ∧ R", "Q", "R"], "by\n  intro hP hQ hR\n  constructor\n  · exact hP\n  · constructor\n    · exact hQ\n    · exact hR"),
-    monster: monster("White Dragonling", "Three nested scales protect its small bright heart.", "monsters-3.png", 9, 92, 126),
+    monster: monster("White Dragonling", "Three nested scales protect its small bright heart.", "monsters-3.png", 9, 92, 126, "imposing"),
   },
   {
     id: 37, depth: 4, chapter: "Tactic Craft", title: "Unwind the Forks", topic: "Nested cases",
@@ -847,7 +854,7 @@ const existingLevelEntries = [
     unlocks: { apprentice: { moves: ["tactic.subst"], text: "New move: `subst x` eliminates a variable using an equality and rewrites the entire goal and environment." } },
     champion: route(["fun h => □", "congrArg g (congrArg f h)"], ["a = b → g (f a) = g (f b)", "g (f a) = g (f b)"], "fun h => congrArg g (congrArg f h)"),
     apprentice: route(["intro h", "subst □", "b", "rfl"], ["a = b → g (f a) = g (f b)", "g (f a) = g (f b)", "g (f a) = g (f b)", "g (f a) = g (f a)"], "by\n  intro h\n  subst b\n  rfl"),
-    monster: monster("Violet Relay Lich", "Its wand changes every symbol caught in the beam.", "monsters.png", 2, 92, 126),
+    monster: monster("Violet Relay Lich", "Its wand changes every symbol caught in the beam.", "monsters.png", 2, 92, 126, "imposing"),
   },
   {
     id: 40, depth: 4, chapter: "Tactic Craft", title: "Chain the Equalities", topic: "Calculational proofs",
@@ -861,7 +868,7 @@ const existingLevelEntries = [
     unlocks: { apprentice: { moves: ["tactic.calc"], text: "New move: a `calc` step records an intermediate equality and asks for its supporting proof." } },
     champion: route(["fun hab => □", "fun hbc => □", "congrArg f (Eq.trans hab hbc)"], ["a = b → b = c → f a = f c", "b = c → f a = f c", "f a = f c"], "fun hab hbc => congrArg f (Eq.trans hab hbc)"),
     apprentice: route(["intro hab", "intro hbc", "calc … = □ := □", "f b", "congr", "exact hab", "congr", "exact hbc"], ["a = b → b = c → f a = f c", "b = c → f a = f c", "f a = f c", "f a = f c", "f a = f b", "a = b", "f b = f c", "b = c"], "by\n  intro hab hbc\n  calc\n    f a = f b := by\n      congr\n    _ = f c := by\n      congr"),
-    monster: monster("Crowned Proof-Knight", "Every equality in the dungeon ends at its throne.", "monsters-2.png", 9, 92, 126),
+    monster: monster("Crowned Proof-Knight", "Every equality in the dungeon ends at its throne.", "monsters-2.png", 9, 92, 126, "imposing"),
   },
   {
     id: 41, depth: 4, chapter: "Tactic Craft", title: "Split on Truth", topic: "Excluded middle",
@@ -881,7 +888,7 @@ const existingLevelEntries = [
       3: ["hP : ¬P"],
       4: ["hP : ¬P"],
     }),
-    monster: monster("Copper Mirror Gargoyle", "Its mirror always shows one of two possible worlds.", "monsters.png", 4, 92, 126),
+    monster: monster("Copper Mirror Gargoyle", "Its mirror always shows one of two possible worlds.", "monsters.png", 4, 92, 126, "imposing"),
   },
   {
     id: 42, depth: 4, chapter: "Tactic Craft", title: "Explode the Clash", topic: "Contradiction tactic",
@@ -927,7 +934,7 @@ const existingLevelEntries = [
       2: [],
       3: ["n : Nat", "ih : 0 + n = n"],
     }),
-    monster: monster("Glacial Frosthorn", "It returns once for zero and once for every successor.", "monsters.png", 7, 92, 126),
+    monster: monster("Glacial Frosthorn", "It returns once for zero and once for every successor.", "monsters.png", 7, 92, 126, "imposing"),
   },
   {
     id: 45, depth: 5, chapter: "Induction and Calculation", title: "Successor Addition", topic: "Recursive reduction",
@@ -943,7 +950,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun n => □", "fun m => □", "Eq.refl (n + Nat.succ m)"], ["∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)", "∀ m : Nat, n + Nat.succ m = Nat.succ (n + m)", "n + Nat.succ m = Nat.succ (n + m)"], "fun n m => Eq.refl (n + Nat.succ m)"),
     apprentice: route(["intro n", "intro m", "rfl"], ["∀ n m : Nat, n + Nat.succ m = Nat.succ (n + m)", "∀ m : Nat, n + Nat.succ m = Nat.succ (n + m)", "n + Nat.succ m = Nat.succ (n + m)"], "by\n  intro n m\n  rfl"),
-    monster: monster("Teal Forked Adder", "The second head always reveals the next successor.", "monsters.png", 8, 92, 126),
+    monster: monster("Teal Forked Adder", "The second head always reveals the next successor.", "monsters.png", 8, 92, 126, "imposing"),
   },
   {
     id: 46, depth: 5, chapter: "Induction and Calculation", title: "Associate the Sums", topic: "Inductive equality",
@@ -962,7 +969,7 @@ const existingLevelEntries = [
       4: ["a : Nat", "b : Nat"],
       5: ["a : Nat", "b : Nat", "c : Nat", "ih : (a + b) + c = a + (b + c)"],
     }),
-    monster: monster("Elder Void Warden", "Three sums bend around its ancient shadow.", "monsters.png", 9, 92, 126),
+    monster: monster("Elder Void Warden", "Three sums bend around its ancient shadow.", "monsters.png", 9, 92, 126, "imposing"),
   },
   {
     id: 47, depth: 5, chapter: "Induction and Calculation", title: "Commute the Sums", topic: "Using proved theorems",
@@ -1047,7 +1054,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun xs => □", "fun ys => □", sumAppendProof.slice("fun xs ys => ".length)], Array.from({ length: 3 }, () => sumAppendTheorem), sumAppendProof),
     apprentice: route(["intro xs", "intro ys", "induction □", "xs", "simp", "rw [□]", "Nat.zero_add", "rfl", "simp", "rw [□]", "ih", "rw [← □]", "Nat.add_assoc", "rfl"], Array.from({ length: 14 }, () => sumAppendTheorem), "by\n  intro xs ys\n  induction xs with\n  | nil =>\n      change sum ys = 0 + sum ys\n      rw [Nat.zero_add]\n  | cons x xs ih =>\n      change x + sum (xs ++ ys) = (x + sum xs) + sum ys\n      rw [ih, Nat.add_assoc]"),
-    monster: monster("Hoard-Sum Automaton", "Its brass ledger fuses two treasure trains without losing a single coin.", "monsters-3.png", 5, 184, 218),
+    monster: monster("Hoard-Sum Automaton", "Its brass ledger fuses two treasure trains without losing a single coin.", "monsters-3.png", 5, 184, 218, "imposing"),
   },
   {
     id: 52, depth: 6, chapter: "The Capstone Abyss", title: "Weight of a Permutation", topic: "Induction on permutation proofs",
@@ -1063,7 +1070,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun xs => □", "fun ys => □", "fun h => □", "List.Perm.rec (Eq.refl 0) (fun x l1 l2 h ih => congrArg (Nat.add x) ih) (fun x y l => Nat.add_left_comm y x (sum l)) (fun h1 h2 ih1 ih2 => Eq.trans ih1 ih2) h"], Array.from({ length: 4 }, () => "∀ xs ys : List Nat, List.Perm xs ys → sum xs = sum ys"), "fun xs ys h => List.Perm.rec (motive := fun xs ys _ => sum xs = sum ys) (Eq.refl 0) (fun x _ _ _ ih => congrArg (Nat.add x) ih) (fun x y l => Nat.add_left_comm y x (sum l)) (fun _ _ ih1 ih2 => Eq.trans ih1 ih2) h"),
     apprentice: route(["intro xs", "intro ys", "intro h", "induction □", "h", "simp", "simp", "rw [□]", "ih", "rfl", "simp", "rw [□]", "Nat.add_left_comm", "rfl", "calc … = □ := □", "sum l2", "exact □", "ih1", "exact □", "ih2"], Array.from({ length: 20 }, () => "List.Perm xs ys → sum xs = sum ys"), "by\n  intro xs ys h\n  induction h with\n  | refl => rfl\n  | cons x h ih =>\n      change x + sum _ = x + sum _\n      rw [ih]\n  | swap x y l =>\n      change y + (x + sum l) = x + (y + sum l)\n      rw [Nat.add_left_comm]\n  | trans h1 h2 ih1 ih2 =>\n      calc\n        sum _ = sum _ := by exact ih1\n        _ = sum _ := by exact ih2"),
-    monster: monster("Permutation Scorpion Matriarch", "Every shuffle of its jeweled segments leaves their total weight unchanged.", "monsters-3.png", 6, 184, 218),
+    monster: monster("Permutation Scorpion Matriarch", "Every shuffle of its jeweled segments leaves their total weight unchanged.", "monsters-3.png", 6, 184, 218, "imposing"),
   },
   {
     id: 53, depth: 6, chapter: "The Capstone Abyss", title: "Swap the Caravans", topic: "Composing sum equalities",
@@ -1074,7 +1081,7 @@ const existingLevelEntries = [
     lesson: lesson("Use what you have learned to prove this theorem."),
     champion: route(["fun xs => □", "fun ys => □", "Eq.trans (sum_append xs ys) (Eq.trans (Nat.add_comm (sum xs) (sum ys)) (Eq.symm (sum_append ys xs)))"], Array.from({ length: 3 }, () => "∀ xs ys : List Nat, sum (xs ++ ys) = sum (ys ++ xs)"), "fun xs ys => Eq.trans (sum_append xs ys) (Eq.trans (Nat.add_comm (sum xs) (sum ys)) (Eq.symm (sum_append ys xs)))"),
     apprentice: route(["intro xs", "intro ys", "rw [□]", "sum_append", "rw [□]", "sum_append", "rw [□]", "Nat.add_comm", "rfl"], Array.from({ length: 9 }, () => "sum (xs ++ ys) = sum (ys ++ xs)"), "by\n  intro xs ys\n  rw [sum_append, sum_append, Nat.add_comm]"),
-    monster: monster("Caravan-Swapping Djinn", "It exchanges two processions at once, but their combined burden never changes.", "monsters-3.png", 7, 184, 218),
+    monster: monster("Caravan-Swapping Djinn", "It exchanges two processions at once, but their combined burden never changes.", "monsters-3.png", 7, 184, 218, "imposing"),
   },
   {
     id: 54, depth: 6, chapter: "The Capstone Abyss", title: "Count the Copies", topic: "Replication and multiplication",
@@ -1091,7 +1098,7 @@ const existingLevelEntries = [
     },
     champion: route(["fun n => □", "fun x => □", sumReplicateProofBody], Array.from({ length: 3 }, () => "∀ n x : Nat, sum (List.replicate n x) = n * x"), `fun n x => ${sumReplicateProofBody}`),
     apprentice: route(["intro n", "intro x", "induction □", "n", "simp", "rw [□]", "Nat.zero_mul", "rfl", "simp", "rw [□]", "ih", "rw [□]", "Nat.succ_mul", "rw [□]", "Nat.add_comm", "rfl"], Array.from({ length: 16 }, () => "sum (List.replicate n x) = n * x"), "by\n  intro n x\n  induction n with\n  | zero =>\n      change 0 = 0 * x\n      rw [Nat.zero_mul]\n  | succ n ih =>\n      change x + sum (List.replicate n x) = Nat.succ n * x\n      rw [ih, Nat.succ_mul, Nat.add_comm]"),
-    monster: monster("Replication Hound Triumvirate", "Every head counts another identical row of coins.", "monsters-3.png", 8, 184, 218),
+    monster: monster("Replication Hound Triumvirate", "Every head counts another identical row of coins.", "monsters-3.png", 8, 184, 218, "imposing"),
   },
   {
     id: 55, depth: 6, chapter: "The Capstone Abyss", title: "Echo Every Wagon", topic: "List induction and theorem reuse",
@@ -1106,7 +1113,13 @@ const existingLevelEntries = [
     },
     champion: route(["fun xs => □", sumRepeatEachProof.slice("fun xs => ".length)], Array.from({ length: 2 }, () => "∀ xs : List Nat, ∀ n : Nat, sum (repeatEach n xs) = n * sum xs"), sumRepeatEachProof),
     apprentice: route(["intro xs", "induction □", "xs", "intro n", "simp", "intro n", "simp", "rw [□]", "sum_append", "rw [□]", "sum_replicate", "rw [□]", "ih", "rw [□]", "Nat.mul_add", "rfl"], Array.from({ length: 16 }, () => "sum (repeatEach n xs) = n * sum xs"), "by\n  intro xs\n  induction xs with\n  | nil =>\n      intro n\n      rfl\n  | cons x xs ih =>\n      intro n\n      change sum (List.replicate n x ++ repeatEach n xs) = n * (x + sum xs)\n      rw [sum_append, sum_replicate, ih, Nat.mul_add]"),
-    monster: monster("Echo-Convoy Dragon", "Every wagon it sees returns in a thundering block of identical copies.", "monsters-3.png", 9, 184, 218),
+    monster: {
+      name: "Hollow Marshal",
+      lore: "At its command, every burden returns in disciplined ranks of identical copies.",
+      presence: "boss",
+      sprite: { image: "hollow-marshal.png" },
+      hueShift: { champion: 0, apprentice: 0 },
+    },
   },
 ] satisfies Omit<Exercise, "kind">[];
 
@@ -1235,7 +1248,7 @@ function rescueStory(hero: HeroClass): StorySequence {
         ],
       },
       {
-        title: "Near Enough to Understand",
+        title: "It Was The Only Way",
         text: [
           "\"I needed to be near them to understand. I planned to come here on my own, but I waited too long.\"",
           "The reflection of a torch flashed across the wizard's eye as he descended the staircase.",
@@ -1337,7 +1350,10 @@ for (const exercise of exercises) {
       throw new Error(`Level ${exercise.id} exceeds the three-sentence lesson limit.`);
     }
   }
-  if (exercise.monster.sprite.cell < 0 || exercise.monster.sprite.cell > 9) {
+  if (
+    "cell" in exercise.monster.sprite
+    && (exercise.monster.sprite.cell < 0 || exercise.monster.sprite.cell > 9)
+  ) {
     throw new Error(`Level ${exercise.id} has an invalid monster sprite cell.`);
   }
 }

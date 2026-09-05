@@ -97,6 +97,47 @@ function marimbaVoice(output: Tone.ToneAudioNode): Voice {
   };
 }
 
+function softOrganVoice(output: Tone.ToneAudioNode, name: string): Voice {
+  const level = name.endsWith("_melody") ? 0.3 : name.endsWith("_bass") ? 0.24 : 0.16;
+  const channel = new Tone.Gain(level).connect(output);
+  const synth = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 2,
+    modulationIndex: 0.8,
+    oscillator: { type: "triangle" },
+    modulation: { type: "square" },
+    envelope: { attack: 0.035, decay: 0.08, sustain: 0.78, release: 0.28 },
+    modulationEnvelope: { attack: 0.05, decay: 0.14, sustain: 0.18, release: 0.24 },
+  }).connect(channel);
+  synth.maxPolyphony = 10;
+  return {
+    trigger: (entry, time) => synth.triggerAttackRelease(entry.name, entry.duration, time, entry.velocity),
+    dispose: () => {
+      synth.dispose();
+      channel.dispose();
+    },
+  };
+}
+
+function churchOrganVoice(output: Tone.ToneAudioNode): Voice {
+  const channel = new Tone.Gain(0.075).connect(output);
+  const synth = new Tone.PolySynth(Tone.FMSynth, {
+    harmonicity: 2,
+    modulationIndex: 0.8,
+    oscillator: { type: "triangle" },
+    modulation: { type: "square" },
+    envelope: { attack: 0.04, decay: 0.08, sustain: 0.78, release: 0.3 },
+    modulationEnvelope: { attack: 0.055, decay: 0.14, sustain: 0.18, release: 0.26 },
+  }).connect(channel);
+  synth.maxPolyphony = 12;
+  return {
+    trigger: (entry, time) => synth.triggerAttackRelease(entry.name, entry.duration, time, entry.velocity),
+    dispose: () => {
+      synth.dispose();
+      channel.dispose();
+    },
+  };
+}
+
 function timpaniVoice(output: Tone.ToneAudioNode): Voice {
   const channel = new Tone.Gain(0.44).connect(output);
   const synth = new Tone.PolySynth(Tone.MembraneSynth, {
@@ -161,10 +202,12 @@ function drumVoice(output: Tone.ToneAudioNode): Voice {
 function createVoice(
   name: string,
   output: Tone.ToneAudioNode,
-  assignedVoice?: "marimba" | "timpani",
+  assignedVoice?: "marimba" | "timpani" | "church-organ",
 ): Voice {
   if (assignedVoice === "marimba") return marimbaVoice(output);
   if (assignedVoice === "timpani") return timpaniVoice(output);
+  if (assignedVoice === "church-organ") return churchOrganVoice(output);
+  if (name.startsWith("soft_organ_")) return softOrganVoice(output, name);
   if (name === "pixel_drums") return drumVoice(output);
   if (name === "crystal_bell" || name === "fm_brass") return fmVoice(output, name === "crystal_bell" ? 0.22 : 0.3);
   if (name === "triangle_bass") {

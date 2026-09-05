@@ -26,31 +26,6 @@ function chord(target, values, start, duration, velocity = 0.48) {
   values.forEach((value) => note(target, value, start, duration, velocity));
 }
 
-function phrase(target, start, values, velocity = 0.72) {
-  let cursor = start;
-  for (const [value, duration] of values) {
-    if (value !== null) note(target, value, cursor, duration * 0.9, velocity);
-    cursor += duration;
-  }
-}
-
-function drums(target, bars, { driving = false, sparse = false } = {}) {
-  for (let bar = 0; bar < bars; bar += 1) {
-    const beat = bar * 4;
-    note(target, 36, beat, 0.18, sparse ? 0.38 : 0.7);
-    if (!sparse || bar % 2 === 1) note(target, 38, beat + 2, 0.16, sparse ? 0.3 : 0.58);
-    const step = driving ? 0.5 : 1;
-    for (let offset = step; offset < 4; offset += step) {
-      note(target, offset % 1 === 0 ? 42 : 44, beat + offset, 0.08, driving ? 0.34 : 0.2);
-    }
-    if (driving) {
-      note(target, 36, beat + 1.5, 0.14, 0.48);
-      note(target, 36, beat + 3, 0.14, 0.55);
-      note(target, 38, beat + 3.5, 0.12, 0.34);
-    }
-  }
-}
-
 // William Byrd's composition is public domain; IMSLP #232546 is the reference
 // public-domain score. Note data was checked against Monique Rio's CC BY 4.0
 // St Cecilia Press edition. This adaptation changes the ending and form: it
@@ -163,101 +138,35 @@ function titleTheme() {
   };
 }
 
-function combatTheme() {
-  const lead = track("pulse_lead", 0, 81);
-  const harmony = track("dark_harmony", 1, 89);
-  const bass = track("triangle_bass", 2, 38);
-  const arp = track("square_arp", 3, 80);
-  const bell = track("crystal_bell", 4, 10);
-  const kit = track("pixel_drums", 9, 0);
-  const progression = [
-    ["D3", ["D4", "F4", "A4"]], ["Bb2", ["Bb3", "D4", "F4"]],
-    ["G2", ["G3", "Bb3", "D4"]], ["A2", ["A3", "C#4", "E4"]],
-    ["D3", ["D4", "F4", "A4"]], ["Eb3", ["Eb4", "G4", "Bb4"]],
-    ["Bb2", ["Bb3", "D4", "F4"]], ["A2", ["A3", "C#4", "E4"]],
-    ["D3", ["D4", "F4", "A4"]], ["C3", ["C4", "Eb4", "G4"]],
-    ["Bb2", ["Bb3", "D4", "F4"]], ["G2", ["G3", "Bb3", "D4"]],
-    ["Eb3", ["Eb4", "G4", "Bb4"]], ["Bb2", ["Bb3", "D4", "F4"]],
-    ["A2", ["A3", "C#4", "E4"]], ["D3", ["D4", "F4", "A4"]],
-  ];
-  progression.forEach(([root, tones], bar) => {
-    const start = bar * 4;
-    chord(harmony, tones, start, 3.75, 0.32);
-    const lowRoot = pitch(root) - 12;
-    const lowFifth = pitch(tones[2]) - 24;
-    [lowRoot, lowRoot, lowFifth, lowRoot, lowRoot, lowFifth, lowRoot, lowFifth].forEach((tone, index) =>
-      note(bass, tone, start + index * 0.5, 0.38, index === 0 || index === 4 ? 0.62 : 0.43));
-    const arpeggio = [...tones, tones[1], tones[2], tones[1], tones[0], tones[1]];
-    arpeggio.forEach((tone, index) => note(arp, tone, start + index * 0.5, 0.36, 0.2));
-  });
-  phrase(lead, 0, [["F5", 0.5], ["E5", 0.5], ["D5", 1], [null, 1], ["C5", 0.5], ["Db5", 0.5], ["A4", 1], [null, 1], ["F5", 0.5], ["E5", 0.5], ["D5", 2], ["C5", 1], ["Bb4", 1], ["A4", 2], [null, 3]], 0.62);
-  phrase(lead, 16, [["A4", 0.5], ["Bb4", 0.5], ["C#5", 1], ["D5", 0.5], ["C#5", 0.5], ["A4", 1], [null, 1], ["E5", 0.5], ["F5", 0.5], ["G5", 1], ["F5", 0.5], ["E5", 0.5], ["C#5", 1], ["D5", 2], ["C#5", 1], ["D5", 2], [null, 2]], 0.64);
-  phrase(lead, 32, [["Ab5", 0.5], ["G5", 0.5], ["F5", 1], ["D5", 1], [null, 1], ["Eb5", 0.5], ["D5", 0.5], ["Bb4", 1], [null, 1], ["G5", 0.5], ["F5", 0.5], ["D5", 2], ["Db5", 1], ["Bb4", 1], ["A4", 2], [null, 2]], 0.63);
-  phrase(lead, 48, [["Bb4", 0.5], ["D5", 0.5], ["Eb5", 1], ["G5", 0.5], ["F5", 0.5], ["D5", 1], [null, 1], ["C#5", 0.5], ["E5", 0.5], ["G5", 1], ["Bb5", 0.5], ["A5", 0.5], ["E5", 1], ["F5", 1], ["E5", 1], ["C#5", 1], ["D5", 2], [null, 2]], 0.66);
-  [0, 16, 32, 48].forEach((start) => chord(bell, ["D5", "A5"], start, 1.1, 0.18));
-  drums(kit, 16, { sparse: true });
-  return { filename: "combat.mid", tempo: 104, title: "Theorem Under Siege", tracks: [lead, harmony, bass, arp, bell, kit] };
-}
+// J. S. Bach's BWV 511 is public domain. These melody and continuo lines are
+// transcribed from Mutopia Project music ID 1009. The cutscene arrangement
+// preserves both source lines, adds a quiet open-fifth organ bourdon, and
+// performs the complete setting twice before returning to the loop boundary.
+const BWV511_MELODY = [[74,0,.5],[70,.5,1],[72,1.5,.5],[74,2,.25],[75,2.25,.25],[74,2.5,1.5],[72,4,.5],[70,4.5,1],[69,5.5,.5],[70,6,.25],[72,6.25,.25],[70,6.5,.5],[69,7,.5],[67,7.5,1],[75,8.5,1],[74,9.5,1],[79,10.5,1],[77,11.5,1],[69,12.5,.5],[75,13,.5],[74,13.5,.5],[72,14,.5],[72,14.5,1],[70,15.5,.5],[74,16.5,.5],[72,17,1],[74,18,.5],[70,18.5,.5],[72,19,1],[74,20,.5],[75,20.5,.5],[77,21,1],[75,22,.5],[74,22.5,.5],[75,23,.5],[74,23.5,.5],[72,24,.5],[75,24.5,.5],[69,25,1],[79,26,.5],[78,26.5,.5],[79,27,.5],[77,27.5,.5],[75,28,.5],[74,28.5,.5],[72,29,.5],[82,29.5,.5],[81,30,.5],[79,30.5,.5],[78,31,.5],[76,31.5,.5],[74,32,.5],[79,32.5,.3854],[77,32.8854,.112],[75,33,1],[74,34,.5],[72,34.5,.5],[74,35,.5],[66,35.5,.5],[67,36,.5],[72,36.5,.5],[70,37,1],[69,38,.5],[67,38.5,.5],[67,39,1.5]];
+const BWV511_BASS = [[43,0,.5],[55,.5,.5],[54,1,.5],[55,1.5,.5],[57,2,.5],[58,2.5,.5],[57,3,.5],[58,3.5,.5],[60,4,.5],[62,4.5,.5],[60,5,.5],[62,5.5,.5],[50,6,.5],[55,6.5,2],[43,8.5,.5],[55,9,1],[53,10,.5],[39,10.5,.5],[51,11,1],[50,12,.5],[48,12.5,1],[46,13.5,1],[41,14.5,1],[46,15.5,.5],[46,16.5,.5],[53,17,.5],[57,17.5,.5],[58,18,.5],[46,18.5,.5],[53,19,.5],[55,19.5,.5],[53,20,.5],[51,20.5,.5],[50,21,1],[55,22,1],[48,23,1.5],[60,24.5,.5],[54,25,.5],[57,25.5,.5],[50,26,.5],[60,26.5,.5],[58,27,.5],[62,27.5,.5],[55,28,.5],[58,28.5,.5],[51,29,1],[48,30,1],[50,31,1.5],[46,32.5,.5],[48,33,1],[53,34,1],[46,35,.5],[45,35.5,.5],[46,36,.5],[51,36.5,.5],[50,37,.5],[48,37.5,.5],[50,38,.5],[38,38.5,.5],[43,39,1.5]];
+const BWV511_PASS_BEATS = 40.5;
 
-function brokenAxiomTheme() {
-  const lead = track("breath_lead", 0, 75);
-  const harmony = track("dark_harmony", 1, 89);
-  const bass = track("triangle_bass", 2, 38);
-  const bell = track("crystal_bell", 3, 10);
-  const arp = track("square_arp", 4, 80);
-  const progression = [
-    ["D2", ["D3", "F3", "A3"]], ["C2", ["C3", "E3", "G3"]],
-    ["Bb1", ["Bb2", "D3", "F3"]], ["A1", ["A2", "C#3", "E3"]],
-    ["D2", ["D3", "F3", "A3"]], ["F2", ["F3", "A3", "C4"]],
-    ["Eb2", ["Eb3", "G3", "Bb3"]], ["A1", ["A2", "C#3", "E3"]],
-    ["G2", ["G3", "Bb3", "D4"]], ["D2", ["D3", "F3", "A3"]],
-    ["Bb1", ["Bb2", "D3", "F3"]], ["C2", ["C3", "E3", "G3"]],
-    ["D2", ["D3", "F3", "A3"]], ["Eb2", ["Eb3", "G3", "Bb3"]],
-    ["A1", ["A2", "C#3", "E3"]], ["D2", ["D3", "F3", "A3"]],
-  ];
-  progression.forEach(([root, tones], bar) => {
-    const start = bar * 4;
-    chord(harmony, tones, start, 3.85, 0.25);
-    note(bass, root, start, 3.6, 0.38);
-    if (bar >= 4) {
-      [tones[0], tones[2], tones[1], tones[2]].forEach((tone, index) => note(arp, tone, start + index, 0.6, 0.14));
-    }
-  });
-  phrase(lead, 0, [["D5", 2], ["A4", 1], ["C5", 1], ["Bb4", 2], ["F4", 2], ["E4", 1], ["G4", 1], ["A4", 2], [null, 2], ["C#5", 2]], 0.46);
-  phrase(lead, 16, [["D5", 1], ["F5", 2], ["E5", 1], ["C5", 2], ["A4", 2], ["Bb4", 1], ["D5", 1], ["Eb5", 2], ["C#5", 2], ["A4", 2]], 0.5);
-  phrase(lead, 32, [["G4", 2], ["Bb4", 1], ["D5", 1], ["A4", 2], ["F4", 2], ["Bb4", 2], ["C5", 1], ["D5", 1], ["F5", 2], ["E5", 2]], 0.48);
-  phrase(lead, 48, [["D5", 1], ["Eb5", 1], ["F5", 2], ["C#5", 2], ["A4", 2], ["C#5", 1], ["E5", 1], ["D5", 4], [null, 4]], 0.52);
-  [0, 15, 31, 47, 60].forEach((start, index) => chord(bell, index === 4 ? ["D5", "A5"] : ["A5", "D6"], start, 1.4, 0.2));
-  return { filename: "story-broken-axiom.mid", tempo: 70, title: "Undeniable Truth", tracks: [lead, harmony, bass, bell, arp] };
-}
+function gibDichZufriedenTheme() {
+  const melody = track("soft_organ_melody", 0, 19);
+  const bourdon = track("soft_organ_bourdon", 1, 19);
+  const bass = track("soft_organ_bass", 2, 19);
 
-function hallOfNamesTheme() {
-  const lead = track("breath_lead", 0, 75);
-  const harmony = track("warm_harmony", 1, 89);
-  const bass = track("triangle_bass", 2, 38);
-  const arp = track("square_arp", 3, 80);
-  const bell = track("crystal_bell", 4, 10);
-  const progression = [
-    ["A2", ["A3", "C4", "E4"]], ["D2", ["D3", "F#3", "A3"]],
-    ["G2", ["G3", "B3", "D4"]], ["E2", ["E3", "G3", "B3"]],
-    ["A2", ["A3", "C4", "E4"]], ["C3", ["C4", "E4", "G4"]],
-    ["D2", ["D3", "F#3", "A3"]], ["E2", ["E3", "G3", "B3"]],
-    ["F#2", ["F#3", "A3", "C4"]], ["G2", ["G3", "B3", "D4"]],
-    ["E2", ["E3", "G3", "B3"]], ["A2", ["A3", "C4", "E4"]],
-  ];
-  progression.forEach(([root, tones], bar) => {
-    const start = bar * 4;
-    chord(harmony, tones, start, 3.8, 0.22);
-    note(bass, root, start, 1.7, 0.4);
-    note(bass, pitch(tones[2]) - 12, start + 2, 1.6, 0.3);
-    const pattern = [tones[0], tones[1], tones[2], tones[1], tones[0], tones[2], tones[1], tones[2]];
-    pattern.forEach((tone, index) => note(arp, tone, start + index * 0.5, 0.32, 0.2));
-  });
-  phrase(lead, 0, [["E5", 1], ["A5", 2], ["G5", 1], ["F#5", 2], ["E5", 1], ["D5", 1], ["B4", 2], ["D5", 2], ["E5", 2], [null, 2]], 0.5);
-  phrase(lead, 16, [["C5", 1], ["E5", 1], ["A5", 2], ["G5", 1], ["E5", 1], ["D5", 2], ["F#5", 1], ["A5", 1], ["B5", 2], ["G5", 2], ["E5", 2]], 0.54);
-  phrase(lead, 32, [["F#5", 1], ["A5", 1], ["C6", 2], ["B5", 1], ["G5", 1], ["E5", 2], ["D5", 1], ["F#5", 1], ["E5", 2], ["C5", 2], ["A4", 2]], 0.52);
-  [0, 12, 24, 36, 44].forEach((start) => note(bell, "A5", start, 1.1, 0.2));
-  return { filename: "story-hall-of-names.mid", tempo: 82, title: "Pattern Without End", tracks: [lead, harmony, bass, arp, bell] };
+  for (let pass = 0; pass < 2; pass += 1) {
+    const offset = pass * BWV511_PASS_BEATS;
+    BWV511_MELODY.forEach(([value, start, duration]) => note(melody, value, offset + start, duration * .94, .48));
+    BWV511_BASS.forEach(([value, start, duration]) => note(bass, value, offset + start, duration * .94, .34));
+    [0, 8.5, 16.5, 24.5, 32.5].forEach((start, phraseIndex) => {
+      const duration = (phraseIndex === 4 ? BWV511_PASS_BEATS - start : 7.75);
+      chord(bourdon, ["G3", "D4"], offset + start, duration, .13);
+    });
+  }
+
+  return {
+    filename: "story-induction.mid",
+    tempo: 60,
+    title: "Gib dich zufrieden und sei stille · J. S. Bach",
+    tracks: [melody, bourdon, bass],
+  };
 }
 
 function variableLength(value) {
@@ -320,7 +229,7 @@ function encodeMidi(song) {
   return Buffer.concat([header, chunk("MTrk", tempoTrack), ...song.tracks.map(encodeTrack)]);
 }
 
-const songs = [titleTheme(), combatTheme(), brokenAxiomTheme(), hallOfNamesTheme()];
+const songs = [titleTheme(), gibDichZufriedenTheme()];
 await mkdir(OUTPUT_DIR, { recursive: true });
 await Promise.all(songs.map((song) => writeFile(resolve(OUTPUT_DIR, song.filename), encodeMidi(song))));
 console.log(`Generated ${songs.length} MIDI tracks in ${OUTPUT_DIR}`);
