@@ -6,6 +6,10 @@ LeanQuest is a browser-based proof game that teaches Lean through two parallel
 campaigns. Champions construct proof terms while Apprentices use tactics to defeat the
 same 50 theorem guardians.
 
+LeanQuest is an independent educational game based on the [Lean programming
+language](https://lean-lang.org). Lean is a trademark of Lean FRO, LLC. LeanQuest
+is not affiliated with or endorsed by Lean FRO.
+
 ## Requirements
 
 - Node.js 22

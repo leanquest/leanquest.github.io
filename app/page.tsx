@@ -715,7 +715,6 @@ export default function Home() {
                 <div><span>COMBAT MUSIC</span><strong>Susan Petcher</strong><small>© 2026 · <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a> · adapted with custom chiptune synthesis</small></div>
                 <div><span>PROGRAMMING &amp; ART</span><strong>GPT 5.6</strong></div>
               </div>
-
               <section className="credits-score" aria-labelledby="story-music-title">
                 <h3 id="story-music-title">Story Music</h3>
                 <div className="credits-story-list">
@@ -741,6 +740,9 @@ export default function Home() {
                 <a href="/music/LICENSE-COMBAT.md" target="_blank" rel="noreferrer">Combat music license</a>
                 <a href="/music/LICENSE-STORY.md" target="_blank" rel="noreferrer">Story music notice</a>
               </nav>
+              <p className="credits-lean-notice">
+                LeanQuest is an independent educational game based on the <a href="https://lean-lang.org" target="_blank" rel="noreferrer">Lean programming language</a>. Lean is a trademark of Lean FRO, LLC. LeanQuest is not affiliated with or endorsed by Lean FRO.
+              </p>
             </section>
           </div>
         )}

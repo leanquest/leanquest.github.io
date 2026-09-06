@@ -793,6 +793,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 .credits-team strong { display: block; margin-top: 9px; color: #ead99f; font: 700 15px/1.25 Georgia, serif; }
 .credits-team small { display: block; margin-top: 6px; color: #8f8a72; font-size: 7px; letter-spacing: .04em; }
 .credits-team small a, .credits-story small a { color: inherit; text-decoration: underline; }
+.credits-lean-notice { margin: 12px 3px 0; color: #817e6c; font: 8px/1.55 var(--font-geist-mono), "Courier New", monospace; letter-spacing: .02em; }
+.credits-lean-notice a { color: #aaa386; text-decoration: underline; }
 .credits-score { margin-top: 25px; padding-top: 21px; border-top: 1px solid #4b4d39; }
 .credits-score h3 { margin: 5px 0 14px; color: #dfc36e; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
 .credits-story-list { display: grid; gap: 7px; }
