@@ -1,3 +1,8 @@
+/*
+ * Copyright 2026 Adam Petcher (to the extent copyright subsists)
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 @import "tailwindcss";
 
 :root {
@@ -142,7 +147,7 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   width: 30px;
   height: 31px;
   display: block;
-  background-image: url("/assets/classes-v2.png");
+  background-image: url("/assets/cc0_images/classes-v2.png");
   background-size: 200% 100%;
   background-repeat: no-repeat;
   background-color: #000;
@@ -162,7 +167,7 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   height: 100%;
   position: relative;
   overflow: hidden;
-  background: #0b0d09 url("/assets/dungeon-background.png") center 58% / cover no-repeat;
+  background: #0b0d09 url("/assets/cc0_images/dungeon-background.png") center 58% / cover no-repeat;
 }
 .dungeon-view::after {
   content: "";
@@ -201,7 +206,7 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   width: min(92%, 315px);
   aspect-ratio: 1;
   margin-bottom: 2%;
-  background-image: url("/assets/monsters.png");
+  background-image: url("/assets/cc0_images/monsters.png");
   background-repeat: no-repeat;
   background-size: 500% 200%;
   image-rendering: pixelated;
@@ -251,7 +256,7 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   display: block;
   width: 100%;
   height: 100%;
-  background: url("/assets/dungeon-torch.png") center / contain no-repeat;
+  background: url("/assets/cc0_images/dungeon-torch.png") center / contain no-repeat;
   image-rendering: pixelated;
   transform-origin: 50% 36%;
   animation: torchFlicker .48s steps(2, end) infinite;
@@ -290,7 +295,7 @@ code, pre, kbd { font-family: var(--font-geist-mono), "Courier New", monospace; 
   width: 49px;
   height: 49px;
   flex: 0 0 auto;
-  background-image: url("/assets/classes-v2.png");
+  background-image: url("/assets/cc0_images/classes-v2.png");
   background-size: 200% 100%;
   background-repeat: no-repeat;
   background-color: #000;
@@ -731,8 +736,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   justify-items: center;
   gap: clamp(10px, 2vh, 20px);
 }
-.title-heading { display: flex; align-items: center; justify-content: center; gap: 14px; }
-.title-heading .brand-mark { flex: 0 0 auto; }
+.title-heading { text-align: center; }
 .title-heading h1 {
   margin: 0;
   color: #f1dda0;
@@ -788,6 +792,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 .credits-team span, .credits-story span { display: block; color: #8b866e; font-size: 7px; font-weight: 800; letter-spacing: .12em; }
 .credits-team strong { display: block; margin-top: 9px; color: #ead99f; font: 700 15px/1.25 Georgia, serif; }
 .credits-team small { display: block; margin-top: 6px; color: #8f8a72; font-size: 7px; letter-spacing: .04em; }
+.credits-team small a, .credits-story small a { color: inherit; text-decoration: underline; }
 .credits-score { margin-top: 25px; padding-top: 21px; border-top: 1px solid #4b4d39; }
 .credits-score h3 { margin: 5px 0 14px; color: #dfc36e; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
 .credits-story-list { display: grid; gap: 7px; }
@@ -797,6 +802,9 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 .credits-story cite { font-style: italic; }
 .credits-story small { display: block; margin-top: 3px; color: #969078; font: 8px/1.4 var(--font-geist-mono), "Courier New", monospace; letter-spacing: .04em; }
 .credits-music-license { margin: 12px 4px 0; color: #969078; font: 8px/1.5 var(--font-geist-mono), "Courier New", monospace; letter-spacing: .03em; }
+.credits-legal { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 18px; padding-top: 15px; border-top: 1px solid #353727; }
+.credits-legal a { color: #aaa386; font-size: 8px; letter-spacing: .05em; text-decoration: underline; }
+.credits-legal a:hover { color: #e4cd7d; }
 
 @keyframes titleFrameOne { 0%, 59.999% { opacity: 1; } 60%, 100% { opacity: 0; } }
 @keyframes titleFrameTwo { 0%, 59.999% { opacity: 0; } 60%, 100% { opacity: 1; } }
@@ -969,7 +977,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   height: auto;
   min-height: 100%;
   aspect-ratio: 1;
-  background-image: url("/assets/classes-v2.png");
+  background-image: url("/assets/cc0_images/classes-v2.png");
   background-size: auto 90%;
   background-repeat: no-repeat;
   background-color: #000;
@@ -1017,7 +1025,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 }
 .lesson-class-art {
   min-height: 400px;
-  background-image: url("/assets/classes-v2.png");
+  background-image: url("/assets/cc0_images/classes-v2.png");
   background-size: 200% auto;
   background-repeat: no-repeat;
   background-color: #000;
@@ -1082,8 +1090,6 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   .screen-music-control { top: 10px; right: 12px; }
   .title-screen { min-height: 500px; padding: 8px; }
   .title-card { height: calc(100dvh - 16px); min-height: 484px; gap: 8px; }
-  .title-heading { gap: 8px; }
-  .title-heading .brand-mark { width: 36px; height: 36px; }
   .title-heading h1 { font-size: clamp(25px, 9vw, 38px); text-shadow: 3px 3px #050604; }
   .title-vignette { box-shadow: inset 0 0 38px 8px rgba(0,0,0,.62); }
   .title-actions { gap: 3px; }

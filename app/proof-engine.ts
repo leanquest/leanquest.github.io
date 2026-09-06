@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 import { unlockedMoves, type HeroClass, type MoveId } from "./curriculum.ts";
 import { tacticManaCost } from "./game-balance.ts";
 import {

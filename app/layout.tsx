@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
@@ -30,19 +33,19 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       "Choose Champion or Apprentice and battle through 55 paired Lean proof lessons using terms or tactics.",
     icons: {
-      icon: "/favicon.svg",
-      shortcut: "/favicon.svg",
+    icon: "/assets/cc0_images/favicon.svg",
+    shortcut: "/assets/cc0_images/favicon.svg",
     },
     openGraph: {
       title: "LeanQuest",
       description: "Choose your proof path and defeat 55 dungeon guardians with Lean.",
-      images: [{ url: `${origin}/og.png`, width: 1536, height: 1024 }],
+      images: [{ url: `${origin}/assets/cc0_images/og.png`, width: 1536, height: 1024 }],
     },
     twitter: {
       card: "summary_large_image",
       title: "LeanQuest — The Proof Dungeon",
       description: "Master term or tactic proofs across two complete dungeon campaigns.",
-      images: [`${origin}/og.png`],
+      images: [`${origin}/assets/cc0_images/og.png`],
     },
   };
 }

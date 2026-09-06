@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 const CC0_URL = "https://creativecommons.org/publicdomain/zero/1.0/";
 
 function publicDomainAdaptationNotice(composer) {

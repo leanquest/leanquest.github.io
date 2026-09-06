@@ -11,4 +11,4 @@ These works are licensed under the [Creative Commons Attribution-NonCommercial 4
 
 Suggested attribution:
 
-> “Battle Moosak” and “Triumph” by Susan Petcher, © 2026, licensed under CC BY-NC 4.0.
+> “Battle Moosak” and “Triumph” by Susan Petcher, © 2026, licensed under CC BY-NC 4.0. Adapted for LeanQuest’s chiptune soundtrack.

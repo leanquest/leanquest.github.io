@@ -1,3 +1,5 @@
+<!-- Copyright 2026 Adam Petcher (to the extent copyright subsists); SPDX-License-Identifier: Apache-2.0 -->
+
 # Project Instructions
 
 - Do not develop code for backward compatibility or migration.

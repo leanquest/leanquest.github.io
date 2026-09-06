@@ -1,18 +1,22 @@
 {
   "name": "leanquest",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "private": true,
   "engines": {
     "node": "22.x"
   },
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run licenses:generate",
     "build": "next build",
     "start": "next start",
     "test": "npm run build && node --experimental-strip-types --experimental-specifier-resolution=node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern .next",
+    "images:license": "node scripts/embed-cc0-image-license.mjs",
     "music:generate": "node scripts/generate-music.mjs && node scripts/embed-story-music-license.mjs",
-    "music:license": "node scripts/embed-combat-music-license.mjs && node scripts/embed-story-music-license.mjs"
+    "music:license": "node scripts/embed-combat-music-license.mjs && node scripts/embed-story-music-license.mjs",
+    "licenses:generate": "node scripts/generate-third-party-notices.mjs"
   },
   "dependencies": {
     "@tonejs/midi": "^2.0.28",

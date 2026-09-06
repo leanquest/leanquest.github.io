@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";

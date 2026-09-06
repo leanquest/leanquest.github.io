@@ -1,0 +1,15 @@
+<!-- Copyright: No copyright claimed. To the extent LeanQuest contributors hold any copyright or related rights in this image, those rights are waived under CC0 1.0 Universal. -->
+<!-- License: https://creativecommons.org/publicdomain/zero/1.0/ -->
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<metadata><rdf:RDF><cc:Work rdf:about=""><dc:rights>No copyright claimed. To the extent LeanQuest contributors hold any copyright or related rights in this image, those rights are waived under CC0 1.0 Universal.</dc:rights><cc:license rdf:resource="https://creativecommons.org/publicdomain/zero/1.0/" /></cc:Work></rdf:RDF></metadata>
+<rect x="2" y="2" width="28" height="28" rx="4" fill="#0B0E0B" stroke="#705D2C" stroke-width="2"/>
+<!-- A squat, crenellated tower in the dark. -->
+<path d="M10 8H14V5H18V8H22V5H25V28H10V8Z" fill="#3C4339"/>
+<path d="M10 13H23V28H10V13Z" fill="#2D332B"/>
+<path d="M10 12H25V15H10V12ZM10 25H25V28H10V25Z" fill="#4A5245"/>
+<path d="M20 17H23V19H20V17ZM16 22H19V25H16V22Z" fill="#171B16"/>
+<!-- An illuminated capital Gamma set into the tower face. -->
+<path d="M10 9H24V14H15V25H10V9Z" fill="#806724" opacity=".8"/>
+<path d="M10 8H24V12H14V25H10V8Z" fill="#F0D67E"/>
+<path d="M12 10H22V11H13V23H12V10Z" fill="#FFF0AF"/>
+</svg>

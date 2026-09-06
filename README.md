@@ -1,3 +1,5 @@
+<!-- Copyright 2026 Adam Petcher (to the extent copyright subsists); SPDX-License-Identifier: Apache-2.0 -->
+
 # LeanQuest
 
 LeanQuest is a browser-based proof game that teaches Lean through two parallel
@@ -48,6 +50,12 @@ The combat compositions “Battle Moosak” (`public/music/battle.mid`) and “T
 (`public/music/victory.mid`) are supplied separately and are not overwritten by
 that command.
 
+## Image assets
+
+The images currently distributed with the game, including the favicon, are in
+`public/assets/cc0_images/` and covered by the notice in that directory. Images added under other licenses
+should be kept outside that directory with their own license notices.
+
 ## Saved progress
 
 Campaign progress is stored in the browser's `localStorage` under
@@ -68,3 +76,17 @@ leave the build command and output directory at their framework defaults.
 Branch pushes produce preview deployments, while the configured production
 branch produces the production deployment. No environment variables or
 external storage services are currently required.
+
+## License
+
+To the extent copyright subsists, copyright 2026 Adam Petcher. The source code, configuration, tests, scripts, and
+documentation are licensed under the [Apache License 2.0](./LICENSE).
+
+The image and music assets are excluded from the Apache license and carry their
+own notices in [`public/assets/cc0_images/`](./public/assets/cc0_images/LICENSE.md)
+and [`public/music/`](./public/music/README.md).
+
+Third-party software and font licenses are collected in
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md). Deployments expose the
+Apache license and third-party notices under `/legal/` and link them from the
+in-game Credits panel.

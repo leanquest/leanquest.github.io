@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -257,12 +260,18 @@ test("class-aware story sequences are placed and rendered entirely from curricul
   const level55Index = curriculum.findIndex((entry) => entry.kind === "level" && entry.id === 55);
   assert.equal(curriculum[level55Index + 1].id, "the-rescue-apprentice");
   assert.equal(curriculum[level55Index + 2].id, "the-rescue-champion");
+  for (const rescueStory of curriculum.slice(level55Index + 1, level55Index + 3)) {
+    assert.equal(rescueStory.panels.length, 4);
+    assert.equal(rescueStory.panels.at(-1).title, "The End");
+    assert.equal(rescueStory.panels.at(-1).completionAction, "return-to-title");
+    assert.equal(rescueStory.panels.at(-1).layers[0].frames[0], "/assets/cc0_images/story/the-end.png");
+  }
 
   assert.equal(storySequences.length, 5);
   for (const story of storySequences) {
     for (const panel of story.panels) {
       for (const layer of panel.layers) {
-        for (const frame of layer.frames) assert.match(frame, /^\/assets\/story\/.+\.png$/);
+        for (const frame of layer.frames) assert.match(frame, /^\/assets\/cc0_images\/story\/.+\.png$/);
       }
     }
   }

@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 import { selectionsForLevel } from "./intended-selections.ts";
 
 export type HeroClass = "champion" | "apprentice";
@@ -209,6 +212,7 @@ export type StoryPanel = {
   title: string;
   text: string[];
   layers: StoryImageLayer[];
+  completionAction?: "return-to-title";
 };
 
 export type StorySequence = {
@@ -1149,7 +1153,7 @@ const openingStory: StorySequence = {
         "For longer than scribes could record, humankind existed in uneasy harmony with the denizens of the land. Beasts could be harnessed for work, while the foul creatures could be kept at bay with walls and swords.",
       ],
       layers: [
-        { id: "old-balance", frames: ["/assets/story/old-balance.png"], alt: "A walled city and its farms bordering a forest filled with foul creatures" },
+        { id: "old-balance", frames: ["/assets/cc0_images/story/old-balance.png"], alt: "A walled city and its farms bordering a forest filled with foul creatures" },
       ],
     },
     {
@@ -1158,7 +1162,7 @@ const openingStory: StorySequence = {
         "Then a new threat appeared from the dark places beyond the walls. Walls and armies could not defend against this new enemy of unmatched strength and cunning. Swords struck in vain upon an enemy with no weakness, and so the threat was named: The Hollow.",
       ],
       layers: [
-        { id: "rising-challenge", frames: ["/assets/story/rising-challenge.png"], alt: "The Hollow breaking through a city wall while soldiers' swords prove useless" },
+        { id: "rising-challenge", frames: ["/assets/cc0_images/story/rising-challenge.png"], alt: "The Hollow breaking through a city wall while soldiers' swords prove useless" },
       ],
     },
     {
@@ -1168,7 +1172,7 @@ const openingStory: StorySequence = {
         "The wizard wrote to his apprentice, describing the basics of this system. He also imbued a sword with the essence of this magic, and had it sent to a nearby champion.",
       ],
       layers: [
-        { id: "the-weapon", frames: ["/assets/story/the-weapon.png"], alt: "A great wizard writing in a journal while enchanting a sword" },
+        { id: "the-weapon", frames: ["/assets/cc0_images/story/the-weapon.png"], alt: "A great wizard writing in a journal while enchanting a sword" },
       ],
     },
     {
@@ -1177,16 +1181,16 @@ const openingStory: StorySequence = {
         "As the wizard continued to develop his weapon, The Hollow reached his city. The walls fell, and the wizard was taken captive. The Hollow, hoping to use his power for their own ends, imprisoned him at the top of a dark tower.",
       ],
       layers: [
-        { id: "the-downfall", frames: ["/assets/story/the-downfall.png"], alt: "The Hollow taking the wizard toward a dark tower as the city burns" },
+        { id: "the-downfall", frames: ["/assets/cc0_images/story/the-downfall.png"], alt: "The Hollow taking the wizard toward a dark tower as the city burns" },
       ],
     },
     {
       title: "The Quest",
       text: [
-        "News of the capture reached our heroes shortly after they received their weapons against the Hollow. Empowered by resolve and their new weapons, they both set out alone to rescue the great wizard.",
+        "News of the capture reached the apprentice and the champion shortly after they received their weapons against the Hollow. Empowered by resolve, they both set out alone to rescue the great wizard.",
       ],
       layers: [
-        { id: "the-quest", frames: ["/assets/story/the-quest.png"], alt: "The apprentice and champion following separate roads toward the dark tower" },
+        { id: "the-quest", frames: ["/assets/cc0_images/story/the-quest.png"], alt: "The apprentice and champion following separate roads toward the dark tower" },
       ],
     },
   ],
@@ -1205,7 +1209,7 @@ const apprenticeInductionStory: StorySequence = {
         "As he closed the journal and approached the next chamber, he was seized by revelation. As he uttered the word, it echoed faintly in the narrow hall: \"Induction.\"",
       ],
       layers: [
-        { id: "induction-apprentice", frames: ["/assets/story/induction-apprentice.png"], alt: "The apprentice discovering induction while ascending the tower" },
+        { id: "induction-apprentice", frames: ["/assets/cc0_images/story/induction-apprentice.png"], alt: "The apprentice discovering induction while ascending the tower" },
       ],
     },
   ],
@@ -1220,11 +1224,11 @@ const championInductionStory: StorySequence = {
     {
       title: "The Sword's Purpose",
       text: [
-        "The champion cleaned her blade as she traversed the corridor into the next chamber. As she held it aloft, she pictured the endless horde of The Hollow arranged in a neat structure, and cutting them down with a few strokes.",
+        "The champion cleaned her blade as she traversed the corridor into the next chamber. As she held it aloft, she pictured the endless horde of The Hollow arranged in a neat structure as she cut them down with a few strokes.",
         "The wizard imbued great power into the sword, and she now understood what she must do.",
       ],
       layers: [
-        { id: "induction-champion", frames: ["/assets/story/induction-champion.png"], alt: "The champion understanding the inductive power of her enchanted sword" },
+        { id: "induction-champion", frames: ["/assets/cc0_images/story/induction-champion.png"], alt: "The champion understanding the inductive power of her enchanted sword" },
       ],
     },
   ],
@@ -1244,7 +1248,7 @@ function rescueStory(hero: HeroClass): StorySequence {
           "\"I knew you would come,\" he groaned as he slowly rose and walked toward the door.",
         ],
         layers: [
-          { id: "rescue-the-door", frames: ["/assets/story/rescue-the-door.png"], alt: "The captive wizard illuminated by the opening chamber door" },
+          { id: "rescue-the-door", frames: ["/assets/cc0_images/story/rescue-the-door.png"], alt: "The captive wizard illuminated by the opening chamber door" },
         ],
       },
       {
@@ -1254,7 +1258,7 @@ function rescueStory(hero: HeroClass): StorySequence {
           "The reflection of a torch flashed across the wizard's eye as he descended the staircase.",
         ],
         layers: [
-          { id: "rescue-the-descent", frames: ["/assets/story/rescue-the-descent.png"], alt: "The freed wizard descending the tower as torchlight flashes across his eye" },
+          { id: "rescue-the-descent", frames: ["/assets/cc0_images/story/rescue-the-descent.png"], alt: "The freed wizard descending the tower as torchlight flashes across his eye" },
         ],
       },
       {
@@ -1264,8 +1268,19 @@ function rescueStory(hero: HeroClass): StorySequence {
           "\"Don't worry,\" he said coarsely. Then the wizard spoke, and the sound of undeniable truth filled the tower. The Hollow collapsed where they stood, and the path was clear.",
         ],
         layers: [
-          { id: "rescue-undeniable-truth", frames: ["/assets/story/rescue-undeniable-truth.png"], alt: "The wizard speaking undeniable truth as The Hollow collapse throughout the corridor" },
+          { id: "rescue-undeniable-truth", frames: ["/assets/cc0_images/story/rescue-undeniable-truth.png"], alt: "The wizard speaking undeniable truth as The Hollow collapse throughout the corridor" },
         ],
+      },
+      {
+        title: "The End",
+        text: [
+          "The wizard emerged from the tower as the first light broke across the land. Behind him, the last echoes of The Hollow faded.",
+          "Before him, the world awoke to a new dawn.",
+        ],
+        layers: [
+          { id: "the-end", frames: ["/assets/cc0_images/story/the-end.png"], alt: "The rescued wizard emerging from the dark tower into the light of sunrise" },
+        ],
+        completionAction: "return-to-title",
       },
     ],
   };

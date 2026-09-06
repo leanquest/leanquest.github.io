@@ -1,3 +1,6 @@
+// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// SPDX-License-Identifier: Apache-2.0
+
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -123,7 +126,7 @@ function monsterVisual(monster: MonsterSpec, hero: HeroClass) {
   const filter = `hue-rotate(${monster.hueShift[hero]}deg) saturate(${hero === "apprentice" ? 1.08 : 1}) drop-shadow(10px 12px 0 rgba(0,0,0,.7))`;
   if ("image" in monster.sprite) {
     return {
-      backgroundImage: `url("/assets/${monster.sprite.image}")`,
+      backgroundImage: `url("/assets/cc0_images/${monster.sprite.image}")`,
       backgroundPosition: "center",
       backgroundSize: "contain",
       filter,
@@ -134,7 +137,7 @@ function monsterVisual(monster: MonsterSpec, hero: HeroClass) {
   const x = [0, 25, 50, 75, 100][cell % 5];
   const y = cell < 5 ? 0 : 100;
   return {
-    backgroundImage: `url("/assets/${sheet}")`,
+    backgroundImage: `url("/assets/cc0_images/${sheet}")`,
     backgroundPosition: `${x}% ${y}%`,
     filter,
   };
@@ -598,6 +601,22 @@ export default function Home() {
     arriveAfterStory(destination);
   }
 
+  function finishStoryAtTitle() {
+    if (!activeStory) return;
+    setSave((current) => ({
+      ...current,
+      seenStories: current.seenStories.includes(activeStory.id)
+        ? current.seenStories
+        : [...current.seenStories, activeStory.id],
+    }));
+    setStoryQueue([]);
+    setStoryPanelIndex(0);
+    setStoryDestination(null);
+    setShowMap(false);
+    setShowCharacterSelect(false);
+    setShowTitle(true);
+  }
+
   function nextStoryPanel() {
     if (!activeStory) return;
     if (storyPanelIndex < activeStory.panels.length - 1) {
@@ -668,12 +687,11 @@ export default function Home() {
         <div className="screen-music-control"><MusicControls {...music} /></div>
         <section className="title-card" aria-labelledby="game-title">
           <div className="title-heading">
-            <span className="brand-mark" aria-hidden="true">λ</span>
             <h1 id="game-title">LEANQUEST</h1>
           </div>
           <div className="title-art pixel-frame" role="img" aria-label="An endless stone staircase climbing toward a distant golden light">
-            <Image className="title-frame title-frame-1" src="/assets/title/infinite-stair-1.png" alt="" fill priority sizes="(max-width: 650px) 100vw, 820px" />
-            <Image className="title-frame title-frame-2" src="/assets/title/infinite-stair-2.png" alt="" fill sizes="(max-width: 650px) 100vw, 820px" />
+            <Image className="title-frame title-frame-1" src="/assets/cc0_images/title/infinite-stair-1.png" alt="" fill priority sizes="(max-width: 650px) 100vw, 820px" />
+            <Image className="title-frame title-frame-2" src="/assets/cc0_images/title/infinite-stair-2.png" alt="" fill sizes="(max-width: 650px) 100vw, 820px" />
             <div className="title-vignette" aria-hidden="true" />
           </div>
           <div className="title-actions">
@@ -694,7 +712,7 @@ export default function Home() {
 
               <div className="credits-team">
                 <div><span>GAME DESIGN</span><strong>Adam Petcher</strong></div>
-                <div><span>COMBAT MUSIC</span><strong>Susan Petcher</strong><small>© 2026 · CC BY-NC 4.0</small></div>
+                <div><span>COMBAT MUSIC</span><strong>Susan Petcher</strong><small>© 2026 · <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noreferrer">CC BY-NC 4.0</a> · adapted with custom chiptune synthesis</small></div>
                 <div><span>PROGRAMMING &amp; ART</span><strong>GPT 5.6</strong></div>
               </div>
 
@@ -703,7 +721,7 @@ export default function Home() {
                 <div className="credits-story-list">
                   <article className="credits-story">
                     <div><strong>Intro</strong></div>
-                    <p><cite>Ave Verum Corpus</cite><small>William Byrd</small></p>
+                    <p><cite>Ave Verum Corpus</cite><small>William Byrd · LeanQuest transcription checked against <a href="https://stcpress.org/pieces/ave_verum_corpus" target="_blank" rel="noreferrer">Monique Rio’s CC BY 4.0 edition</a></small></p>
                   </article>
                   <article className="credits-story">
                     <div><strong>Interlude</strong></div>
@@ -716,6 +734,13 @@ export default function Home() {
                 </div>
                 <p className="credits-music-license">Underlying compositions are public domain. LeanQuest MIDI adaptations are released under CC0 1.0.</p>
               </section>
+              <nav className="credits-legal" aria-label="Legal notices">
+                <a href="/legal/APACHE-2.0.txt" target="_blank" rel="noreferrer">LeanQuest source license</a>
+                <a href="/legal/THIRD_PARTY_NOTICES.txt" target="_blank" rel="noreferrer">Third-party licenses</a>
+                <a href="/assets/cc0_images/LICENSE.md" target="_blank" rel="noreferrer">Image license</a>
+                <a href="/music/LICENSE-COMBAT.md" target="_blank" rel="noreferrer">Combat music license</a>
+                <a href="/music/LICENSE-STORY.md" target="_blank" rel="noreferrer">Story music notice</a>
+              </nav>
             </section>
           </div>
         )}
@@ -751,9 +776,16 @@ export default function Home() {
             <div className="story-text">{activeStoryPanel.text.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>
             <div className="story-actions">
               <button onClick={() => setStoryPanelIndex((index) => Math.max(0, index - 1))} disabled={storyPanelIndex === 0}>◀ BACK</button>
-              <button className="story-skip" onClick={skipStories}>SKIP STORY</button>
-              <button className="primary-button" onClick={nextStoryPanel}>
-                {storyPanelIndex === activeStory.panels.length - 1 ? "CONTINUE" : "NEXT"} ▶
+              {activeStoryPanel.completionAction === "return-to-title"
+                ? <span aria-hidden="true" />
+                : <button className="story-skip" onClick={skipStories}>SKIP STORY</button>}
+              <button
+                className="primary-button"
+                onClick={activeStoryPanel.completionAction === "return-to-title" ? finishStoryAtTitle : nextStoryPanel}
+              >
+                {activeStoryPanel.completionAction === "return-to-title"
+                  ? "RETURN TO TITLE"
+                  : `${storyPanelIndex === activeStory.panels.length - 1 ? "CONTINUE" : "NEXT"} ▶`}
               </button>
             </div>
           </div>
