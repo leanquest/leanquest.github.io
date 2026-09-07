@@ -54,7 +54,8 @@ devices, and is removed when that browser's site data is cleared.
 LeanQuest is statically exported and hosted at
 [leanquest.github.io](https://leanquest.github.io/) using GitHub Pages. The
 workflow in `.github/workflows/deploy-pages.yml` builds and deploys the site
-whenever `main` is pushed, and can also be run manually from the Actions tab.
+when a GitHub Release is published. The released tag is checked out explicitly,
+so pushes to `main` do not change the live site.
 
 In the repository's GitHub settings, Pages must use **GitHub Actions** as its
 source. No environment variables, server runtime, or external storage services
