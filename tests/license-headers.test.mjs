@@ -19,7 +19,7 @@ const EXCLUDED_FILES = new Set([
   "public/music/LICENSE-STORY.md",
   "public/legal/THIRD_PARTY_NOTICES.txt",
 ]);
-const EXCLUDED_DIRECTORIES = new Set([".agents", ".codex", ".git", ".next", "cc0_images", "node_modules"]);
+const EXCLUDED_DIRECTORIES = new Set([".agents", ".codex", ".git", ".next", "cc0_images", "node_modules", "out"]);
 
 async function sourceFiles(directory = ".") {
   const files = [];

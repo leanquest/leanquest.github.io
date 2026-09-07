@@ -10,7 +10,7 @@
     "dev": "next dev",
     "prebuild": "npm run licenses:generate",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/serve-static.mjs",
     "test": "npm run build && node --experimental-strip-types --experimental-specifier-resolution=node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern .next",
     "images:license": "node scripts/embed-cc0-image-license.mjs",

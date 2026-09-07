@@ -72,14 +72,14 @@ devices, and is removed when that browser's site data is cleared.
 
 ## Deployment
 
-LeanQuest is configured as a standard Next.js application for deployment from
-a GitHub repository to Vercel. Import the repository as a new Vercel project,
-select the Next.js framework preset if it is not detected automatically, and
-leave the build command and output directory at their framework defaults.
+LeanQuest is statically exported and hosted at
+[leanquest.github.io](https://leanquest.github.io/) using GitHub Pages. The
+workflow in `.github/workflows/deploy-pages.yml` builds and deploys the site
+whenever `main` is pushed, and can also be run manually from the Actions tab.
 
-Branch pushes produce preview deployments, while the configured production
-branch produces the production deployment. No environment variables or
-external storage services are currently required.
+In the repository's GitHub settings, Pages must use **GitHub Actions** as its
+source. No environment variables, server runtime, or external storage services
+are required.
 
 ## License
 

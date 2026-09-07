@@ -3,7 +3,6 @@
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { headers } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,39 +15,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ??
-    requestHeaders.get("host") ??
-    "localhost:3000";
-  const protocol =
-    requestHeaders.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https");
-  const origin = `${protocol}://${host}`;
-
-  return {
-    metadataBase: new URL(origin),
-    title: "LeanQuest — The Proof Dungeon",
-    description:
-      "Choose Champion or Apprentice and battle through 55 paired Lean proof lessons using terms or tactics.",
-    icons: {
+export const metadata: Metadata = {
+  metadataBase: new URL("https://leanquest.github.io"),
+  title: "LeanQuest — The Proof Dungeon",
+  description:
+    "Choose Champion or Apprentice and battle through 55 paired Lean proof lessons using terms or tactics.",
+  icons: {
     icon: "/assets/cc0_images/favicon.svg",
     shortcut: "/assets/cc0_images/favicon.svg",
-    },
-    openGraph: {
-      title: "LeanQuest",
-      description: "Choose your proof path and defeat 55 dungeon guardians with Lean.",
-      images: [{ url: `${origin}/assets/cc0_images/og.png`, width: 1536, height: 1024 }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: "LeanQuest — The Proof Dungeon",
-      description: "Master term or tactic proofs across two complete dungeon campaigns.",
-      images: [`${origin}/assets/cc0_images/og.png`],
-    },
-  };
-}
+  },
+  openGraph: {
+    title: "LeanQuest",
+    description: "Choose your proof path and defeat 55 dungeon guardians with Lean.",
+    images: [{ url: "/assets/cc0_images/og.png", width: 1536, height: 1024 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeanQuest — The Proof Dungeon",
+    description: "Master term or tactic proofs across two complete dungeon campaigns.",
+    images: ["/assets/cc0_images/og.png"],
+  },
+};
 
 export default function RootLayout({
   children,
