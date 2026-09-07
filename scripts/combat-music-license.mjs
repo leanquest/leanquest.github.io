@@ -1,4 +1,4 @@
-// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// Copyright 2026 Adam Petcher
 // SPDX-License-Identifier: Apache-2.0
 
 const LICENSE = "Copyright 2026 Susan Petcher. Licensed under CC BY-NC 4.0. https://creativecommons.org/licenses/by-nc/4.0/";

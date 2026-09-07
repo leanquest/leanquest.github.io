@@ -1,10 +1,8 @@
-<!-- Copyright 2026 Adam Petcher (to the extent copyright subsists); SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Adam Petcher; SPDX-License-Identifier: Apache-2.0 -->
 
 # LeanQuest
 
-LeanQuest is a browser-based proof game that teaches Lean through two parallel
-campaigns. Champions construct proof terms while Apprentices use tactics to defeat the
-same 50 theorem guardians.
+LeanQuest is a browser-based game where the player constructs proofs in Lean to defeat monsters. Players will learn the basics of machine-checked proofs, terms as proofs, induction, and Lean terms and tactics. The game is intended to be a fun (and sometimes challenging) introduction to machine-checked proofs, but not really a Lean tutorial.
 
 LeanQuest is an independent educational game based on the [Lean programming
 language](https://lean-lang.org). Lean is a trademark of Lean FRO, LLC. LeanQuest
@@ -39,26 +37,7 @@ npm run lint
 
 `npm test` creates a production Next.js build, checks every intended proof
 route and game-balance constraint, validates the MIDI assets, and verifies that
-the built application can server-render.
-
-## Music
-
-The browser renders the MIDI files in `public/music/` through Tone.js. To
-regenerate the arrangements and original compositions produced by the project script, run:
-
-```bash
-npm run music:generate
-```
-
-The combat compositions “Battle Moosak” (`public/music/battle.mid`) and “Triumph”
-(`public/music/victory.mid`) are supplied separately and are not overwritten by
-that command.
-
-## Image assets
-
-The images currently distributed with the game, including the favicon, are in
-`public/assets/cc0_images/` and covered by the notice in that directory. Images added under other licenses
-should be kept outside that directory with their own license notices.
+the built application produces a valid static export.
 
 ## Saved progress
 
@@ -83,7 +62,7 @@ are required.
 
 ## License
 
-To the extent copyright subsists, copyright 2026 Adam Petcher. The source code, configuration, tests, scripts, and
+Copyright 2026 Adam Petcher. The source code, configuration, tests, scripts, and
 documentation are licensed under the [Apache License 2.0](./LICENSE).
 
 The image and music assets are excluded from the Apache license and carry their

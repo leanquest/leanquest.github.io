@@ -1,4 +1,4 @@
-// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// Copyright 2026 Adam Petcher
 // SPDX-License-Identifier: Apache-2.0
 
 export type IntendedSelections = { champion: readonly string[]; apprentice: readonly string[] };

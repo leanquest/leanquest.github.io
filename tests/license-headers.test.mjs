@@ -1,4 +1,4 @@
-// Copyright 2026 Adam Petcher (to the extent copyright subsists)
+// Copyright 2026 Adam Petcher
 // SPDX-License-Identifier: Apache-2.0
 
 import assert from "node:assert/strict";
@@ -6,7 +6,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { extname, join } from "node:path";
 import test from "node:test";
 
-const HEADER_TEXT = "Copyright 2026 Adam Petcher (to the extent copyright subsists)";
+const HEADER_TEXT = "Copyright 2026 Adam Petcher";
 const SPDX_TEXT = "SPDX-License-Identifier: Apache-2.0";
 const SOURCE_EXTENSIONS = new Set([".css", ".lean", ".md", ".mjs", ".sh", ".svg", ".ts", ".tsx"]);
 const EXCLUDED_FILES = new Set([
