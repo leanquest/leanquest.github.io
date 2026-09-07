@@ -736,7 +736,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   justify-items: center;
   gap: clamp(10px, 2vh, 20px);
 }
-.title-heading { text-align: center; }
+.title-heading { display: flex; align-items: baseline; justify-content: center; gap: 10px; text-align: center; }
 .title-heading h1 {
   margin: 0;
   color: #f1dda0;
@@ -744,6 +744,22 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   letter-spacing: .13em;
   text-shadow: 5px 5px #050604, 0 0 18px rgba(205,159,53,.25);
 }
+.title-beta {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: nowrap;
+}
+.title-beta, .title-credits {
+  color: #8f927d;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-decoration: underline;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.title-beta:hover, .title-credits:hover { color: #e4cd7d; }
 .title-art {
   position: relative;
   width: auto;
@@ -764,15 +780,22 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   padding: 5px 14px;
   border: 0;
   background: transparent;
-  color: #8f927d;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: .16em;
-  text-decoration: underline;
-  text-transform: uppercase;
-  cursor: pointer;
 }
-.title-credits:hover { color: #e4cd7d; }
+
+.status-backdrop { z-index: 100; background: rgba(0,0,0,.9); }
+.status-modal {
+  width: min(520px, 100%);
+  padding: clamp(20px, 4vw, 34px);
+  background:
+    linear-gradient(rgba(25,29,21,.98), rgba(11,13,9,.99)),
+    repeating-linear-gradient(45deg, #282c20 0 3px, #171a13 3px 6px);
+}
+.status-header { display: flex; align-items: start; justify-content: space-between; gap: 20px; }
+.status-header h2 { margin: 5px 0 0; color: #f0dda0; font-size: clamp(25px, 5vw, 40px); letter-spacing: .12em; text-shadow: 3px 3px #070806; }
+.status-header .close-button { flex: 0 0 auto; }
+.status-description { margin: 24px 0 16px; color: #d9cca3; font: 700 clamp(15px, 3vw, 18px)/1.5 Georgia, serif; }
+.status-repository { color: #d9b954; font-size: 9px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.status-repository:hover { color: #ffe08a; }
 
 .credits-backdrop { z-index: 100; background: rgba(0,0,0,.9); }
 .credits-modal {
@@ -1093,6 +1116,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   .title-screen { min-height: 500px; padding: 8px; }
   .title-card { height: calc(100dvh - 16px); min-height: 484px; gap: 8px; }
   .title-heading h1 { font-size: clamp(25px, 9vw, 38px); text-shadow: 3px 3px #050604; }
+  .title-heading { gap: 7px; }
+  .title-beta { font-size: 6px; }
   .title-vignette { box-shadow: inset 0 0 38px 8px rgba(0,0,0,.62); }
   .title-actions { gap: 3px; }
   .title-continue { min-height: 42px; font-size: 8px; }

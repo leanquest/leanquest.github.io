@@ -163,6 +163,7 @@ export default function Home() {
   const [save, setSave] = useState<SaveData>(emptySave);
   const [heroClass, setHeroClass] = useState<HeroClass | null>(null);
   const [showTitle, setShowTitle] = useState(true);
+  const [showBetaStatus, setShowBetaStatus] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   const [showCharacterSelect, setShowCharacterSelect] = useState(false);
   const [levelIndex, setLevelIndex] = useState(0);
@@ -688,6 +689,7 @@ export default function Home() {
         <section className="title-card" aria-labelledby="game-title">
           <div className="title-heading">
             <h1 id="game-title">LEANQUEST</h1>
+            <button className="title-beta" onClick={() => setShowBetaStatus(true)}>Beta</button>
           </div>
           <div className="title-art pixel-frame" role="img" aria-label="An endless stone staircase climbing toward a distant golden light">
             <Image className="title-frame title-frame-1" src="/assets/cc0_images/title/infinite-stair-1.png" alt="" fill priority sizes="(max-width: 650px) 100vw, 820px" />
@@ -699,6 +701,25 @@ export default function Home() {
             <button className="title-credits" onClick={() => setShowCredits(true)}>Credits</button>
           </div>
         </section>
+        {showBetaStatus && (
+          <div className="modal-backdrop status-backdrop" onMouseDown={() => setShowBetaStatus(false)}>
+            <section className="status-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="status-title" onMouseDown={(event) => event.stopPropagation()}>
+              <header className="status-header">
+                <div>
+                  <p className="eyebrow">LEANQUEST</p>
+                  <h2 id="status-title">STATUS</h2>
+                </div>
+                <button className="close-button" aria-label="Close beta status" onClick={() => setShowBetaStatus(false)}>×</button>
+              </header>
+              <p className="status-description">
+                LeanQuest is an open source project currently in Beta testing. Please use the link below to access the GitHub repository, and submit any problems or suggestions using the issue tracker. If you have artistic ability, please consider contributing art to replace the AI-generated placeholder art. 
+              </p>
+              <a className="status-repository" href="https://github.com/leanquest/leanquest.github.io" target="_blank" rel="noreferrer">
+                View the repository
+              </a>
+            </section>
+          </div>
+        )}
         {showCredits && (
           <div className="modal-backdrop credits-backdrop" onMouseDown={() => setShowCredits(false)}>
             <section className="credits-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="credits-title" onMouseDown={(event) => event.stopPropagation()}>
