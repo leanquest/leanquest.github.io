@@ -77,7 +77,7 @@ test("the CC0 directory contains no unused artwork", async () => {
     "monsters-2.png",
     "monsters-3.png",
     "monsters.png",
-    "og.png",
+    "og-v0.1.2.png",
     "title/infinite-stair-1.png",
     "title/infinite-stair-2.png",
     ...storyFiles,

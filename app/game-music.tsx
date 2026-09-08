@@ -4,7 +4,7 @@
 "use client";
 
 import { Midi } from "@tonejs/midi";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import * as Tone from "tone";
 import { musicCues, type MusicCueId } from "./music-manifest";
 import { safeTriggerTime } from "./music-timing";
@@ -252,7 +252,7 @@ class MidiMusicEngine {
   private desiredCue: MusicCueId | null = null;
   private playingCue: MusicCueId | null = null;
   private enabled = true;
-  private volume = 0.35;
+  private volume = 0.5;
   private unlocked = false;
   private requestId = 0;
 
@@ -358,7 +358,7 @@ class MidiMusicEngine {
 }
 
 export function useGameMusic(cue: MusicCueId | null) {
-  const [settings, setSettings] = useState<MusicSettings>({ enabled: true, volume: 0.35 });
+  const [settings, setSettings] = useState<MusicSettings>({ enabled: true, volume: 0.5 });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const engine = useRef<MidiMusicEngine | null>(null);
@@ -371,7 +371,7 @@ export function useGameMusic(cue: MusicCueId | null) {
           const parsed = JSON.parse(stored) as Partial<MusicSettings>;
           setSettings({
             enabled: parsed.enabled !== false,
-            volume: typeof parsed.volume === "number" ? Math.min(0.8, Math.max(0.05, parsed.volume)) : 0.35,
+            volume: typeof parsed.volume === "number" ? Math.min(0.8, Math.max(0.05, parsed.volume)) : 0.5,
           });
         }
       } catch {
@@ -413,22 +413,90 @@ export function useGameMusic(cue: MusicCueId | null) {
     cue,
     title: cue ? musicCues[cue].title : "Music paused",
     toggle: () => setSettings((current) => ({ ...current, enabled: !current.enabled })),
-    setVolume: (volume: number) => setSettings((current) => ({ ...current, volume })),
+    setVolume: (volume: number) => setSettings((current) => volume <= 0
+      ? { ...current, enabled: false }
+      : { enabled: true, volume: Math.min(0.8, Math.max(0.05, volume)) }),
   };
 }
 
 type MusicControlsProps = ReturnType<typeof useGameMusic>;
 
-export function MusicControls({ enabled, title, toggle }: MusicControlsProps) {
+function SpeakerIcon({ muted }: { muted: boolean }) {
   return (
-    <button
-      className={`music-toggle ${enabled ? "" : "muted"}`}
-      onClick={toggle}
-      aria-label={enabled ? `Mute music: ${title}` : `Enable music: ${title}`}
-      aria-pressed={enabled}
-      title={enabled ? `Mute music · ${title}` : `Enable music · ${title}`}
-    >
-      <span aria-hidden="true">♫</span>
-    </button>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 9v6h4l5 4V5L7 9H3Z" />
+      {muted ? (
+        <path className="speaker-waves" d="m15.5 9.5 5 5m0-5-5 5" />
+      ) : (
+        <path className="speaker-waves" d="M15 8.5a5 5 0 0 1 0 7M17.5 6a8.5 8.5 0 0 1 0 12" />
+      )}
+    </svg>
+  );
+}
+
+export function MusicControls({ enabled, volume, title, toggle, setVolume }: MusicControlsProps) {
+  const [open, setOpen] = useState(false);
+  const controls = useRef<HTMLDivElement>(null);
+  const displayedVolume = enabled ? volume : 0;
+  const volumePercent = Math.round(displayedVolume * 100);
+  const volumeStyle = {
+    "--music-volume": `${(displayedVolume / 0.8) * 100}%`,
+  } as CSSProperties;
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!controls.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div className="music-controls" ref={controls}>
+      <button
+        className={`music-toggle ${enabled ? "" : "muted"}`}
+        onClick={() => setOpen((current) => !current)}
+        aria-label={`Music controls: ${title}`}
+        aria-expanded={open}
+        aria-controls="music-volume-panel"
+        title={`Music controls · ${title}`}
+      >
+        <span aria-hidden="true">♫</span>
+      </button>
+      {open && (
+        <div className="music-volume-panel pixel-frame" id="music-volume-panel" role="group" aria-label="Music volume controls">
+          <button
+            className={`music-mute-button ${enabled ? "" : "muted"}`}
+            onClick={toggle}
+            aria-label={enabled ? "Mute music" : "Unmute music"}
+            aria-pressed={!enabled}
+            title={enabled ? "Mute music" : "Unmute music"}
+          >
+            <SpeakerIcon muted={!enabled} />
+          </button>
+          <input
+            className="music-volume"
+            type="range"
+            min="0"
+            max="0.8"
+            step="0.05"
+            value={displayedVolume}
+            onChange={(event) => setVolume(Number(event.target.value))}
+            aria-label="Music volume"
+            aria-valuetext={`${volumePercent}%`}
+            title={`Music volume · ${volumePercent}%`}
+            style={volumeStyle}
+          />
+        </div>
+      )}
+    </div>
   );
 }

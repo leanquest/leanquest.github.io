@@ -58,7 +58,7 @@ type SaveData = {
   seenTutorials: string[];
 };
 
-type StoryDestination = { kind: "character" } | { kind: "level"; index: number } | { kind: "map" };
+type StoryDestination = { kind: "character" } | { kind: "level"; index: number; suppressTutorial?: boolean } | { kind: "map" };
 type CSSPropertiesWithVariables = CSSProperties & {
   [name: `--${string}`]: string | number | undefined;
 };
@@ -186,6 +186,8 @@ export default function Home() {
   const [storyPanelIndex, setStoryPanelIndex] = useState(0);
   const [storyDestination, setStoryDestination] = useState<StoryDestination | null>(null);
   const [tutorialStepIndex, setTutorialStepIndex] = useState(0);
+  const [replayingTutorialId, setReplayingTutorialId] = useState<string | null>(null);
+  const [suppressedTutorialId, setSuppressedTutorialId] = useState<string | null>(null);
   const animationTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const naturalNumberInput = useRef<HTMLInputElement>(null);
   const proofScrollCard = useRef<HTMLElement>(null);
@@ -235,7 +237,9 @@ export default function Home() {
   const tutorialLibraryIsOpen = showCatalogue && pendingTutorialStep?.action.type === "close-library";
   const tutorialIsActive = Boolean(
     ready && !showTitle && !showCharacterSelect && !showMap && (!showCatalogue || tutorialLibraryIsOpen) && !showLesson && !activeStory &&
-    tutorial && !save.seenTutorials.includes(tutorial.id),
+    tutorial && (replayingTutorialId === tutorial.id || (
+      suppressedTutorialId !== tutorial.id && !save.seenTutorials.includes(tutorial.id)
+    )),
   );
   const tutorialStep = tutorialIsActive ? pendingTutorialStep : null;
   const tutorialTargets = new Set(tutorialStep?.targets ?? []);
@@ -347,6 +351,8 @@ export default function Home() {
     setEnteringNaturalNumber(false);
     setNaturalNumber("");
     setTutorialStepIndex(0);
+    setReplayingTutorialId(null);
+    setSuppressedTutorialId(null);
     setShowCharacterSelect(false);
     setSave((current) => ({ ...current, selectedClass: nextClass }));
     setShowLesson(shouldAutoOpenLesson(nextClass, exercises[nextIndex].id, save.seenLessons[nextClass]));
@@ -506,9 +512,19 @@ export default function Home() {
     }));
   }
 
-  function goToLevel(index: number) {
+  function startTutorialFromLesson() {
+    if (!tutorial) return;
+    closeLesson();
+    reset();
+    setTutorialStepIndex(0);
+    setReplayingTutorialId(tutorial.id);
+    setSuppressedTutorialId(null);
+  }
+
+  function goToLevel(index: number, suppressTutorial = false) {
     if (!heroClass) return;
     if (index + 1 > unlockedThrough && !completed.includes(index + 1)) return;
+    const destinationTutorial = tutorialForLevel(heroClass, exercises[index].id);
     clearAnimations();
     setLevelIndex(index);
     setShowMap(false);
@@ -522,6 +538,8 @@ export default function Home() {
     setEnteringNaturalNumber(false);
     setNaturalNumber("");
     setTutorialStepIndex(0);
+    setReplayingTutorialId(null);
+    setSuppressedTutorialId(suppressTutorial ? destinationTutorial?.id ?? null : null);
     setSave((current) => ({
       ...current,
       level: { ...current.level, [heroClass]: index },
@@ -565,7 +583,7 @@ export default function Home() {
     } else if (destination.kind === "map") {
       setShowMap(true);
     } else {
-      goToLevel(destination.index);
+      goToLevel(destination.index, destination.suppressTutorial);
     }
   }
 
@@ -638,10 +656,12 @@ export default function Home() {
       }));
     }
     if (!heroClass) return;
+    const isTutorialReplay = replayingTutorialId === tutorial?.id;
     const stories = storiesAfterLevel(level.id, heroClass).filter((story) => !save.seenStories.includes(story.id));
     const destination: StoryDestination = levelIndex >= exercises.length - 1
       ? { kind: "map" }
-      : { kind: "level", index: levelIndex + 1 };
+      : { kind: "level", index: levelIndex + 1, suppressTutorial: isTutorialReplay };
+    setReplayingTutorialId(null);
     if (stories.length) {
       startStories(stories, destination);
       return;
@@ -1160,7 +1180,10 @@ export default function Home() {
               <h2 id="lesson-title">{level.title}</h2>
               {lessonTextFor(level.lesson, heroClass).map((sentence) => <p key={sentence}>{formatInlineCode(sentence)}</p>)}
               {moveUnlockText && <p>{formatInlineCode(moveUnlockText)}</p>}
-              <button className="primary-button" onClick={closeLesson}>FACE {level.monster.name.toUpperCase()} ▶</button>
+              <div className="lesson-actions">
+                {tutorial && <button className="lesson-tutorial-button" onClick={startTutorialFromLesson}>START TUTORIAL</button>}
+                <button className="primary-button" onClick={closeLesson}>FACE {level.monster.name.toUpperCase()} ▶</button>
+              </div>
             </div>
           </section>
         </div>

@@ -27,13 +27,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "LeanQuest",
     description: "Choose your proof path and defeat 55 dungeon guardians with Lean.",
-    images: [{ url: "/assets/cc0_images/og.png", width: 1536, height: 1024 }],
+    images: [{ url: "/assets/cc0_images/og-v0.1.2.png", width: 1536, height: 1024 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "LeanQuest — The Proof Dungeon",
     description: "Master term or tactic proofs across two complete dungeon campaigns.",
-    images: ["/assets/cc0_images/og.png"],
+    images: ["/assets/cc0_images/og-v0.1.2.png"],
   },
 };
 

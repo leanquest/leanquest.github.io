@@ -13,6 +13,6 @@ test("static export renders LeanQuest", async () => {
   const html = await readFile(join(projectRoot, "out", "index.html"), "utf8");
   assert.match(html, /<title>LeanQuest — The Proof Dungeon<\/title>/i);
   assert.match(html, /ENTERING THE DUNGEON/);
-  assert.match(html, /https:\/\/leanquest\.github\.io\/assets\/cc0_images\/og\.png/i);
+  assert.match(html, /https:\/\/leanquest\.github\.io\/assets\/cc0_images\/og-v0\.1\.2\.png/i);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton/i);
 });
