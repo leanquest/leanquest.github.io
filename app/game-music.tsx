@@ -263,11 +263,13 @@ class MidiMusicEngine {
   }
 
   async unlock() {
-    if (this.unlocked) return;
+    if (this.unlocked && Tone.getContext().state === "running") return true;
     await Tone.start();
+    if (Tone.getContext().state !== "running") return false;
     this.unlocked = true;
     this.output.gain.rampTo(this.enabled ? this.volume : 0, 0.08);
-    if (this.desiredCue) await this.play(this.desiredCue);
+    if (this.desiredCue && !this.playingCue) await this.play(this.desiredCue);
+    return true;
   }
 
   setSettings({ enabled, volume }: MusicSettings) {
@@ -384,16 +386,36 @@ export function useGameMusic(cue: MusicCueId | null) {
   useEffect(() => {
     const player = new MidiMusicEngine();
     engine.current = player;
+    let disposed = false;
+    const removeGestureListeners = () => {
+      document.removeEventListener("pointerdown", unlock);
+      document.removeEventListener("touchend", unlock);
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
     const unlock = () => {
       void player.unlock()
-        .then(() => setUnlocked(true))
+        .then((started) => {
+          if (!started || disposed) return;
+          setUnlocked(true);
+          removeGestureListeners();
+        })
         .catch((error) => console.error("Unable to start music", error));
     };
-    document.addEventListener("pointerdown", unlock, { once: true });
-    document.addEventListener("keydown", unlock, { once: true });
+    const resumeWhenVisible = () => {
+      if (document.visibilityState === "visible") unlock();
+    };
+    document.addEventListener("pointerdown", unlock);
+    document.addEventListener("touchend", unlock, { passive: true });
+    document.addEventListener("click", unlock);
+    document.addEventListener("keydown", unlock);
+    document.addEventListener("visibilitychange", resumeWhenVisible);
+    window.addEventListener("pageshow", unlock);
     return () => {
-      document.removeEventListener("pointerdown", unlock);
-      document.removeEventListener("keydown", unlock);
+      disposed = true;
+      removeGestureListeners();
+      document.removeEventListener("visibilitychange", resumeWhenVisible);
+      window.removeEventListener("pageshow", unlock);
       player.dispose();
       engine.current = null;
     };
@@ -407,11 +429,22 @@ export function useGameMusic(cue: MusicCueId | null) {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   }, [settings, settingsLoaded]);
 
+  const requestUnlock = () => {
+    const player = engine.current;
+    if (!player) return;
+    void player.unlock()
+      .then((started) => {
+        if (started && engine.current === player) setUnlocked(true);
+      })
+      .catch((error) => console.error("Unable to start music", error));
+  };
+
   return {
     ...settings,
     unlocked,
     cue,
     title: cue ? musicCues[cue].title : "Music paused",
+    requestUnlock,
     toggle: () => setSettings((current) => ({ ...current, enabled: !current.enabled })),
     setVolume: (volume: number) => setSettings((current) => volume <= 0
       ? { ...current, enabled: false }
@@ -434,7 +467,7 @@ function SpeakerIcon({ muted }: { muted: boolean }) {
   );
 }
 
-export function MusicControls({ enabled, volume, title, toggle, setVolume }: MusicControlsProps) {
+export function MusicControls({ enabled, volume, title, requestUnlock, toggle, setVolume }: MusicControlsProps) {
   const [open, setOpen] = useState(false);
   const controls = useRef<HTMLDivElement>(null);
   const displayedVolume = enabled ? volume : 0;
@@ -463,7 +496,10 @@ export function MusicControls({ enabled, volume, title, toggle, setVolume }: Mus
     <div className="music-controls" ref={controls}>
       <button
         className={`music-toggle ${enabled ? "" : "muted"}`}
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          requestUnlock();
+          setOpen((current) => !current);
+        }}
         aria-label={`Music controls: ${title}`}
         aria-expanded={open}
         aria-controls="music-volume-panel"
@@ -475,7 +511,10 @@ export function MusicControls({ enabled, volume, title, toggle, setVolume }: Mus
         <div className="music-volume-panel pixel-frame" id="music-volume-panel" role="group" aria-label="Music volume controls">
           <button
             className={`music-mute-button ${enabled ? "" : "muted"}`}
-            onClick={toggle}
+            onClick={() => {
+              requestUnlock();
+              toggle();
+            }}
             aria-label={enabled ? "Mute music" : "Unmute music"}
             aria-pressed={!enabled}
             title={enabled ? "Mute music" : "Unmute music"}
@@ -489,7 +528,10 @@ export function MusicControls({ enabled, volume, title, toggle, setVolume }: Mus
             max="0.8"
             step="0.05"
             value={displayedVolume}
-            onChange={(event) => setVolume(Number(event.target.value))}
+            onChange={(event) => {
+              requestUnlock();
+              setVolume(Number(event.target.value));
+            }}
             aria-label="Music volume"
             aria-valuetext={`${volumePercent}%`}
             title={`Music volume · ${volumePercent}%`}

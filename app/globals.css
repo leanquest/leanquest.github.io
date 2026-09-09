@@ -1469,6 +1469,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
 @media (max-width: 700px) and (orientation: portrait) {
   body { overflow: hidden; }
 
+  .story-viewer { grid-template-rows: 52% 48%; }
+
   .app-shell {
     height: 100dvh;
     min-height: 560px;
@@ -1764,6 +1766,43 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 17px; 
   .lesson-copy h2 { margin: 4px 0 9px; font-size: 18px; }
   .lesson-copy > p:not(.eyebrow) { margin-bottom: 8px; font-size: 8px; line-height: 1.45; }
   .lesson-actions { gap: 7px; margin-top: 8px; }
+}
+
+/* Keep every phone screen reachable when browser chrome leaves little vertical space. */
+@media (max-width: 700px) and (max-height: 625px) and (orientation: portrait) {
+  .title-screen,
+  .story-screen,
+  .title-card,
+  .story-viewer,
+  .character-screen,
+  .app-shell { min-height: 0; }
+
+  .modal-backdrop.status-backdrop,
+  .modal-backdrop.credits-backdrop { z-index: 100; }
+
+  .workspace {
+    grid-template-rows:
+      clamp(82px, 18dvh, 110px)
+      minmax(180px, 1fr)
+      clamp(145px, 30dvh, 185px);
+  }
+
+  .encounter,
+  .moves-column { height: 100%; }
+
+  .left-console {
+    grid-template-rows: 35px auto minmax(48px, 1fr) 32px;
+  }
+
+  .level-strip { height: 35px; }
+  .theorem-card { min-height: 0; }
+  .source-card { height: 32px; }
+
+  .lesson-modal {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .lesson-class-art { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
