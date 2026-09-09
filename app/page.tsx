@@ -23,7 +23,6 @@ import {
 import {
   environmentLines,
   createProofState,
-  currentModeLabel,
   currentTarget,
   getMoveChoices,
   isSolved,
@@ -48,7 +47,6 @@ import {
 } from "./tutorials";
 
 type MonsterPhase = "idle" | "attack" | "death" | "gone";
-type Message = { kind: "info" | "error"; text: string } | null;
 type SaveData = {
   selectedClass?: HeroClass;
   completed: Record<HeroClass, number[]>;
@@ -171,7 +169,6 @@ export default function Home() {
     createProofState(exercises[0].theorem, exercises[0].environment),
   );
   const [undoStack, setUndoStack] = useState<ProofState[]>([]);
-  const [message, setMessage] = useState<Message>(null);
   const [showMap, setShowMap] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
   const [showLesson, setShowLesson] = useState(false);
@@ -343,7 +340,6 @@ export default function Home() {
     setLevelIndex(nextIndex);
     setProofState(createProofState(exercises[nextIndex].theorem, exercises[nextIndex].environment));
     setUndoStack([]);
-    setMessage(null);
     setMonsterPhase("idle");
     setHp(MAX_HP[nextClass]);
     setMana(maxManaFor(nextClass));
@@ -362,7 +358,6 @@ export default function Home() {
     if (!heroClass || monsterPhase !== "idle" || proofFailed) return;
     if (!tutorialAllowsChoice(tutorialStep, choice.id)) return;
     if (RESOURCE_CONSUMPTION_ENABLED && mana < choice.manaCost) {
-      setMessage({ kind: "error", text: `This move requires ${choice.manaCost} MP, but only ${mana} MP remains.` });
       return;
     }
     if (choice.input === "natural-number" && value === undefined) {
@@ -405,7 +400,6 @@ export default function Home() {
           },
         };
       });
-      setMessage({ kind: "info", text: "All goals completed. The guardian is defeated." });
       animationTimers.current.push(
         setTimeout(() => setMonsterPhase("gone"), 1300),
       );
@@ -415,16 +409,14 @@ export default function Home() {
         : hp;
       setHp(nextHp);
       setMonsterPhase("attack");
-      setMessage(nextHp === 0
-        ? { kind: "error", text: "Your proof has failed. Restart the level to recover and try again." }
-        : RESOURCE_CONSUMPTION_ENABLED ? {
-            kind: "info",
-            text: `The move fits. The guardian strikes for ${attackDamage} HP. The focused hole now expects ${currentTarget(nextState)}.`,
-          } : {
-            kind: "info",
-            text: `The move fits. Resource consumption is paused. The focused hole now expects ${currentTarget(nextState)}.`,
-          });
       animationTimers.current.push(setTimeout(() => setMonsterPhase("idle"), 620));
+    }
+  }
+
+  function submitNaturalNumber(value: string) {
+    const submittedValue = value || "0";
+    if (numberInputChoice?.acceptsInput?.(submittedValue)) {
+      choose(numberInputChoice, submittedValue);
     }
   }
 
@@ -438,19 +430,14 @@ export default function Home() {
     setEnteringNaturalNumber(false);
     setNaturalNumber("");
     setUndoStack((items) => items.slice(0, -1));
-    setMessage({ kind: "info", text: "The last move has been undone." });
   }
 
   function revealWithVision() {
     if (heroClass !== "champion" || visionPoints < 1 || monsterPhase !== "idle" || solved || proofFailed) return;
     const normalized = normalizeFocusedHole(proofState);
-    if (normalized === proofState) {
-      setMessage({ kind: "info", text: "The focused hole is already in normal form. No VP was spent." });
-      return;
-    }
+    if (normalized === proofState) return;
     setProofState(normalized);
     setVisionPoints((current) => current - 1);
-    setMessage({ kind: "info", text: "Vision reveals the focused hole in normal form. No proof move was made." });
   }
 
   function reset() {
@@ -461,7 +448,6 @@ export default function Home() {
     setVisionPoints(heroClass ? visionFor(heroClass) : MAX_VISION_POINTS);
     setProofState(createProofState(level.theorem, level.environment));
     setUndoStack([]);
-    setMessage(null);
     setEnteringNaturalNumber(false);
     setNaturalNumber("");
   }
@@ -530,7 +516,6 @@ export default function Home() {
     setShowMap(false);
     setProofState(createProofState(exercises[index].theorem, exercises[index].environment));
     setUndoStack([]);
-    setMessage(null);
     setMonsterPhase("idle");
     setHp(MAX_HP[heroClass]);
     setMana(maxManaFor(heroClass));
@@ -699,7 +684,7 @@ export default function Home() {
   }
 
   if (!ready) {
-    return <main className="loading-shell">ENTERING THE DUNGEON...</main>;
+    return <main className="loading-shell">ASCENDING THE TOWER...</main>;
   }
 
   if (showTitle) {
@@ -713,7 +698,7 @@ export default function Home() {
           </div>
           <div className="title-art pixel-frame" role="img" aria-label="An endless stone staircase climbing toward a distant golden light">
             <Image className="title-frame title-frame-1" src="/assets/cc0_images/title/infinite-stair-1.png" alt="" fill priority sizes="(max-width: 650px) 100vw, 820px" />
-            <Image className="title-frame title-frame-2" src="/assets/cc0_images/title/infinite-stair-2.png" alt="" fill sizes="(max-width: 650px) 100vw, 820px" />
+            <Image className="title-frame title-frame-2" src="/assets/cc0_images/title/infinite-stair-2.png" alt="" fill loading="eager" sizes="(max-width: 650px) 100vw, 820px" />
             <div className="title-vignette" aria-hidden="true" />
           </div>
           <div className="title-actions">
@@ -928,7 +913,7 @@ export default function Home() {
         className={`topbar pixel-frame${showTopbarSpotlight ? " tutorial-topbar-parent" : ""}`}
         style={showTopbarSpotlight ? { zIndex: 71, isolation: "isolate" } : undefined}
       >
-        <button className="brand" onClick={() => setShowMap(true)} aria-label="Open dungeon map">
+        <button className="brand" onClick={() => setShowMap(true)} aria-label="Open tower map">
           <span className="brand-mark">λ</span>
           <span><strong>LEANQUEST</strong><small>{heroClass === "champion" ? "PATH OF TERMS" : "PATH OF TACTICS"}</small></span>
         </button>
@@ -956,7 +941,7 @@ export default function Home() {
 
       <section className="workspace">
         <section className={`encounter pixel-frame phase-${monsterPhase}`}>
-          <div className="dungeon-view">
+          <div className="tower-view">
             <div className="torch torch-left"><i /></div><div className="torch torch-right"><i /></div>
             <div className={`monster-stage${tutorialClass("guardian")}`}>
               <div className={`monster-sprite${level.monster.presence ? ` monster-sprite-${level.monster.presence}` : ""}`} role="img" aria-label={level.monster.name} style={visual} />
@@ -1026,19 +1011,12 @@ export default function Home() {
             </article>
           </div>
 
-          <aside className={`moves-column pixel-frame${tutorialClass("move-catalogue")}${tutorialTargets.has("next-level") ? " tutorial-muted-parent" : ""}`}>
+          <aside className={`moves-column pixel-frame${solved ? " completion-active" : ""}${tutorialClass("move-catalogue")}${tutorialTargets.has("next-level") ? " tutorial-muted-parent" : ""}`}>
             <div className="path-banner">
               <span className="path-symbol">{proofFailed ? "☠" : heroClass === "champion" ? "⚔" : "✦"}</span>
               <span><strong>{proofFailed ? "PROOF FAILED" : heroClass === "champion" ? "TERM CATALOGUE" : "MOVE CATALOGUE"}</strong><small>{proofFailed ? "NO MOVES REMAIN" : "CUMULATIVE · FILTERED BY TYPE"}</small></span>
             </div>
             <div className="move-panel">
-              <div className="move-heading">
-                <div>
-                  <p className="eyebrow">{proofFailed ? "HP DEPLETED" : solved ? "ENCOUNTER WON" : `MOVE ${history.length + 1}`}</p>
-                  <h2>{proofFailed ? "PROOF FAILED" : solved ? "VICTORY" : currentModeLabel(proofState, heroClass)}</h2>
-                </div>
-                {!solved && !proofFailed && <span className="focus-chip">{choices.length} MATCH</span>}
-              </div>
               {proofFailed ? (
                 <div className="failure-panel">
                   <div className="failure-sigil">☠</div>
@@ -1053,7 +1031,7 @@ export default function Home() {
                   <h3>{level.monster.name} falls!</h3>
                   <p>The {heroClass}&apos;s proof used {history.length} moves.</p>
                   <div className="proof-pair"><div><small>COMPLETE {heroClass.toUpperCase()} PROOF</small><code>{heroClass === "champion" ? renderProof(proofState) : proofDisplay.join("\n")}</code></div></div>
-                  <button className={`primary-button${tutorialClass("next-level")}`} onClick={nextLevel}>{level.id === exercises.length ? "VIEW CONQUERED DUNGEON" : "ENTER NEXT CHAMBER"} <span>▶</span></button>
+                  <button className={`primary-button${tutorialClass("next-level")}`} onClick={nextLevel}>{level.id === exercises.length ? "VIEW TOWER MAP" : "ENTER NEXT CHAMBER"} <span>▶</span></button>
                 </div>
               ) : (
                 <>
@@ -1078,9 +1056,7 @@ export default function Home() {
                   {enteringNaturalNumber ? (
                     <form className="natural-number-entry" onSubmit={(event) => {
                       event.preventDefault();
-                      if (numberInputChoice?.acceptsInput?.(submittedNaturalNumber)) {
-                        choose(numberInputChoice, submittedNaturalNumber);
-                      }
+                      submitNaturalNumber(naturalNumber);
                     }}>
                       <label htmlFor="natural-number-input">ENTER A NATURAL NUMBER</label>
                       <input
@@ -1088,12 +1064,26 @@ export default function Home() {
                         id="natural-number-input"
                         type="text"
                         inputMode="numeric"
+                        enterKeyHint="done"
                         pattern="[0-9]+"
                         autoComplete="off"
                         placeholder="0"
                         value={naturalNumber}
                         onChange={(event) => setNaturalNumber(event.target.value.replace(/\D/g, ""))}
+                        onBlur={(event) => {
+                          if (
+                            event.currentTarget.value
+                            && window.matchMedia("(max-width: 700px) and (orientation: portrait)").matches
+                          ) {
+                            submitNaturalNumber(event.currentTarget.value);
+                          }
+                        }}
                         onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            submitNaturalNumber(event.currentTarget.value);
+                            return;
+                          }
                           if (event.key === "Escape") {
                             setEnteringNaturalNumber(false);
                             setNaturalNumber("");
@@ -1124,14 +1114,6 @@ export default function Home() {
                       {!choices.length && <p className="catalogue-empty">No catalogue move fits this branch. Undo and try another route.</p>}
                     </div>
                   )}
-                  <div className={`feedback ${message?.kind ?? "quiet"}`} role="status" aria-live="polite">
-                    <span>{message?.kind === "error" ? "!" : message ? "◆" : "i"}</span>
-                    <p>{message?.text ?? (RESOURCE_CONSUMPTION_ENABLED
-                      ? "Every displayed move is type-compatible. Every selection gives the guardian a chance to strike."
-                      : heroClass === "champion"
-                        ? "Every displayed move is type-compatible. Guardian attacks continue, but HP consumption is paused; vision still costs VP."
-                        : "Every displayed move is type-compatible. Guardian attacks continue, but HP and MP consumption is paused.")}</p>
-                  </div>
                 </>
               )}
             </div>
@@ -1152,7 +1134,7 @@ export default function Home() {
             </article>
           )}
           <aside
-            className={`tutorial-card tutorial-${tutorialStep.placement}${tutorialStep.compact ? " tutorial-compact" : ""} pixel-frame`}
+            className={`tutorial-card tutorial-${tutorialStep.placement}${tutorialStep.portraitPlacement ? ` tutorial-portrait-${tutorialStep.portraitPlacement}` : ""}${tutorialStep.compact ? " tutorial-compact" : ""} pixel-frame`}
             style={tutorialStep.compact ? { width: "min(300px, calc(100vw - 28px))", padding: 14 } : undefined}
             role="dialog"
             aria-modal="true"
@@ -1243,7 +1225,7 @@ export default function Home() {
         <div className="modal-backdrop" onMouseDown={() => setShowMap(false)}>
           <section className="map-modal pixel-frame" role="dialog" aria-modal="true" aria-labelledby="map-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="map-header">
-              <div><p className="eyebrow">{heroClass.toUpperCase()} CAMPAIGN</p><h2 id="map-title">DUNGEON MAP</h2></div>
+              <div><p className="eyebrow">{heroClass.toUpperCase()} CAMPAIGN</p><h2 id="map-title">TOWER MAP</h2></div>
               <button className="close-button" onClick={() => setShowMap(false)}>×</button>
             </div>
             <p className="map-intro">Each guardian unlocks the next chamber. Champion and Apprentice progress are saved separately.</p>

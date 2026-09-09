@@ -39,6 +39,7 @@ export type TutorialStep = {
   compact?: boolean;
   targets: TutorialTarget[];
   placement: TutorialPlacement;
+  portraitPlacement?: TutorialPlacement;
   action: TutorialAction;
 };
 
@@ -102,6 +103,7 @@ export const levelTutorials: LevelTutorial[] = [
         text: "Your Health Points are shown in the HP bar. After every move, the guardian attacks. If your HP reaches zero, you fail the level and must restart it.",
         targets: ["vitals"],
         placement: "top-left",
+        portraitPlacement: "bottom-center",
         action: { type: "continue", label: "SHOW ME MY MAGIC POINTS" },
       },
       {
@@ -109,6 +111,7 @@ export const levelTutorials: LevelTutorial[] = [
         text: "The Apprentice spends Magic Points (MP) to invoke tactics, which are like spells that construct terms. Each tactic has its own MP cost.",
         targets: ["vitals"],
         placement: "top-left",
+        portraitPlacement: "bottom-center",
         action: { type: "continue", label: "SHOW ME THE CATALOGUE" },
       },
       {
@@ -298,8 +301,8 @@ export const levelTutorials: LevelTutorial[] = [
         action: { type: "continue", label: "SHOW ME THE MAP" },
       },
       {
-        title: "View the Dungeon Map",
-        text: "The Map button shows your progress through the dungeon and lets you revisit unlocked chambers.",
+        title: "View the Tower Map",
+        text: "The Map button shows your progress through the tower and lets you revisit unlocked chambers.",
         targets: ["map"],
         placement: "bottom-center",
         action: { type: "continue", label: "SHOW ME THE LIBRARY" },

@@ -872,7 +872,7 @@ const existingLevelEntries = [
     unlocks: { apprentice: { moves: ["tactic.calc"], text: "New move: a `calc` step records an intermediate equality and asks for its supporting proof." } },
     champion: route(["fun hab => □", "fun hbc => □", "congrArg f (Eq.trans hab hbc)"], ["a = b → b = c → f a = f c", "b = c → f a = f c", "f a = f c"], "fun hab hbc => congrArg f (Eq.trans hab hbc)"),
     apprentice: route(["intro hab", "intro hbc", "calc … = □ := □", "f b", "congr", "exact hab", "congr", "exact hbc"], ["a = b → b = c → f a = f c", "b = c → f a = f c", "f a = f c", "f a = f c", "f a = f b", "a = b", "f b = f c", "b = c"], "by\n  intro hab hbc\n  calc\n    f a = f b := by\n      congr\n    _ = f c := by\n      congr"),
-    monster: monster("Crowned Proof-Knight", "Every equality in the dungeon ends at its throne.", "monsters-2.png", 9, 92, 126, "imposing"),
+    monster: monster("Crowned Proof-Knight", "Every equality in the tower ends at its throne.", "monsters-2.png", 9, 92, 126, "imposing"),
   },
   {
     id: 41, depth: 4, chapter: "Tactic Craft", title: "Split on Truth", topic: "Excluded middle",

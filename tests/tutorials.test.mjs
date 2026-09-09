@@ -35,6 +35,15 @@ test("Apprentice level one defines the complete seven-step onboarding tutorial",
     "natural-number",
     "next-level",
   ]);
+  assert.deepEqual(tutorial.steps.map((step) => step.portraitPlacement), [
+    undefined,
+    undefined,
+    "bottom-center",
+    "bottom-center",
+    undefined,
+    undefined,
+    undefined,
+  ]);
 });
 
 test("Champion level one teaches direct construction, holes, and vision", () => {

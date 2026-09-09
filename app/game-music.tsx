@@ -290,9 +290,9 @@ class MidiMusicEngine {
     }
   }
 
-  private clearPlayback() {
+  private clearPlayback(stopTime?: number) {
     const transport = Tone.getTransport();
-    transport.stop();
+    transport.stop(stopTime);
     transport.cancel(0);
     this.parts.forEach((part) => part.dispose());
     this.voices.forEach((voice) => voice.dispose());
@@ -344,8 +344,8 @@ class MidiMusicEngine {
       this.parts.push(part);
     }
     if (!config.loop) {
-      transport.scheduleOnce(() => {
-        if (this.playingCue === cue) this.clearPlayback();
+      transport.scheduleOnce((time) => {
+        if (this.playingCue === cue) this.clearPlayback(time);
       }, midi.duration + 0.15);
     }
     transport.start("+0.04");

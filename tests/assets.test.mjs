@@ -70,8 +70,8 @@ test("the CC0 directory contains no unused artwork", async () => {
   ));
   const usedFiles = Array.from(new Set([
     "classes-v2.png",
-    "dungeon-background.png",
-    "dungeon-torch.png",
+    "tower-background.png",
+    "tower-torch.png",
     "favicon.svg",
     "hollow-marshal.png",
     "monsters-2.png",
